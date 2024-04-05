@@ -52,7 +52,7 @@ pub type SignedExtra = (
 pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
@@ -79,7 +79,7 @@ use frame::arithmetic::Perbill;
 use frame::deps::sp_runtime::{create_runtime_str, traits::Bounded, FixedPointNumber, Perquintill};
 use frame::deps::sp_std::prelude::*;
 use frame::deps::sp_version::NativeVersion;
-use sp_core::{ ConstBool};
+use sp_core::ConstBool;
 
 use frame_support::{
     construct_runtime, derive_impl,
@@ -90,7 +90,6 @@ use frame_support::{
 };
 use frame_system::{EnsureRoot, EnsureSigned};
 pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
-
 
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
@@ -170,9 +169,7 @@ impl frame_system::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ExistentialDeposit: Balance = DOLLARS;
-    // For weight estimation, we assume that the most locks on an individual account will be 50.
-    // This number may need to be adjusted in the future if this assumption no longer holds true.
+         pub static ExistentialDeposit: u64 = 1;
     pub const MaxLocks: u32 = 50;
     pub const MaxReserves: u32 = 50;
 }

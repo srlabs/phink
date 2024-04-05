@@ -16,6 +16,8 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk
 pallet-assets = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
 pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+env_logger = "0.11.3"
 
 [features]
 default = ["std"]
