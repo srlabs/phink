@@ -3,6 +3,30 @@ name = "phink"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+parity-scale-codec = { version = "3.0.0", default-features = false }
+scale-info = { version = "2.6.0", default-features = false }
+frame = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false, features = ["experimental", "runtime"] }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+
+pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+
+pallet-assets = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+    "frame/std",
+    "pallet-balances/std",
+    "pallet-timestamp/std",
+    "pallet-transaction-payment/std",
+    "pallet-assets/std",
+    "pallet-contracts/std",
+    "pallet-insecure-randomness-collective-flip/std",
+    "parity-scale-codec/std",
+    "scale-info/std",
+]

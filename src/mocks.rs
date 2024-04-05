@@ -1,603 +1,325 @@
-// This file is part of Substrate.
+use frame::deps::{frame_support, frame_system, sp_runtime};
+use frame::runtime::testing_prelude::RuntimeVersion;
+use frame::traits::IdentityLookup;
 
-// Copyright (C) Parity Technologies (UK) Ltd.
-// SPDX-License-Identifier: Apache-2.0
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// 	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-mod builder;
-mod pallet_dummy;
-mod test_debug;
-
-use self::{
-	test_debug::TestDebug,
-	test_utils::{ensure_stored, expected_deposit, hash},
-};
-use crate::{
-	self as pallet_contracts,
-	chain_extension::{
-		ChainExtension, Environment, Ext, InitState, RegisteredChainExtension,
-		Result as ExtensionResult, RetVal, ReturnFlags, SysConfig,
-	},
-	exec::{Frame, Key},
-	migration::codegen::LATEST_MIGRATION_VERSION,
-	primitives::CodeUploadReturnValue,
-	storage::DeletionQueueManager,
-	tests::test_utils::{get_contract, get_contract_checked},
-	wasm::{Determinism, ReturnErrorCode as RuntimeReturnCode},
-	weights::WeightInfo,
-	Array, BalanceOf, Code, CodeHash, CodeInfoOf, CollectEvents, Config, ContractInfo,
-	ContractInfoOf, DebugInfo, DefaultAddressGenerator, DeletionQueueCounter, Error, HoldReason,
-	MigrationInProgress, Origin, Pallet, PristineCode, Schedule,
-};
-use assert_matches::assert_matches;
-use codec::{Decode, Encode};
-use frame_support::{
-	assert_err, assert_err_ignore_postinfo, assert_err_with_weight, assert_noop, assert_ok,
-	derive_impl,
-	dispatch::{DispatchErrorWithPostInfo, PostDispatchInfo},
-	pallet_prelude::EnsureOrigin,
-	parameter_types,
-	storage::child,
-	traits::{
-		fungible::{BalancedHold, Inspect, Mutate, MutateHold},
-		tokens::Preservation,
-		ConstU32, ConstU64, Contains, OnIdle, OnInitialize, StorageVersion,
-	},
-	weights::{constants::WEIGHT_REF_TIME_PER_SECOND, Weight},
-};
-use frame_system::{EventRecord, Phase};
-use pallet_contracts_fixtures::compile_module;
-use pretty_assertions::{assert_eq, assert_ne};
-use sp_core::ByteArray;
-use sp_io::hashing::blake2_256;
-use sp_keystore::{testing::MemoryKeystore, KeystoreExt};
 use sp_runtime::{
-	testing::H256,
-	traits::{BlakeTwo256, Convert, Hash, IdentityLookup},
-	AccountId32, BuildStorage, DispatchError, Perbill, TokenError,
+    generic,
+    traits::{BlakeTwo256, IdentifyAccount, Verify},
+    MultiSignature,
 };
 
-type Block = frame_system::mocking::MockBlock<Test>;
+/// An index to a block.
+pub type BlockNumber = u32;
 
-frame_support::construct_runtime!(
-	pub enum Test
-	{
-		System: frame_system,
-		Balances: pallet_balances,
-		Timestamp: pallet_timestamp,
-		Randomness: pallet_insecure_randomness_collective_flip,
-		Utility: pallet_utility,
-		Contracts: pallet_contracts,
-		Proxy: pallet_proxy,
-		Dummy: pallet_dummy
-	}
+/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
+pub type Signature = MultiSignature;
+
+/// Some way of identifying an account on the chain. We intentionally make it equivalent
+/// to the public key of our transaction signing scheme.
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+
+/// The type for looking up accounts. We don't expect more than 4 billion of them.
+pub type AccountIndex = u32;
+
+/// Balance of an account.
+pub type Balance = u128;
+
+/// Type used for expressing timestamp.
+pub type Moment = u64;
+
+/// Index of a transaction in the chain.
+pub type Nonce = u32;
+
+/// A hash of some data used by the chain.
+pub type Hash = frame::deps::sp_core::H256;
+
+/// Digest item type.
+pub type DigestItem = generic::DigestItem;
+/// Header type.
+pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
+
+pub type SignedExtra = (
+    frame_system::CheckNonZeroSender<Runtime>,
+    frame_system::CheckSpecVersion<Runtime>,
+    frame_system::CheckTxVersion<Runtime>,
+    frame_system::CheckGenesis<Runtime>,
+    frame_system::CheckEra<Runtime>,
+    frame_system::CheckNonce<Runtime>,
+    frame_system::CheckWeight<Runtime>,
+    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
-macro_rules! assert_return_code {
-	( $x:expr , $y:expr $(,)? ) => {{
-		assert_eq!(u32::from_le_bytes($x.data[..].try_into().unwrap()), $y as u32);
-	}};
-}
+pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 
-macro_rules! assert_refcount {
-	( $code_hash:expr , $should:expr $(,)? ) => {{
-		let is = crate::CodeInfoOf::<Test>::get($code_hash).map(|m| m.refcount()).unwrap();
-		assert_eq!(is, $should);
-	}};
-}
+pub type UncheckedExtrinsic =
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
-pub mod test_utils {
+pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
-	use super::{Contracts, DepositPerByte, DepositPerItem, Hash, SysConfig, Test};
-	use crate::{
-		exec::AccountIdOf, BalanceOf, CodeHash, CodeInfo, CodeInfoOf, Config, ContractInfo,
-		ContractInfoOf, Nonce, PristineCode,
-	};
-	use codec::{Encode, MaxEncodedLen};
-	use frame_support::traits::fungible::{InspectHold, Mutate};
+type Migrations = ();
 
-	pub fn place_contract(address: &AccountIdOf<Test>, code_hash: CodeHash<Test>) {
-		let nonce = <Nonce<Test>>::mutate(|counter| {
-			*counter += 1;
-			*counter
-		});
-		set_balance(address, Contracts::min_balance() * 10);
-		<CodeInfoOf<Test>>::insert(code_hash, CodeInfo::new(address.clone()));
-		let contract = <ContractInfo<Test>>::new(&address, nonce, code_hash).unwrap();
-		<ContractInfoOf<Test>>::insert(address, contract);
-	}
-	pub fn set_balance(who: &AccountIdOf<Test>, amount: u64) {
-		let _ = <Test as Config>::Currency::set_balance(who, amount);
-	}
-	pub fn get_balance(who: &AccountIdOf<Test>) -> u64 {
-		<Test as Config>::Currency::free_balance(who)
-	}
-	pub fn get_balance_on_hold(
-		reason: &<Test as Config>::RuntimeHoldReason,
-		who: &AccountIdOf<Test>,
-	) -> u64 {
-		<Test as Config>::Currency::balance_on_hold(reason.into(), who)
-	}
-	pub fn get_contract(addr: &AccountIdOf<Test>) -> ContractInfo<Test> {
-		get_contract_checked(addr).unwrap()
-	}
-	pub fn get_contract_checked(addr: &AccountIdOf<Test>) -> Option<ContractInfo<Test>> {
-		ContractInfoOf::<Test>::get(addr)
-	}
-	pub fn get_code_deposit(code_hash: &CodeHash<Test>) -> BalanceOf<Test> {
-		crate::CodeInfoOf::<Test>::get(code_hash).unwrap().deposit()
-	}
-	pub fn contract_info_storage_deposit(
-		addr: &<Test as frame_system::Config>::AccountId,
-	) -> BalanceOf<Test> {
-		let contract_info = self::get_contract(&addr);
-		let info_size = contract_info.encoded_size() as u64;
-		DepositPerByte::get()
-			.saturating_mul(info_size)
-			.saturating_add(DepositPerItem::get())
-	}
-	pub fn hash<S: Encode>(s: &S) -> <<Test as SysConfig>::Hashing as Hash>::Output {
-		<<Test as SysConfig>::Hashing as Hash>::hash_of(s)
-	}
-	pub fn expected_deposit(code_len: usize) -> u64 {
-		// For code_info, the deposit for max_encoded_len is taken.
-		let code_info_len = CodeInfo::<Test>::max_encoded_len() as u64;
-		// Calculate deposit to be reserved.
-		// We add 2 storage items: one for code, other for code_info
-		DepositPerByte::get().saturating_mul(code_len as u64 + code_info_len) +
-			DepositPerItem::get().saturating_mul(2)
-	}
-	pub fn ensure_stored(code_hash: CodeHash<Test>) -> usize {
-		// Assert that code_info is stored
-		assert!(CodeInfoOf::<Test>::contains_key(&code_hash));
-		// Assert that contract code is stored, and get its size.
-		PristineCode::<Test>::try_get(&code_hash).unwrap().len()
-	}
-}
+/// Block ID.
+pub type BlockId = generic::BlockId<Block>;
 
-impl Test {
-	pub fn set_unstable_interface(unstable_interface: bool) {
-		UNSTABLE_INTERFACE.with(|v| *v.borrow_mut() = unstable_interface);
-	}
-}
+pub type RuntimeExecutive = frame::deps::frame_executive::Executive<
+    Runtime,
+    Block,
+    frame_system::ChainContext<Runtime>,
+    Runtime,
+    AllPalletsWithSystem,
+    Migrations,
+>;
 
-parameter_types! {
-	static TestExtensionTestValue: TestExtension = Default::default();
-}
+/*
+pub type RuntimeExecutive =
+    frame::runtime::testing_prelude::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPalletsWithSystem>;
+*/
 
-#[derive(Clone)]
-pub struct TestExtension {
-	enabled: bool,
-	last_seen_buffer: Vec<u8>,
-	last_seen_input_len: u32,
-}
+use frame::arithmetic::Perbill;
+use frame::deps::sp_runtime::{create_runtime_str, traits::Bounded, FixedPointNumber, Perquintill};
+use frame::deps::sp_std::prelude::*;
+use frame::deps::sp_version::NativeVersion;
+use sp_core::{ ConstBool};
 
-#[derive(Default)]
-pub struct RevertingExtension;
+use frame_support::{
+    construct_runtime, derive_impl,
+    instances::Instance1,
+    parameter_types,
+    traits::{AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32},
+    weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
+};
+use frame_system::{EnsureRoot, EnsureSigned};
+pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 
-#[derive(Default)]
-pub struct DisabledExtension;
 
-#[derive(Default)]
-pub struct TempStorageExtension {
-	storage: u32,
-}
+pub const MILLICENTS: Balance = 1_000_000_000;
+pub const CENTS: Balance = 1_000 * MILLICENTS;
+// assume this is worth about a cent.
+pub const DOLLARS: Balance = 100 * CENTS;
 
-impl TestExtension {
-	fn disable() {
-		TestExtensionTestValue::mutate(|e| e.enabled = false)
-	}
+pub const MILLISECS_PER_BLOCK: Moment = 3000;
+pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
-	fn last_seen_buffer() -> Vec<u8> {
-		TestExtensionTestValue::get().last_seen_buffer.clone()
-	}
+// NOTE: Currently it is not possible to change the slot duration after the chain has started.
+//       Attempting to do so will brick block production.
+pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
-	fn last_seen_input_len() -> u32 {
-		TestExtensionTestValue::get().last_seen_input_len
-	}
-}
+// 1 in 4 blocks (on average, not counting collisions) will be primary BABE blocks.
+pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
-impl Default for TestExtension {
-	fn default() -> Self {
-		Self { enabled: true, last_seen_buffer: vec![], last_seen_input_len: 0 }
-	}
-}
+// NOTE: Currently it is not possible to change the epoch duration after the chain has started.
+//       Attempting to do so will brick block production.
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
+pub const EPOCH_DURATION_IN_SLOTS: u64 = {
+    const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
 
-impl ChainExtension<Test> for TestExtension {
-	fn call<E>(&mut self, env: Environment<E, InitState>) -> ExtensionResult<RetVal>
-	where
-		E: Ext<T = Test>,
-	{
-		let func_id = env.func_id();
-		let id = env.ext_id() as u32 | func_id as u32;
-		match func_id {
-			0 => {
-				let mut env = env.buf_in_buf_out();
-				let input = env.read(8)?;
-				env.write(&input, false, None)?;
-				TestExtensionTestValue::mutate(|e| e.last_seen_buffer = input);
-				Ok(RetVal::Converging(id))
-			},
-			1 => {
-				let env = env.only_in();
-				TestExtensionTestValue::mutate(|e| e.last_seen_input_len = env.val1());
-				Ok(RetVal::Converging(id))
-			},
-			2 => {
-				let mut env = env.buf_in_buf_out();
-				let mut enc = &env.read(9)?[4..8];
-				let weight = Weight::from_parts(
-					u32::decode(&mut enc).map_err(|_| Error::<Test>::ContractTrapped)?.into(),
-					0,
-				);
-				env.charge_weight(weight)?;
-				Ok(RetVal::Converging(id))
-			},
-			3 => Ok(RetVal::Diverging { flags: ReturnFlags::REVERT, data: vec![42, 99] }),
-			_ => {
-				panic!("Passed unknown id to test chain extension: {}", func_id);
-			},
-		}
-	}
+    (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
+};
 
-	fn enabled() -> bool {
-		TestExtensionTestValue::get().enabled
-	}
-}
+// These time units are defined in number of blocks.
+pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
+pub const HOURS: BlockNumber = MINUTES * 60;
+pub const DAYS: BlockNumber = HOURS * 24;
 
-impl RegisteredChainExtension<Test> for TestExtension {
-	const ID: u16 = 0;
-}
+/// Runtime version.
+#[frame::deps::sp_version::runtime_version]
+pub const VERSION: RuntimeVersion = RuntimeVersion {
+    spec_name: create_runtime_str!("node"),
+    impl_name: create_runtime_str!("substrate-node"),
+    authoring_version: 10,
+    // Per convention: if the runtime behavior changes, increment spec_version
+    // and set impl_version to 0. If only runtime
+    // implementation changes and behavior does not, then leave spec_version as
+    // is and increment impl_version.
+    spec_version: 268,
+    impl_version: 0,
+    apis: frame::deps::sp_version::create_apis_vec!([]),
+    transaction_version: 2,
+    state_version: 1,
+};
 
-impl ChainExtension<Test> for RevertingExtension {
-	fn call<E>(&mut self, _env: Environment<E, InitState>) -> ExtensionResult<RetVal>
-	where
-		E: Ext<T = Test>,
-	{
-		Ok(RetVal::Diverging { flags: ReturnFlags::REVERT, data: vec![0x4B, 0x1D] })
-	}
-
-	fn enabled() -> bool {
-		TestExtensionTestValue::get().enabled
-	}
-}
-
-impl RegisteredChainExtension<Test> for RevertingExtension {
-	const ID: u16 = 1;
-}
-
-impl ChainExtension<Test> for DisabledExtension {
-	fn call<E>(&mut self, _env: Environment<E, InitState>) -> ExtensionResult<RetVal>
-	where
-		E: Ext<T = Test>,
-	{
-		panic!("Disabled chain extensions are never called")
-	}
-
-	fn enabled() -> bool {
-		false
-	}
-}
-
-impl RegisteredChainExtension<Test> for DisabledExtension {
-	const ID: u16 = 2;
-}
-
-impl ChainExtension<Test> for TempStorageExtension {
-	fn call<E>(&mut self, env: Environment<E, InitState>) -> ExtensionResult<RetVal>
-	where
-		E: Ext<T = Test>,
-	{
-		let func_id = env.func_id();
-		match func_id {
-			0 => self.storage = 42,
-			1 => assert_eq!(self.storage, 42, "Storage is preserved inside the same call."),
-			2 => {
-				assert_eq!(self.storage, 0, "Storage is different for different calls.");
-				self.storage = 99;
-			},
-			3 => assert_eq!(self.storage, 99, "Storage is preserved inside the same call."),
-			_ => {
-				panic!("Passed unknown id to test chain extension: {}", func_id);
-			},
-		}
-		Ok(RetVal::Converging(0))
-	}
-
-	fn enabled() -> bool {
-		TestExtensionTestValue::get().enabled
-	}
-}
-
-impl RegisteredChainExtension<Test> for TempStorageExtension {
-	const ID: u16 = 3;
+/// Native version.
+pub fn native_version() -> NativeVersion {
+    NativeVersion {
+        runtime_version: VERSION,
+        can_author_with: Default::default(),
+    }
 }
 
 parameter_types! {
-	pub BlockWeights: frame_system::limits::BlockWeights =
-		frame_system::limits::BlockWeights::simple_max(
-			Weight::from_parts(2u64 * WEIGHT_REF_TIME_PER_SECOND, u64::MAX),
-		);
-	pub static ExistentialDeposit: u64 = 1;
+pub const BlockHashCount: BlockNumber = 100;
 }
 
-#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
-impl frame_system::Config for Test {
-	type AccountId = AccountId32;
-	type Lookup = IdentityLookup<Self::AccountId>;
-	type Block = Block;
-	type AccountData = pallet_balances::AccountData<u64>;
-}
-impl pallet_insecure_randomness_collective_flip::Config for Test {}
-impl pallet_balances::Config for Test {
-	type MaxLocks = ();
-	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
-	type Balance = u64;
-	type RuntimeEvent = RuntimeEvent;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = System;
-	type WeightInfo = ();
-	type FreezeIdentifier = ();
-	type MaxFreezes = ();
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type RuntimeFreezeReason = RuntimeFreezeReason;
-}
-
-impl pallet_timestamp::Config for Test {
-	type Moment = u64;
-	type OnTimestampSet = ();
-	type MinimumPeriod = ConstU64<1>;
-	type WeightInfo = ();
-}
-impl pallet_utility::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type PalletsOrigin = OriginCaller;
-	type WeightInfo = ();
-}
-
-impl pallet_proxy::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type Currency = Balances;
-	type ProxyType = ();
-	type ProxyDepositBase = ConstU64<1>;
-	type ProxyDepositFactor = ConstU64<1>;
-	type MaxProxies = ConstU32<32>;
-	type WeightInfo = ();
-	type MaxPending = ConstU32<32>;
-	type CallHasher = BlakeTwo256;
-	type AnnouncementDepositBase = ConstU64<1>;
-	type AnnouncementDepositFactor = ConstU64<1>;
-}
-
-impl pallet_dummy::Config for Test {}
-
-parameter_types! {
-	pub MySchedule: Schedule<Test> = {
-		let schedule = <Schedule<Test>>::default();
-		schedule
-	};
-	pub static DepositPerByte: BalanceOf<Test> = 1;
-	pub const DepositPerItem: BalanceOf<Test> = 2;
-	pub static MaxDelegateDependencies: u32 = 32;
-
-	pub static CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(0);
-	// We need this one set high enough for running benchmarks.
-	pub static DefaultDepositLimit: BalanceOf<Test> = 10_000_000;
-}
-
-impl Convert<Weight, BalanceOf<Self>> for Test {
-	fn convert(w: Weight) -> BalanceOf<Self> {
-		w.ref_time()
-	}
-}
-
-/// A filter whose filter function can be swapped at runtime.
-pub struct TestFilter;
-
-#[derive(Clone)]
-pub struct Filters {
-	filter: fn(&RuntimeCall) -> bool,
-}
-
-impl Default for Filters {
-	fn default() -> Self {
-		Filters { filter: (|_| true) }
-	}
+#[derive_impl(frame_system::config_preludes::SolochainDefaultConfig as frame_system::DefaultConfig)]
+impl frame_system::Config for Runtime {
+    type BaseCallFilter = frame::traits::Everything;
+    type BlockWeights = ();
+    type BlockLength = ();
+    type DbWeight = RocksDbWeight;
+    type Nonce = Nonce;
+    type Hash = Hash;
+    type AccountId = AccountId;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Block = Block;
+    type BlockHashCount = BlockHashCount;
+    type Version = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
+    type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
+    type SS58Prefix = ConstU16<42>;
+    type MaxConsumers = ConstU32<16>;
 }
 
 parameter_types! {
-	static CallFilter: Filters = Default::default();
+    pub const ExistentialDeposit: Balance = DOLLARS;
+    // For weight estimation, we assume that the most locks on an individual account will be 50.
+    // This number may need to be adjusted in the future if this assumption no longer holds true.
+    pub const MaxLocks: u32 = 50;
+    pub const MaxReserves: u32 = 50;
 }
 
-impl TestFilter {
-	pub fn set_filter(filter: fn(&RuntimeCall) -> bool) {
-		CallFilter::mutate(|fltr| fltr.filter = filter);
-	}
-}
-
-impl Contains<RuntimeCall> for TestFilter {
-	fn contains(call: &RuntimeCall) -> bool {
-		(CallFilter::get().filter)(call)
-	}
+impl pallet_balances::Config for Runtime {
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
+    type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
+    type ReserveIdentifier = [u8; 8];
+    type Balance = Balance;
+    type DustRemoval = ();
+    type RuntimeEvent = RuntimeEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = frame_system::Pallet<Runtime>;
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxFreezes = ConstU32<1>;
 }
 
 parameter_types! {
-	pub static UploadAccount: Option<<Test as frame_system::Config>::AccountId> = None;
-	pub static InstantiateAccount: Option<<Test as frame_system::Config>::AccountId> = None;
+    pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+    pub const OperationalFeeMultiplier: u8 = 5;
+    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
+    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+    pub MaximumMultiplier: Multiplier = Bounded::max_value();
 }
 
-pub struct EnsureAccount<T, A>(sp_std::marker::PhantomData<(T, A)>);
-impl<T: Config, A: sp_core::Get<Option<crate::AccountIdOf<T>>>>
-	EnsureOrigin<<T as frame_system::Config>::RuntimeOrigin> for EnsureAccount<T, A>
-where
-	<T as frame_system::Config>::AccountId: From<AccountId32>,
-{
-	type Success = T::AccountId;
-
-	fn try_origin(o: T::RuntimeOrigin) -> Result<Self::Success, T::RuntimeOrigin> {
-		let who = <frame_system::EnsureSigned<_> as EnsureOrigin<_>>::try_origin(o.clone())?;
-		if matches!(A::get(), Some(a) if who != a) {
-			return Err(o)
-		}
-
-		Ok(who)
-	}
-
-	#[cfg(feature = "runtime-benchmarks")]
-	fn try_successful_origin() -> Result<T::RuntimeOrigin, ()> {
-		Err(())
-	}
+impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type WeightToFee = IdentityFee<Balance>;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = TargetedFeeAdjustment<
+        Self,
+        TargetBlockFullness,
+        AdjustmentVariable,
+        MinimumMultiplier,
+        MaximumMultiplier,
+    >;
+    type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
+
 parameter_types! {
-	pub static UnstableInterface: bool = true;
+    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
-impl Config for Test {
-	type Time = Timestamp;
-	type Randomness = Randomness;
-	type Currency = Balances;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type CallFilter = TestFilter;
-	type CallStack = [Frame<Self>; 5];
-	type WeightPrice = Self;
-	type WeightInfo = ();
-	type ChainExtension =
-		(TestExtension, DisabledExtension, RevertingExtension, TempStorageExtension);
-	type Schedule = MySchedule;
-	type DepositPerByte = DepositPerByte;
-	type DepositPerItem = DepositPerItem;
-	type DefaultDepositLimit = DefaultDepositLimit;
-	type AddressGenerator = DefaultAddressGenerator;
-	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
-	type MaxStorageKeyLen = ConstU32<128>;
-	type UnsafeUnstableInterface = UnstableInterface;
-	type UploadOrigin = EnsureAccount<Self, UploadAccount>;
-	type InstantiateOrigin = EnsureAccount<Self, InstantiateAccount>;
-	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type Migrations = crate::migration::codegen::BenchMigrations;
-	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
-	type MaxDelegateDependencies = MaxDelegateDependencies;
-	type Debug = TestDebug;
-	type Environment = ();
-	type ApiVersion = ();
-	type Xcm = ();
+impl pallet_timestamp::Config for Runtime {
+    type Moment = Moment;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
-pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
-pub const BOB: AccountId32 = AccountId32::new([2u8; 32]);
-pub const CHARLIE: AccountId32 = AccountId32::new([3u8; 32]);
-pub const DJANGO: AccountId32 = AccountId32::new([4u8; 32]);
-
-pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
-
-pub struct ExtBuilder {
-	existential_deposit: u64,
-	storage_version: Option<StorageVersion>,
-	code_hashes: Vec<CodeHash<Test>>,
+parameter_types! {
+    pub const AssetDeposit: Balance = 100 * DOLLARS;
+    pub const ApprovalDeposit: Balance = DOLLARS;
+    pub const StringLimit: u32 = 50;
+    pub const MetadataDepositBase: Balance = 10 * DOLLARS;
+    pub const MetadataDepositPerByte: Balance = DOLLARS;
 }
 
-impl Default for ExtBuilder {
-	fn default() -> Self {
-		Self {
-			existential_deposit: ExistentialDeposit::get(),
-			storage_version: None,
-			code_hashes: vec![],
-		}
-	}
+impl pallet_assets::Config<Instance1> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = u128;
+    type AssetId = u32;
+    type AssetIdParameter = parity_scale_codec::Compact<u32>;
+    type Currency = Balances;
+    type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AssetDeposit = AssetDeposit;
+    type AssetAccountDeposit = ConstU128<DOLLARS>;
+    type MetadataDepositBase = MetadataDepositBase;
+    type MetadataDepositPerByte = MetadataDepositPerByte;
+    type ApprovalDeposit = ApprovalDeposit;
+    type StringLimit = StringLimit;
+    type Freezer = ();
+    type Extra = ();
+    type CallbackHandle = ();
+    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    type RemoveItemsLimit = ConstU32<1000>;
 }
 
-impl ExtBuilder {
-	pub fn existential_deposit(mut self, existential_deposit: u64) -> Self {
-		self.existential_deposit = existential_deposit;
-		self
-	}
-	pub fn with_code_hashes(mut self, code_hashes: Vec<CodeHash<Test>>) -> Self {
-		self.code_hashes = code_hashes;
-		self
-	}
-	pub fn set_associated_consts(&self) {
-		EXISTENTIAL_DEPOSIT.with(|v| *v.borrow_mut() = self.existential_deposit);
-	}
-	pub fn set_storage_version(mut self, version: u16) -> Self {
-		self.storage_version = Some(StorageVersion::new(version));
-		self
-	}
-	pub fn build(self) -> sp_io::TestExternalities {
-		use env_logger::{Builder, Env};
-		let env = Env::new().default_filter_or("runtime=debug");
-		let _ = Builder::from_env(env).is_test(true).try_init();
-		self.set_associated_consts();
-		let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
-		pallet_balances::GenesisConfig::<Test> { balances: vec![] }
-			.assimilate_storage(&mut t)
-			.unwrap();
-		let mut ext = sp_io::TestExternalities::new(t);
-		ext.register_extension(KeystoreExt::new(MemoryKeystore::new()));
-		ext.execute_with(|| {
-			use frame_support::traits::OnGenesis;
+pub const AST: Balance = 1_000 * 1_000 * 1_000_000_000_000;
 
-			Pallet::<Test>::on_genesis();
-			if let Some(storage_version) = self.storage_version {
-				storage_version.put::<Pallet<Test>>();
-			}
-			System::set_block_number(1)
-		});
-		ext.execute_with(|| {
-			for code_hash in self.code_hashes {
-				CodeInfoOf::<Test>::insert(code_hash, crate::CodeInfo::new(ALICE));
-			}
-		});
-		ext
-	}
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+    items as Balance * 1 * AST + (bytes as Balance) * 100 * 1_000_000_000_000
 }
 
-fn initialize_block(number: u64) {
-	System::reset_events();
-	System::initialize(&number, &[0u8; 32].into(), &Default::default());
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
+parameter_types! {
+    pub const DepositPerItem: Balance = deposit(1, 0);
+    pub const DepositPerByte: Balance = deposit(0, 1);
+    // Fallback value if storage deposit limit not set by the user
+    pub const DefaultDepositLimit: Balance = deposit(16, 16 * 1024);
+    pub const MaxDelegateDependencies: u32 = 32;
+    pub const CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(10);
+    pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+}
+impl pallet_contracts::Config for Runtime {
+    type Time = Timestamp;
+    type Randomness = Randomness;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    /// The safest default is to allow no calls at all.
+    ///
+    /// Runtimes should whitelist dispatchables that are allowed to be called from contracts
+    /// and make sure they are stable. Dispatchables exposed to contracts are not allowed to
+    /// change because that would break already deployed contracts. The `Call` structure itself
+    /// is not allowed to change the indices of existing pallets, too.
+    type CallFilter = frame_support::traits::Nothing;
+    type DepositPerItem = DepositPerItem;
+    type DepositPerByte = DepositPerByte;
+    type DefaultDepositLimit = DefaultDepositLimit;
+    type CallStack = [pallet_contracts::Frame<Self>; 5];
+    type WeightPrice = pallet_transaction_payment::Pallet<Self>;
+    type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+    // type ChainExtension = LocalChainExtensions<Self, UnifiedAccounts, Xvm>;
+    type ChainExtension = ();
+    type Schedule = Schedule;
+    type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
+    type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
+    type MaxStorageKeyLen = ConstU32<128>;
+    type UnsafeUnstableInterface = ConstBool<true>;
+    type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
+    type MaxDelegateDependencies = MaxDelegateDependencies;
+    type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type Debug = ();
+    type Environment = ();
+    type Migrations = ();
+    type ApiVersion = ();
+    type Xcm = ();
 }
 
-struct ExtensionInput<'a> {
-	extension_id: u16,
-	func_id: u16,
-	extra: &'a [u8],
-}
+construct_runtime!(
+    pub enum Runtime {
+        System: frame_system,
+        Timestamp: pallet_timestamp,
 
-impl<'a> ExtensionInput<'a> {
-	fn to_vec(&self) -> Vec<u8> {
-		((self.extension_id as u32) << 16 | (self.func_id as u32))
-			.to_le_bytes()
-			.iter()
-			.chain(self.extra)
-			.cloned()
-			.collect()
-	}
-}
+        Balances: pallet_balances,
+        TransactionPayment: pallet_transaction_payment,
+        Randomness: pallet_insecure_randomness_collective_flip,
 
-impl<'a> From<ExtensionInput<'a>> for Vec<u8> {
-	fn from(input: ExtensionInput) -> Vec<u8> {
-		input.to_vec()
-	}
-}
-
-impl Default for Origin<Test> {
-	fn default() -> Self {
-		Self::Signed(ALICE)
-	}
-}
+        Assets: pallet_assets::<Instance1>,
+        Contracts: pallet_contracts
+    }
+);
