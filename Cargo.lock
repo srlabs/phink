@@ -2567,6 +2567,7 @@ dependencies = [
  "scale-info",
  "sp-core",
  "sp-keystore",
+ "ziggy",
 ]
 
 [[package]]
@@ -5125,3 +5126,9 @@ dependencies = [
  "quote",
  "syn 2.0.58",
 ]
+
+[[package]]
+name = "ziggy"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b87eb3e4f63e984ca43eadbc74fc951ee556596ddd738874165409e835bef1f"
