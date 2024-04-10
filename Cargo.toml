@@ -19,7 +19,7 @@ pallet-insecure-randomness-collective-flip = { git = "https://github.com/parityt
 sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
 env_logger = "0.11.3"
 ziggy = { version = "1.0.0", default-features = false }
-
+wat = "1.202.0"
 
 [features]
 default = ["std"]

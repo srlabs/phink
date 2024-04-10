@@ -19,7 +19,7 @@ pub struct ExtBuilder {
 impl Default for ExtBuilder {
     fn default() -> Self {
         Self {
-            existential_deposit: ExistentialDeposit::get() as u64,
+            existential_deposit: ExistentialDeposit::get(),
             storage_version: None,
             code_hashes: vec![],
         }
