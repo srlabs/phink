@@ -15,7 +15,7 @@ use frame_support::{
 use pallet_contracts::{
     chain_extension::SysConfig, Code, CollectEvents, Config, DebugInfo, Determinism,
 };
-use parity_scale_codec::{DecodeLimit, Encode, Decode};
+use parity_scale_codec::{Decode, DecodeLimit, Encode};
 use serde::Deserialize;
 use serde_json::Value;
 use sp_core::{crypto::AccountId32, storage::Storage};
@@ -26,7 +26,7 @@ use sp_runtime::{traits::Hash, BuildStorage};
 use crate::externalities::ExtBuilder;
 use crate::runtime::RuntimeCall;
 use crate::{
-    contract_helper::AccountIdOf,
+    extrinsics::AccountIdOf,
     runtime::{
         AccountId, AllPalletsWithSystem, BalancesConfig, BlockNumber, RuntimeGenesisConfig,
         Timestamp, SLOT_DURATION,
@@ -36,40 +36,37 @@ use crate::{
 
 type CodeHash<T> = <T as frame_system::Config>::Hash;
 type BalanceOf<T> =
-<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 type Test = Runtime;
 
-mod contract_helper;
 mod externalities;
-mod ink_helper;
+mod extrinsics;
 mod runtime;
-mod wasm_helper;
+mod selectors;
 
-pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
-pub const BOB: AccountId32 = AccountId32::new([2u8; 32]);
 pub const ENOUGH: Balance = Balance::MAX / 2;
 
 fn main() {
-    let wasm_blob: Vec<u8> =
-        fs::read("/Users/kevinvalerio/Desktop/phink/sample/flipper/target/ink/flipper.wasm")
-            .unwrap();
+    let wasm_blob: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap();
 
     let wasm_bytes: Vec<u8> =
-        include_bytes!("/Users/kevinvalerio/Desktop/phink/sample/flipper/target/ink/flipper.wasm")
+        include_bytes!("/Users/kevinvalerio/Desktop/phink/sample/dns/target/ink/dns.wasm")
             [..]
-            .to_vec();
+            .to_vec(); //full path is required for this damn macro...
 
-    let flipper_specs = fs::read_to_string(
-        "/Users/kevinvalerio/Desktop/phink/sample/flipper/target/ink/flipper.json",
-    )
-        .unwrap();
+    let flipper_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
 
-    let (genesis, contract_addr) = initialize_contract(wasm_blob, wasm_bytes);
+    let (genesis, contract_addr) =
+        initialize_contract(wasm_blob, wasm_bytes, flipper_specs.clone());
     fuzz_contract(genesis, contract_addr, flipper_specs);
 }
 
-fn initialize_contract(wasm_blob: Vec<u8>, wasm_bytes: Vec<u8>) -> (Storage, AccountId32) {
+fn initialize_contract(
+    wasm_blob: Vec<u8>,
+    wasm_bytes: Vec<u8>,
+    json_specs: String,
+) -> (Storage, AccountId32) {
     let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // Dummy account
     let code_hash = <<Test as SysConfig>::Hashing as Hash>::hash(wasm_blob.as_slice());
 
@@ -86,12 +83,10 @@ fn initialize_contract(wasm_blob: Vec<u8>, wasm_bytes: Vec<u8>) -> (Storage, Acc
             },
             ..Default::default()
         }
-            .build_storage()
-            .unwrap();
+        .build_storage()
+        .unwrap();
         let mut chain = BasicExternalities::new(storage.clone());
         chain.execute_with(|| {
-            // let _ = <Test as Config>::Currency::set_balance(&ALICE, 1_000_000);
-
             assert_ok!(Contracts::upload_code(
                 RuntimeOrigin::signed(ALICE),
                 wasm_bytes,
@@ -99,8 +94,15 @@ fn initialize_contract(wasm_blob: Vec<u8>, wasm_bytes: Vec<u8>) -> (Storage, Acc
                 Determinism::Relaxed
             ));
 
-            contract_addr = contract_helper::bare_instantiate(Code::Existing(code_hash))
-                .data(hex::decode("9bae9d5e").unwrap())
+            let default_ctr = selectors::constructor(json_specs)
+                .into_iter()
+                .flat_map(|arr| arr.to_vec())
+                .collect::<Vec<u8>>();
+
+            println!("Chosen constructor : {:?}", hex::encode(default_ctr.clone()));
+
+            contract_addr = extrinsics::bare_instantiate(Code::Existing(code_hash))
+                .data(default_ctr.clone())
                 .build_and_unwrap_account_id();
 
             assert!(
@@ -120,7 +122,7 @@ fn fuzz_contract(
     contract_addr: AccountIdOf<Test>,
     flipper_specs: String,
 ) {
-    let all_selectors: Vec<[u8; 4]> = ink_helper::extract_selectors(flipper_specs);
+    let all_selectors: Vec<[u8; 4]> = selectors::extract_all(flipper_specs);
 
     ziggy::fuzz!(|data: &[u8]| {
         if data.len() > 300 {
@@ -137,7 +139,6 @@ fn fuzz_contract(
         let mut block: u32 = 1;
 
         let fuzzed_func = all_selectors[selector_slice as usize];
-        println!("Fuzzed selector: {:?} ({:?})", fuzzed_func, hex::encode(fuzzed_func));
         let arguments = &data[5..];
 
         chain.execute_with(|| {
@@ -157,9 +158,9 @@ fn fuzz_contract(
                 args.encode()
             };
 
-             println!("full_args: {:?}", full_call);
+            println!("full_args: {:?}", hex::encode(full_call.clone()));
 
-            let result = contract_helper::bare_call(contract_addr.clone())
+            let result = extrinsics::bare_call(contract_addr.clone())
                 .debug(DebugInfo::UnsafeDebug)
                 .determinism(Determinism::Relaxed)
                 .data(full_call)
@@ -169,6 +170,5 @@ fn fuzz_contract(
 
             println!("    result:     {result:?}");
         });
-
     });
 }

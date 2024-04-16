@@ -21,6 +21,7 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk
 pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
+
 env_logger = { version = "0.11.3" }
 ziggy = { version = "1.0.0", default-features = false }
 wat = { version = "1.202.0" }
@@ -29,6 +30,7 @@ hex-literal = { version = "0.4.1" }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.115" }
 ink_env = { version = "5.0.0" }
+ink = { version = "5.0.0" }
 paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
 

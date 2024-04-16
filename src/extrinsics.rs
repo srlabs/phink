@@ -1,4 +1,4 @@
-use super::{BalanceOf, CodeHash, Runtime, ALICE, GAS_LIMIT};
+use super::{BalanceOf, CodeHash, Runtime, ALICE};
 use crate::{RuntimeOrigin, Weight};
 use frame_support::pallet_prelude::DispatchResultWithPostInfo;
 use frame_system::{self, pallet_prelude::OriginFor, EventRecord};
@@ -10,16 +10,17 @@ use pallet_contracts::{
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 
-pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-
 use parity_scale_codec::Compact;
 use paste::paste;
 
 type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
+pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 type Test = Runtime;
 type EventRecordOf<T> =
     EventRecord<<T as frame_system::Config>::RuntimeEvent, <T as frame_system::Config>::Hash>;
+
+pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
 macro_rules! builder {
 	(

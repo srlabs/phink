@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
-#![allow(arithmetic_overflow)]
 
 #[ink::contract]
 mod flipper {
@@ -9,13 +8,13 @@ mod flipper {
     #[ink(storage)]
     pub struct Flipper {
         /// Stores a single `bool` value on the storage.
-        value: u8,
+        value: bool,
     }
 
     impl Flipper {
         /// Constructor that initializes the `bool` value to the given `init_value`.
         #[ink(constructor)]
-        pub fn new(init_value: u8) -> Self {
+        pub fn new(init_value: bool) -> Self {
             Self { value: init_value }
         }
 
@@ -31,19 +30,13 @@ mod flipper {
         /// This one flips the value of the stored `bool` from `true`
         /// to `false` and vice versa.
         #[ink(message)]
-        pub fn add(&mut self, x: u8) {
-            let a: u8 = u8::MAX;
-            // let b: u8 = 3_u8;
-            // let mut c: u8 = 0;
-            // if x == 1 {
-            //     c = c.saturating_add(a + b);
-            // }
-            self.value = self.value.saturating_add(x);
+        pub fn flip(&mut self) {
+            self.value = !self.value;
         }
 
         /// Simply returns the current value of our `bool`.
         #[ink(message)]
-        pub fn get(&self) -> u8 {
+        pub fn get(&self) -> bool {
             self.value
         }
     }

@@ -52,8 +52,8 @@ impl ExtBuilder {
                 .map(|k| (k, 10000000000000000000 * 2))
                 .collect(),
         }
-            .assimilate_storage(&mut t)
-            .unwrap();
+        .assimilate_storage(&mut t)
+        .unwrap();
         let mut ext = BasicExternalities::new(t);
         ext.register_extension(KeystoreExt::new(MemoryKeystore::new()));
         ext.execute_with(|| {
