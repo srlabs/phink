@@ -4,31 +4,40 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parity-scale-codec = { version = "3.0.0", default-features = false }
+parity-scale-codec = { version = "3.6.9", default-features = false }
 scale-info = { version = "2.6.0", default-features = false }
-frame = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false, features = ["experimental", "runtime"] }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
 
-pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
-pallet-assets = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.8.0", default-features = false }
-env_logger = "0.11.3"
+frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+
+pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
+
+env_logger = { version = "0.11.3" }
 ziggy = { version = "1.0.0", default-features = false }
-wat = "1.202.0"
+wat = { version = "1.202.0" }
+hex = { version = "0.4.3" }
+hex-literal = { version = "0.4.1" }
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = { version = "1.0.115" }
+ink_env = { version = "5.0.0" }
+paste = { version = "1.0.14" }
+anyhow = { version = "1.0.81" }
 
 [features]
 default = ["std"]
 std = [
-    "frame/std",
     "pallet-balances/std",
     "pallet-timestamp/std",
     "pallet-transaction-payment/std",
-    "pallet-assets/std",
     "pallet-contracts/std",
     "pallet-insecure-randomness-collective-flip/std",
     "parity-scale-codec/std",

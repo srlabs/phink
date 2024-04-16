@@ -1,21 +1,21 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
+#![allow(arithmetic_overflow)]
 
 #[ink::contract]
 mod flipper {
-
     /// Defines the storage of your contract.
     /// Add new fields to the below struct in order
     /// to add new static storage fields to your contract.
     #[ink(storage)]
     pub struct Flipper {
         /// Stores a single `bool` value on the storage.
-        value: bool,
+        value: u8,
     }
 
     impl Flipper {
         /// Constructor that initializes the `bool` value to the given `init_value`.
         #[ink(constructor)]
-        pub fn new(init_value: bool) -> Self {
+        pub fn new(init_value: u8) -> Self {
             Self { value: init_value }
         }
 
@@ -31,13 +31,19 @@ mod flipper {
         /// This one flips the value of the stored `bool` from `true`
         /// to `false` and vice versa.
         #[ink(message)]
-        pub fn flip(&mut self) {
-            self.value = !self.value;
+        pub fn add(&mut self, x: u8) {
+            let a: u8 = u8::MAX;
+            // let b: u8 = 3_u8;
+            // let mut c: u8 = 0;
+            // if x == 1 {
+            //     c = c.saturating_add(a + b);
+            // }
+            self.value = self.value.saturating_add(x);
         }
 
         /// Simply returns the current value of our `bool`.
         #[ink(message)]
-        pub fn get(&self) -> bool {
+        pub fn get(&self) -> u8 {
             self.value
         }
     }
@@ -79,7 +85,7 @@ mod flipper {
         use super::*;
 
         /// A helper function used for calling contract messages.
-        use ink_e2e::build_message;
+        use ink_e2e::ContractsBackend;
 
         /// The End-to-End test `Result` type.
         type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -88,19 +94,19 @@ mod flipper {
         #[ink_e2e::test]
         async fn default_works(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             // Given
-            let constructor = FlipperRef::default();
+            let mut constructor = FlipperRef::default();
 
             // When
-            let contract_account_id = client
-                .instantiate("flipper", &ink_e2e::alice(), constructor, 0, None)
+            let contract = client
+                .instantiate("flipper", &ink_e2e::alice(), &mut constructor)
+                .submit()
                 .await
-                .expect("instantiate failed")
-                .account_id;
+                .expect("instantiate failed");
+            let call_builder = contract.call_builder::<Flipper>();
 
             // Then
-            let get = build_message::<FlipperRef>(contract_account_id.clone())
-                .call(|flipper| flipper.get());
-            let get_result = client.call_dry_run(&ink_e2e::alice(), &get, 0, None).await;
+            let get = call_builder.get();
+            let get_result = client.call(&ink_e2e::alice(), &get).dry_run().await?;
             assert!(matches!(get_result.return_value(), false));
 
             Ok(())
@@ -110,30 +116,29 @@ mod flipper {
         #[ink_e2e::test]
         async fn it_works(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             // Given
-            let constructor = FlipperRef::new(false);
-            let contract_account_id = client
-                .instantiate("flipper", &ink_e2e::bob(), constructor, 0, None)
+            let mut constructor = FlipperRef::new(false);
+            let contract = client
+                .instantiate("flipper", &ink_e2e::bob(), &mut constructor)
+                .submit()
                 .await
-                .expect("instantiate failed")
-                .account_id;
+                .expect("instantiate failed");
+            let mut call_builder = contract.call_builder::<Flipper>();
 
-            let get = build_message::<FlipperRef>(contract_account_id.clone())
-                .call(|flipper| flipper.get());
-            let get_result = client.call_dry_run(&ink_e2e::bob(), &get, 0, None).await;
+            let get = call_builder.get();
+            let get_result = client.call(&ink_e2e::bob(), &get).dry_run().await?;
             assert!(matches!(get_result.return_value(), false));
 
             // When
-            let flip = build_message::<FlipperRef>(contract_account_id.clone())
-                .call(|flipper| flipper.flip());
+            let flip = call_builder.flip();
             let _flip_result = client
-                .call(&ink_e2e::bob(), flip, 0, None)
+                .call(&ink_e2e::bob(), &flip)
+                .submit()
                 .await
                 .expect("flip failed");
 
             // Then
-            let get = build_message::<FlipperRef>(contract_account_id.clone())
-                .call(|flipper| flipper.get());
-            let get_result = client.call_dry_run(&ink_e2e::bob(), &get, 0, None).await;
+            let get = call_builder.get();
+            let get_result = client.call(&ink_e2e::bob(), &get).dry_run().await?;
             assert!(matches!(get_result.return_value(), true));
 
             Ok(())

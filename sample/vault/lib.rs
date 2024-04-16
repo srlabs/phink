@@ -59,7 +59,7 @@ mod vault {
 
         /// Withdraws the given amount from the vault.
         #[ink(message)]
-        pub fn withdraw(&mut self, amount: Balance) -> Result<Balance, Error> {
+        pub fn withdraw(&mut self, amount: Baflance) -> Result<Balance, Error> {
             let caller_addr = self.env().caller();
             let caller_balance = self.balance(caller_addr);
             if amount > caller_balance {

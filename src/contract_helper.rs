@@ -19,11 +19,9 @@ type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup
 
 type Test = Runtime;
 type EventRecordOf<T> =
-EventRecord<<T as frame_system::Config>::RuntimeEvent, <T as frame_system::Config>::Hash>;
+    EventRecord<<T as frame_system::Config>::RuntimeEvent, <T as frame_system::Config>::Hash>;
 
-/// Helper macro to generate a builder for contract API calls.
 macro_rules! builder {
-	// Entry point to generate a builder for the given method.
 	(
 		$method:ident($($field:ident: $type:ty,)*) -> $result:ty
 	) => {
@@ -31,7 +29,6 @@ macro_rules! builder {
 			builder!([< $method:camel Builder >], $method($($field: $type,)* ) -> $result);
 		}
 	};
-	// Generate the builder struct and its methods.
 	(
 		$name:ident,
 		$method:ident(
