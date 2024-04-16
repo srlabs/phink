@@ -1,7 +1,9 @@
 extern crate core;
 
+use contract_transcode::ContractMessageTranscoder;
 use std::error::Error;
 use std::fs;
+use std::path::PathBuf;
 
 use frame_support::{
     __private::BasicExternalities,
@@ -23,7 +25,6 @@ use sp_io::hashing::blake2_256;
 use sp_io::TestExternalities;
 use sp_runtime::{traits::Hash, BuildStorage};
 
-use crate::externalities::ExtBuilder;
 use crate::runtime::RuntimeCall;
 use crate::{
     extrinsics::AccountIdOf,
@@ -36,10 +37,9 @@ use crate::{
 
 type CodeHash<T> = <T as frame_system::Config>::Hash;
 type BalanceOf<T> =
-    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 type Test = Runtime;
 
-mod externalities;
 mod extrinsics;
 mod runtime;
 mod selectors;
@@ -48,18 +48,15 @@ pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 pub const ENOUGH: Balance = Balance::MAX / 2;
 
 fn main() {
-    let wasm_blob: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap();
-
-    let wasm_bytes: Vec<u8> =
-        include_bytes!("/Users/kevinvalerio/Desktop/phink/sample/dns/target/ink/dns.wasm")
-            [..]
+    let dns_wasm: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap();
+    let dns_wasm_bytes: Vec<u8> =
+        include_bytes!("/Users/kevinvalerio/Desktop/phink/sample/dns/target/ink/dns.wasm")[..]
             .to_vec(); //full path is required for this damn macro...
+    let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+    let dns_toml = PathBuf::from("sample/dns/Cargo.toml");
 
-    let flipper_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-
-    let (genesis, contract_addr) =
-        initialize_contract(wasm_blob, wasm_bytes, flipper_specs.clone());
-    fuzz_contract(genesis, contract_addr, flipper_specs);
+    let (genesis, contract_addr) = initialize_contract(dns_wasm, dns_wasm_bytes, dns_specs.clone());
+    fuzz_contract(genesis, contract_addr, dns_specs, Some(&dns_toml));
 }
 
 fn initialize_contract(
@@ -83,8 +80,8 @@ fn initialize_contract(
             },
             ..Default::default()
         }
-        .build_storage()
-        .unwrap();
+            .build_storage()
+            .unwrap();
         let mut chain = BasicExternalities::new(storage.clone());
         chain.execute_with(|| {
             assert_ok!(Contracts::upload_code(
@@ -94,15 +91,13 @@ fn initialize_contract(
                 Determinism::Relaxed
             ));
 
-            let default_ctr = selectors::constructor(json_specs)
-                .into_iter()
-                .flat_map(|arr| arr.to_vec())
-                .collect::<Vec<u8>>();
+            let default_ctr = selectors::constructor(json_specs);
 
-            println!("Chosen constructor : {:?}", hex::encode(default_ctr.clone()));
+            #[cfg(not(fuzzing))]
+            println!("constructor : {:?}", hex::encode(default_ctr.clone()));
 
             contract_addr = extrinsics::bare_instantiate(Code::Existing(code_hash))
-                .data(default_ctr.clone())
+                .data(Vec::from(default_ctr.clone()))
                 .build_and_unwrap_account_id();
 
             assert!(
@@ -120,55 +115,76 @@ fn initialize_contract(
 fn fuzz_contract(
     genesis_storage: Storage,
     contract_addr: AccountIdOf<Test>,
-    flipper_specs: String,
+    json_specs: String,
+    cargo_toml: Option<&PathBuf>,
 ) {
-    let all_selectors: Vec<[u8; 4]> = selectors::extract_all(flipper_specs);
+    let all_selectors: Vec<[u8; 4]> = selectors::extract_all(json_specs);
+    let transcoder: ContractMessageTranscoder =
+        selectors::initialize_transcoder(cargo_toml.unwrap()).unwrap();
 
     ziggy::fuzz!(|data: &[u8]| {
-        if data.len() > 300 {
+        if data.len() > 300 || data.len() < 5 {
             return;
         }
         let selector_slice = u32::from_ne_bytes(data[0..4].try_into().unwrap());
 
-        if (selector_slice) > all_selectors.len() as u32 {
+        if selector_slice >= all_selectors.len() as u32 {
+            return;
+        }
+        let fuzzed_func = all_selectors[selector_slice as usize];
+        let arguments = &data[4..];
+        let full_call = {
+            let args: ([u8; 4], Vec<u8>) = (fuzzed_func, arguments.encode().to_vec());
+            args.encode()
+        };
+
+        //TODO: THis bugs because ziggy refuses &mut
+        if let Err(_) = transcoder.decode_contract_message(&mut &full_call[..]) {
+            #[cfg(not(fuzzing))]
+            println!("{:?}", hex::decode(full_call.clone()));
             return;
         }
 
         let mut chain = BasicExternalities::new(genesis_storage.clone());
-
-        let mut block: u32 = 1;
-
-        let fuzzed_func = all_selectors[selector_slice as usize];
-        let arguments = &data[5..];
-
         chain.execute_with(|| {
-            Timestamp::set(RuntimeOrigin::none(), block as u64 * SLOT_DURATION).unwrap();
-
-            let lapse: u32 = 0; //for now, we set lapse always to zero
-
-            if lapse > 0 {
-                <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
-                block += u32::from(lapse);
-                <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
-                Timestamp::set(RuntimeOrigin::none(), SLOT_DURATION * block as u64).unwrap();
-            }
-
-            let full_call = {
-                let args: ([u8; 4], Vec<u8>) = (fuzzed_func, arguments.encode()[1..].to_vec());
-                args.encode()
-            };
-
-            println!("full_args: {:?}", hex::encode(full_call.clone()));
+            timestamp();
 
             let result = extrinsics::bare_call(contract_addr.clone())
                 .debug(DebugInfo::UnsafeDebug)
                 .determinism(Determinism::Relaxed)
-                .data(full_call)
+                .data(full_call.clone())
                 .build();
 
-            // .data([message_to_bytes!("flip").to_vec(), data.encode()].concat())
+            check_invariants();
 
-            println!("    result:     {result:?}");
+            #[cfg(not(fuzzing))]
+            {
+                println!("\n0x{}", hex::encode(full_call.clone()));
+                if Some(cargo_toml).is_some() {
+                    println!("{full_call:?}");
+                    println!("{result:?}");
+                }
+            }
         });
     });
+}
+
+// On each iteration, we check if all stats are good.
+fn check_invariants() {
+    println!("WE PASSED!!!!!");
+}
+
+fn timestamp() {
+    let mut block: u32 = 1;
+
+    Timestamp::set(RuntimeOrigin::none(), block as u64 * SLOT_DURATION).unwrap();
+
+    let lapse: u32 = 0; //for now, we set lapse always to zero
+
+    if lapse > 0 {
+        <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
+        block += u32::from(lapse);
+        <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
+        Timestamp::set(RuntimeOrigin::none(), SLOT_DURATION * block as u64).unwrap();
+    }
 }

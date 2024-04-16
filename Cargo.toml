@@ -31,8 +31,10 @@ serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.115" }
 ink_env = { version = "5.0.0" }
 ink = { version = "5.0.0" }
+contract-build = { version = "4.1.0" }
 paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
+contract-transcode = { version = "4.1.0" }
 
 [features]
 default = ["std"]

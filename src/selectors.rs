@@ -1,8 +1,14 @@
+use contract_build::{util, CrateMetadata};
+use contract_transcode::ContractMessageTranscoder;
+use contract_transcode::Map;
 use hex::FromHex;
-use serde::ser::Error;
+use parity_scale_codec::Input;
 use serde::Deserialize;
+use serde::__private::from_utf8_lossy;
+use serde::ser::Error;
 use serde_json::Value;
 use std::fs;
+use std::path::PathBuf;
 
 #[macro_export]
 macro_rules! message_to_bytes {
@@ -42,7 +48,7 @@ pub fn extract_all(json_data: String) -> Vec<[u8; 4]> {
 
 // Return the smart-contract constructor based on its spec. If there's multiple constructors,
 // returns the one preferably that doesn't have args
-pub fn constructor(json_data: String) -> Vec<[u8; 4]> {
+pub fn constructor(json_data: String) -> [u8; 4] {
     let parsed_json: Value = serde_json::from_str(json_data.as_str()).unwrap();
 
     if let Some(constructors) = parsed_json["spec"]["constructors"].as_array() {
@@ -51,12 +57,7 @@ pub fn constructor(json_data: String) -> Vec<[u8; 4]> {
             if let Some(selector_str) = constructors[0]["selector"].as_str() {
                 let bytes = hex::decode(selector_str.trim_start_matches("0x")).unwrap();
 
-                let chunks: Vec<[u8; 4]> = bytes
-                    .chunks_exact(4)
-                    .map(|chunk| chunk.try_into().unwrap())
-                    .collect();
-
-                return chunks;
+                return <[u8; 4]>::try_from(bytes).unwrap();
             }
         }
 
@@ -67,17 +68,35 @@ pub fn constructor(json_data: String) -> Vec<[u8; 4]> {
         {
             if let Some(selector_str) = constructor["selector"].as_str() {
                 let bytes = hex::decode(selector_str.trim_start_matches("0x")).unwrap();
-
-                let chunks: Vec<[u8; 4]> = bytes
-                    .chunks_exact(4)
-                    .map(|chunk| chunk.try_into().unwrap())
-                    .collect();
-
-                return chunks;
+                return <[u8; 4]>::try_from(bytes).unwrap();
             }
         }
     }
     panic!("No constructor found, or there's multiple constructor but no one without arguments");
+}
+
+// Format the hex input to a human-readable string
+// 0x229b553f9400000000000000000027272727272727272700002727272727272727272727
+// register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }
+// THIS IS EXTREMELY SLOW!
+pub(crate) fn bytes_to_debug(
+    message: Vec<u8>,
+    transcoder: &ContractMessageTranscoder,
+) -> anyhow::Result<contract_transcode::Value> {
+    transcoder.decode_contract_message(&mut &*message)
+}
+
+pub(crate) fn initialize_transcoder(
+    cargo_toml: &PathBuf,
+) -> Result<ContractMessageTranscoder, String> {
+    let result: Result<ContractMessageTranscoder, String> = ContractMessageTranscoder::load(
+        CrateMetadata::from_manifest_path(Some(cargo_toml), contract_build::Target::Wasm)
+            .map_err(|e| e.to_string())
+            .unwrap()
+            .metadata_path(),
+    )
+    .map_err(|e| e.to_string());
+    result
 }
 
 #[test]
@@ -95,11 +114,18 @@ fn fetch_correct_flipper_selectors() {
 #[test]
 fn fetch_correct_dns_constructor() {
     let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-    let ctor: String = constructor(dns_spec)
-        .iter()
-        .map(|x| hex::encode(x))
-        .collect();
+    let ctor: [u8; 4] = constructor(dns_spec);
 
     // DNS default selectors
-    assert_eq!(ctor, "9bae9d5e");
+    assert_eq!(hex::encode(ctor), "9bae9d5e");
+}
+
+#[test]
+fn bytes_to_command() {
+    let message = "0x229b553f9400000000000000000027272727272727272700002727272727272727272727";
+    let decoded_data = bytes_to_debug(&message, &PathBuf::from("sample/dns/Cargo.toml"));
+    assert_eq!(
+        decoded_data.to_string(),
+        "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
+    );
 }

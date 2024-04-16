@@ -1,1 +1,5 @@
 target
+sample/flipper/target
+sample/.DS_Store
+*/.DS_Store
+output/
