@@ -1,36 +1,35 @@
-use frame::deps::{frame_support, frame_system, sp_runtime};
-use frame::traits::IdentityLookup;
-
+use crate::BalanceOf;
+use frame_support::{
+    construct_runtime, derive_impl,
+    instances::Instance1,
+    parameter_types, traits,
+    traits::{AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32},
+    weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
+};
+use frame_system::{EnsureRoot, EnsureSigned};
+pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
+use sp_core::ConstBool;
 use sp_runtime::{
     generic,
+    testing::H256,
+    traits::Bounded,
+    traits::IdentityLookup,
     traits::{BlakeTwo256, IdentifyAccount, Verify},
-    MultiSignature,
+    FixedPointNumber, MultiSignature, Perbill, Perquintill,
 };
 
-/// An index to a block.
 pub type BlockNumber = u32;
 
-/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
 
-/// Some way of identifying an account on the chain. We intentionally make it equivalent
-/// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
-/// Balance of an account.
 pub type Balance = u128;
 
-/// Type used for expressing timestamp.
 pub type Moment = u64;
 
-/// Index of a transaction in the chain.
 pub type Nonce = u32;
 
-/// A hash of some data used by the chain.
-pub type Hash = frame::deps::sp_core::H256;
-
-/// Digest item type.
-/// Header type.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 
 pub type SignedExtra = (
@@ -51,48 +50,46 @@ pub type UncheckedExtrinsic =
 
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
-type Migrations = ();
+pub const MILLISECS_PER_BLOCK: Moment = 3000;
 
-use frame::arithmetic::Perbill;
-use frame::deps::sp_runtime::{traits::Bounded, FixedPointNumber, Perquintill};
-use frame::deps::sp_std::prelude::*;
-use sp_core::ConstBool;
-
-use frame_support::{
-    construct_runtime, derive_impl,
-    instances::Instance1,
-    parameter_types,
-    traits::{AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32},
-    weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
-};
-use frame_system::{EnsureRoot, EnsureSigned};
-pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
-
+pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
+pub const AST: Balance = 1_000 * 1_000 * 1_000_000_000_000;
 pub const MILLICENTS: Balance = 1_000_000_000;
 pub const CENTS: Balance = 1_000 * MILLICENTS;
 // assume this is worth about a cent.
 pub const DOLLARS: Balance = 100 * CENTS;
 
-pub const MILLISECS_PER_BLOCK: Moment = 3000;
-
-// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-//       Attempting to do so will brick block production.
-pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
-
-// 1 in 4 blocks (on average, not counting collisions) will be primary BABE blocks.
-
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 parameter_types! {
-pub const BlockHashCount: BlockNumber = 100;
-}
+    pub static DepositPerByte: BalanceOf<Runtime> = 1;
+    pub const DepositPerItem: BalanceOf<Runtime> = 2;
+    pub static DefaultDepositLimit: BalanceOf<Runtime> = 10_000_000;
+    pub const MaxDelegateDependencies: u32 = 32;
+    pub const CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(10);
+    pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
+        pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+    pub const OperationalFeeMultiplier: u8 = 5;
+    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
+    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+    pub MaximumMultiplier: Multiplier = Bounded::max_value();
+         pub static ExistentialDeposit: u64 = 1;
+    pub const MaxLocks: u32 = 50;
+    pub const MaxReserves: u32 = 50;
+    pub const BlockHashCount: BlockNumber = 100;
 
+}
 #[derive_impl(frame_system::config_preludes::SolochainDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = frame::traits::Everything;
+    type BaseCallFilter = traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = RocksDbWeight;
     type Nonce = Nonce;
-    type Hash = Hash;
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Block = Block;
@@ -102,12 +99,6 @@ impl frame_system::Config for Runtime {
     type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
     type SS58Prefix = ConstU16<42>;
     type MaxConsumers = ConstU32<16>;
-}
-
-parameter_types! {
-         pub static ExistentialDeposit: u64 = 1;
-    pub const MaxLocks: u32 = 50;
-    pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -126,15 +117,6 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<1>;
 }
 
-parameter_types! {
-    pub const TransactionByteFee: Balance = 10 * MILLICENTS;
-    pub const OperationalFeeMultiplier: u8 = 5;
-    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
-    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
-    pub MaximumMultiplier: Multiplier = Bounded::max_value();
-}
-
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
@@ -150,10 +132,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
 }
 
-parameter_types! {
-    pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
-}
-
 impl pallet_timestamp::Config for Runtime {
     type Moment = Moment;
     type OnTimestampSet = ();
@@ -161,51 +139,6 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
-parameter_types! {
-    pub const AssetDeposit: Balance = 100 * DOLLARS;
-    pub const ApprovalDeposit: Balance = DOLLARS;
-    pub const StringLimit: u32 = 50;
-    pub const MetadataDepositBase: Balance = 10 * DOLLARS;
-    pub const MetadataDepositPerByte: Balance = DOLLARS;
-}
-
-impl pallet_assets::Config<Instance1> for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Balance = u128;
-    type AssetId = u32;
-    type AssetIdParameter = parity_scale_codec::Compact<u32>;
-    type Currency = Balances;
-    type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-    type ForceOrigin = EnsureRoot<AccountId>;
-    type AssetDeposit = AssetDeposit;
-    type AssetAccountDeposit = ConstU128<DOLLARS>;
-    type MetadataDepositBase = MetadataDepositBase;
-    type MetadataDepositPerByte = MetadataDepositPerByte;
-    type ApprovalDeposit = ApprovalDeposit;
-    type StringLimit = StringLimit;
-    type Freezer = ();
-    type Extra = ();
-    type CallbackHandle = ();
-    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
-    type RemoveItemsLimit = ConstU32<1000>;
-}
-
-pub const AST: Balance = 1_000 * 1_000 * 1_000_000_000_000;
-
-pub const fn deposit(items: u32, bytes: u32) -> Balance {
-    items as Balance * 1 * AST + (bytes as Balance) * 100 * 1_000_000_000_000
-}
-
-impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
-parameter_types! {
-    pub const DepositPerItem: Balance = deposit(1, 0);
-    pub const DepositPerByte: Balance = deposit(0, 1);
-    // Fallback value if storage deposit limit not set by the user
-    pub const DefaultDepositLimit: Balance = deposit(16, 16 * 1024);
-    pub const MaxDelegateDependencies: u32 = 32;
-    pub const CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(10);
-    pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
-}
 impl pallet_contracts::Config for Runtime {
     type Time = Timestamp;
     type Randomness = Randomness;
@@ -241,18 +174,17 @@ impl pallet_contracts::Config for Runtime {
     type Environment = ();
     type ApiVersion = ();
     type Xcm = ();
+    type UploadOrigin = EnsureSigned<Self::AccountId>;
+    type InstantiateOrigin = EnsureSigned<Self::AccountId>;
 }
 
 construct_runtime!(
     pub enum Runtime {
         System: frame_system,
         Timestamp: pallet_timestamp,
-
         Balances: pallet_balances,
         TransactionPayment: pallet_transaction_payment,
         Randomness: pallet_insecure_randomness_collective_flip,
-
-        Assets: pallet_assets::<Instance1>,
         Contracts: pallet_contracts
     }
 );
