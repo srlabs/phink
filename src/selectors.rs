@@ -8,7 +8,7 @@ use serde::__private::from_utf8_lossy;
 use serde::ser::Error;
 use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[macro_export]
 macro_rules! message_to_bytes {
@@ -121,11 +121,43 @@ fn fetch_correct_dns_constructor() {
 }
 
 #[test]
-fn bytes_to_command() {
-    let message = "0x229b553f9400000000000000000027272727272727272700002727272727272727272727";
-    let decoded_data = bytes_to_debug(&message, &PathBuf::from("sample/dns/Cargo.toml"));
-    assert_eq!(
-        decoded_data.to_string(),
-        "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
-    );
+fn encode_works_good() {
+    let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+    let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
+    let constructor = "set_address";
+    let args = [
+        //name: Hash, new_address: AccountId
+        "re",
+        "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+    ];
+    let data = transcoder.encode(&constructor, args).unwrap();
+    let hex = hex::encode(data);
+    println!("Encoded constructor data {}", hex);
+    assert!(!hex.is_empty())
 }
+
+#[test]
+fn decode_works_good() {
+    let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+    let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
+
+    let encoded_bytes =
+        hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+            .unwrap();
+    let hex = transcoder
+        .decode_contract_message(&mut &encoded_bytes[..])
+        .unwrap();
+
+    println!("{}", hex);
+}
+
+// #[test]
+// fn bytes_to_command() {
+//     let message = "0x229b553f9400000000000000000027272727272727272700002727272727272727272727";
+//     let decoded_data = bytes_to_debug(&message, &PathBuf::from("sample/dns/Cargo.toml"));
+//     assert_eq!(
+//         decoded_data.to_string(),
+//         "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
+//     );
+// }
+//

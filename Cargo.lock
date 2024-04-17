@@ -3286,6 +3286,8 @@ dependencies = [
  "hex-literal",
  "ink",
  "ink_env",
+ "ink_metadata",
+ "itertools 0.10.5",
  "pallet-balances",
  "pallet-contracts",
  "pallet-insecure-randomness-collective-flip",
@@ -3300,6 +3302,8 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
+ "strsim 0.10.0",
+ "tracing",
  "wat",
  "ziggy",
 ]

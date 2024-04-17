@@ -3,7 +3,9 @@ extern crate core;
 use contract_transcode::ContractMessageTranscoder;
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use frame_support::{
     __private::BasicExternalities,
@@ -37,7 +39,7 @@ use crate::{
 
 type CodeHash<T> = <T as frame_system::Config>::Hash;
 type BalanceOf<T> =
-<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 type Test = Runtime;
 
 mod extrinsics;
@@ -56,7 +58,7 @@ fn main() {
     let dns_toml = PathBuf::from("sample/dns/Cargo.toml");
 
     let (genesis, contract_addr) = initialize_contract(dns_wasm, dns_wasm_bytes, dns_specs.clone());
-    fuzz_contract(genesis, contract_addr, dns_specs, Some(&dns_toml));
+    fuzz_contract(genesis, contract_addr, dns_specs);
 }
 
 fn initialize_contract(
@@ -80,8 +82,8 @@ fn initialize_contract(
             },
             ..Default::default()
         }
-            .build_storage()
-            .unwrap();
+        .build_storage()
+        .unwrap();
         let mut chain = BasicExternalities::new(storage.clone());
         chain.execute_with(|| {
             assert_ok!(Contracts::upload_code(
@@ -112,20 +114,17 @@ fn initialize_contract(
     (genesis_storage, contract_addr)
 }
 
-fn fuzz_contract(
-    genesis_storage: Storage,
-    contract_addr: AccountIdOf<Test>,
-    json_specs: String,
-    cargo_toml: Option<&PathBuf>,
-) {
+fn fuzz_contract(genesis_storage: Storage, contract_addr: AccountIdOf<Test>, json_specs: String) {
     let all_selectors: Vec<[u8; 4]> = selectors::extract_all(json_specs);
-    let transcoder: ContractMessageTranscoder =
-        selectors::initialize_transcoder(cargo_toml.unwrap()).unwrap();
+    let transcoder_loader = Arc::new(Mutex::new(
+        ContractMessageTranscoder::load(Path::new("sample/dns/target/ink/dns.json")).unwrap(),
+    ));
 
     ziggy::fuzz!(|data: &[u8]| {
-        if data.len() > 300 || data.len() < 5 {
+        if data.len() > 400 || data.len() < 4 {
             return;
         }
+
         let selector_slice = u32::from_ne_bytes(data[0..4].try_into().unwrap());
 
         if selector_slice >= all_selectors.len() as u32 {
@@ -138,10 +137,11 @@ fn fuzz_contract(
             args.encode()
         };
 
-        //TODO: THis bugs because ziggy refuses &mut
-        if let Err(_) = transcoder.decode_contract_message(&mut &full_call[..]) {
-            #[cfg(not(fuzzing))]
-            println!("{:?}", hex::decode(full_call.clone()));
+        let decoded_msg = transcoder_loader
+            .lock()
+            .unwrap()
+            .decode_contract_message(&mut &*full_call);
+        if let Err(_) = decoded_msg {
             return;
         }
 
@@ -159,11 +159,8 @@ fn fuzz_contract(
 
             #[cfg(not(fuzzing))]
             {
-                println!("\n0x{}", hex::encode(full_call.clone()));
-                if Some(cargo_toml).is_some() {
-                    println!("{full_call:?}");
-                    println!("{result:?}");
-                }
+                println!("{} ......... {}", decoded_msg.unwrap().to_string(), hex::encode(full_call.clone()));
+                println!("{result:?}\n");
             }
         });
     });

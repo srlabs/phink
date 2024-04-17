@@ -35,7 +35,10 @@ contract-build = { version = "4.1.0" }
 paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
 contract-transcode = { version = "4.1.0" }
-
+itertools = "0.10.5"
+strsim = "0.10.0"
+tracing = "0.1.40"
+ink_metadata = "5.0.0"
 [features]
 default = ["std"]
 std = [
