@@ -1,15 +1,9 @@
-use contract_build::{util, CrateMetadata};
 use contract_transcode::ContractMessageTranscoder;
-use contract_transcode::Map;
-use hex::FromHex;
-use parity_scale_codec::{Encode, Input};
-use serde::Deserialize;
-use serde::__private::from_utf8_lossy;
 use serde::ser::Error;
+use serde::Deserialize;
 use serde_json::Value;
 use std::fs;
-use std::path::{Path, PathBuf};
-
+use std::path::Path;
 pub type Selector = [u8; 4];
 
 #[derive(Default, Clone)]
@@ -57,6 +51,8 @@ impl PayloadCrafter {
         }
         selectors
     }
+
+    pub fn execute() {}
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there

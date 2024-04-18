@@ -1,3 +1,5 @@
+Cargo.lock
+.DS_Store
 target
 sample/flipper/target
 sample/.DS_Store

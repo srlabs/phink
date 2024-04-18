@@ -1,12 +1,10 @@
 use crate::BalanceOf;
 use frame_support::{
-    construct_runtime, derive_impl,
-    instances::Instance1,
-    parameter_types, traits,
-    traits::{AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32},
+    construct_runtime, derive_impl, parameter_types, traits,
+    traits::{ConstU16, ConstU32},
     weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::EnsureSigned;
 pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 use sp_core::ConstBool;
 use sp_runtime::{

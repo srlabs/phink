@@ -1,8 +1,10 @@
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
-use pallet_contracts::{Code, CollectEvents, DebugInfo, Determinism};
+use pallet_contracts::{
+    Code, CollectEvents, ContractExecResult, DebugInfo, Determinism, ExecReturnValue,
+};
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
-use sp_runtime::BuildStorage;
+use sp_runtime::{BuildStorage, DispatchError};
 
 use crate::{
     payload,
@@ -10,14 +12,16 @@ use crate::{
     AccountIdOf, Test, ALICE,
 };
 
+pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+
 #[derive(Clone)]
-pub struct DeployedSetup {
+pub struct ContractBridge {
     pub genesis: Storage,
     pub contract: AccountIdOf<Test>,
     pub json_specs: String,
 }
 
-impl DeployedSetup {
+impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
     ///
     /// # Arguments
@@ -38,8 +42,8 @@ impl DeployedSetup {
     // let ct =
     //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
     /// ```
-    pub fn initialize_contract(wasm_bytes: Vec<u8>, json_specs: String) -> DeployedSetup {
-        let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
+    pub fn initialize_contract(wasm_bytes: Vec<u8>, json_specs: String) -> ContractBridge {
+        let contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
 
         let genesis_storage: Storage = {
             let storage = storage();
@@ -53,6 +57,7 @@ impl DeployedSetup {
                         &contract_addr.unwrap()
                     )
                 );
+                // println!("{:?}", contract_addr.clone().unwrap());
             });
             chain.into_storages()
         };
@@ -63,11 +68,24 @@ impl DeployedSetup {
             json_specs,
         }
     }
+
+    pub fn call(self, payload: &Vec<u8>) -> Result<ExecReturnValue, DispatchError> {
+        return Contracts::bare_call(
+            ALICE,
+            self.contract,
+            0,
+            GAS_LIMIT,
+            None,
+            payload.clone(),
+            DebugInfo::UnsafeDebug,
+            CollectEvents::UnsafeCollect,
+            Determinism::Relaxed,
+        )
+        .result;
+    }
 }
 
 fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
-    const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
-
     Some(
         Contracts::bare_instantiate(
             ALICE,
@@ -87,9 +105,10 @@ fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>
 }
 
 fn upload(wasm_bytes: &Vec<u8>) -> H256 {
-    let code_hash = Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
-        .unwrap()
-        .code_hash;
+    let code_hash =
+        Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
+            .unwrap()
+            .code_hash;
     code_hash
 }
 

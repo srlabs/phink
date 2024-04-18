@@ -1,23 +1,23 @@
-use crate::deploy::DeployedSetup;
-use crate::payload;
+use crate::deploy::ContractBridge;
+
 use crate::payload::{PayloadCrafter, Selector};
 use crate::runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION};
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use pallet_contracts::{DebugInfo, Determinism};
+
 use parity_scale_codec::Encode;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct ContractFuzzer {
-    setup: DeployedSetup,
+    setup: ContractBridge,
     payload: PayloadCrafter,
 }
 
 impl ContractFuzzer {
-    pub fn new(setup: DeployedSetup) -> ContractFuzzer {
+    pub fn new(setup: ContractBridge) -> ContractFuzzer {
         Self {
             setup,
             payload: Default::default(),
@@ -44,7 +44,7 @@ impl ContractFuzzer {
         {
             let fuzzed_func = selectors[selector_slice as usize];
             let arguments = &data[4..];
-         return   Some(Box::new((fuzzed_func, arguments)))
+            return Some(Box::new((fuzzed_func, arguments)));
         }
         None
     }
@@ -60,7 +60,10 @@ impl ContractFuzzer {
                 return;
             }
 
-            match ContractFuzzer::create_call(raw_call.clone().unwrap().0, raw_call.clone().unwrap().1) {
+            match ContractFuzzer::create_call(
+                raw_call.clone().unwrap().0,
+                raw_call.clone().unwrap().1,
+            ) {
                 // Successfully encoded
                 Some(full_call) => {
                     let decoded_msg = transcoder_loader
@@ -75,11 +78,7 @@ impl ContractFuzzer {
                     chain.execute_with(|| {
                         timestamp();
                         //TODO!
-                        // let result = extrinsics::bare_call(self.setup.contract.clone())
-                        //     .debug(DebugInfo::UnsafeDebug)
-                        //     .determinism(Determinism::Relaxed)
-                        //     .data(full_call.clone())
-                        //     .build();
+                        let result = self.setup.clone().call(&full_call);
 
                         // check_invariants();
 
@@ -88,14 +87,14 @@ impl ContractFuzzer {
                             println!(
                                 "{}          {}",
                                 decoded_msg.unwrap().to_string(),
-                                hex::encode(full_call.clone())
+                                hex::encode(full_call.clone().clone())
                             );
-                            // println!("{result:?}\n");
+                            println!("{result:?}\n");
                         }
                     });
                 }
 
-                // Encoding failed, we try agian
+                // Encoding failed, we try again
                 None => return,
             }
         });

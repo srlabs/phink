@@ -1,27 +1,16 @@
 extern crate core;
 
-use frame_support::{
-    traits::fungible::Inspect,
-    traits::fungible::Mutate,
-    traits::Currency,
-    traits::{OnFinalize, OnInitialize},
-    weights::Weight,
-};
-use pallet_contracts::{chain_extension::SysConfig, Config};
-use parity_scale_codec::{Decode, DecodeLimit, Encode};
-use serde::Deserialize;
+use frame_support::traits::fungible::Inspect;
+use pallet_contracts::Config;
+
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
-use sp_runtime::{traits::Hash, BuildStorage};
-use std::error::Error;
+
 use std::fs;
 
-use crate::deploy::DeployedSetup;
+use crate::deploy::ContractBridge;
 use crate::fuzzer::ContractFuzzer;
-use crate::{
-    runtime::{AllPalletsWithSystem, BlockNumber, Timestamp, SLOT_DURATION},
-    runtime::{Balance, Runtime, RuntimeOrigin},
-};
+use crate::runtime::Runtime;
 
 type CodeHash<T> = <T as frame_system::Config>::Hash;
 type BalanceOf<T> =
@@ -47,8 +36,8 @@ fn main() {
 
     let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
 
-    let setup: DeployedSetup =
-        DeployedSetup::initialize_contract(dns_wasm_bytes, dns_specs.clone());
+    let setup: ContractBridge =
+        ContractBridge::initialize_contract(dns_wasm_bytes, dns_specs.clone());
 
     let fuzzer: ContractFuzzer = ContractFuzzer::new(setup);
     fuzzer.fuzz();
