@@ -2,6 +2,7 @@
 name = "phink"
 version = "0.1.0"
 edition = "2021"
+build = "sample/build.rs"
 
 [dependencies]
 parity-scale-codec = { version = "3.6.9", default-features = false }

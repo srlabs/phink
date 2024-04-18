@@ -2,7 +2,7 @@ use contract_build::{util, CrateMetadata};
 use contract_transcode::ContractMessageTranscoder;
 use contract_transcode::Map;
 use hex::FromHex;
-use parity_scale_codec::Input;
+use parity_scale_codec::{Encode, Input};
 use serde::Deserialize;
 use serde::__private::from_utf8_lossy;
 use serde::ser::Error;
@@ -10,93 +10,108 @@ use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub type Selector = [u8; 4];
+
+#[derive(Default)]
+pub struct PayloadCrafter {}
+
+impl PayloadCrafter {
+    /// Extract all selectors for a given spec
+    ///
+    /// # Arguments
+    ///
+    /// * `json_data`:
+    ///
+    /// returns: Vec<[u8; 4], Global>
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///
+    /// ```
+    // Parses a JSON and returns a list of all possibles messages
+    pub fn extract_all(json_data: String) -> Vec<Selector> {
+        #[derive(Deserialize)]
+        struct Spec {
+            constructors: Vec<SelectorEntry>,
+            messages: Vec<SelectorEntry>,
+        }
+
+        #[derive(Deserialize)]
+        struct SelectorEntry {
+            selector: String,
+        }
+
+        let v: Value = serde_json::from_str(json_data.as_str()).unwrap();
+
+        let spec: Spec = serde_json::from_value(v["spec"].clone()).unwrap();
+
+        let mut selectors: Vec<Selector> = Vec::new();
+        for entry in spec.constructors.iter().chain(spec.messages.iter()) {
+            let bytes: Vec<u8> = hex::decode(&entry.selector.trim_start_matches("0x"))
+                .unwrap()
+                .try_into()
+                .map_err(|_| serde_json::Error::custom("Selector is not a valid 4-byte array"))
+                .unwrap();
+            selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
+        }
+        selectors
+    }
+
+    fn create_call(data: &[u8], all_selectors: &Vec<Selector>) -> Option<Vec<u8>> {
+        let selector_slice = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+        if selector_slice as usize >= all_selectors.len() {
+            return None;
+        }
+        let fuzzed_func = all_selectors[selector_slice as usize];
+        let arguments = &data[4..];
+        Some((fuzzed_func, arguments.to_vec()).encode())
+    }
+
+    /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
+    /// returns the one that preferably doesn't have args. If no suitable constructor is found or there
+    /// is an error in processing, this function returns `None`.
+    pub fn get_constructor(json_data: &String) -> Option<[u8; 4]> {
+        // Parse the JSON data safely, return None if parsing fails.
+        let parsed_json: Value = match serde_json::from_str(&json_data) {
+            Ok(data) => data,
+            Err(_) => return None,
+        };
+
+        // Access the constructors array, return None if it's not found or not an array.
+        let constructors = parsed_json["spec"]["constructors"].as_array()?;
+
+        // If there is exactly one constructor, return its selector if available.
+        if constructors.len() == 1 {
+            return get_selector_bytes(constructors[0]["selector"].as_str()?);
+        }
+
+        // Otherwise, look for a constructor without arguments.
+        for constructor in constructors {
+            if constructor["args"].as_array().map_or(false, Vec::is_empty) {
+                return get_selector_bytes(constructor["selector"].as_str()?);
+            }
+        }
+
+        // Return None if no suitable constructor is found.
+        None
+    }
+}
+
+/// Helper function to decode a hexadecimal string selector into a byte array of length 4.
+/// Returns `None` if the decoding or conversion fails.
+fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
+    let bytes = hex::decode(selector_str.trim_start_matches("0x")).ok()?;
+    bytes.try_into().ok()
+}
+
+/// A simple helper used to directly encode a message i.e. `flip` to a proper selector `[u8; 4]`
 #[macro_export]
 macro_rules! message_to_bytes {
     ($s:expr) => {{
         let hash = blake2_256($s.as_bytes());
         [hash[0], hash[1], hash[2], hash[3]]
     }};
-}
-// Parses a JSON and returns a list of all possibles messages
-pub fn extract_all(json_data: String) -> Vec<[u8; 4]> {
-    #[derive(Deserialize)]
-    struct Spec {
-        constructors: Vec<SelectorEntry>,
-        messages: Vec<SelectorEntry>,
-    }
-
-    #[derive(Deserialize)]
-    struct SelectorEntry {
-        selector: String,
-    }
-
-    let v: Value = serde_json::from_str(json_data.as_str()).unwrap();
-
-    let spec: Spec = serde_json::from_value(v["spec"].clone()).unwrap();
-
-    let mut selectors: Vec<[u8; 4]> = Vec::new();
-    for entry in spec.constructors.iter().chain(spec.messages.iter()) {
-        let bytes: Vec<u8> = hex::decode(&entry.selector.trim_start_matches("0x"))
-            .unwrap()
-            .try_into()
-            .map_err(|_| serde_json::Error::custom("Selector is not a valid 4-byte array"))
-            .unwrap();
-        selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
-    }
-    selectors
-}
-
-// Return the smart-contract constructor based on its spec. If there's multiple constructors,
-// returns the one preferably that doesn't have args
-pub fn constructor(json_data: String) -> [u8; 4] {
-    let parsed_json: Value = serde_json::from_str(json_data.as_str()).unwrap();
-
-    if let Some(constructors) = parsed_json["spec"]["constructors"].as_array() {
-        // If there is only one constructor, add its selector
-        if constructors.len() == 1 {
-            if let Some(selector_str) = constructors[0]["selector"].as_str() {
-                let bytes = hex::decode(selector_str.trim_start_matches("0x")).unwrap();
-
-                return <[u8; 4]>::try_from(bytes).unwrap();
-            }
-        }
-
-        // Find the constructor with no arguments
-        if let Some(constructor) = constructors
-            .iter()
-            .find(|c| c["args"].as_array().map_or(false, |args| args.is_empty()))
-        {
-            if let Some(selector_str) = constructor["selector"].as_str() {
-                let bytes = hex::decode(selector_str.trim_start_matches("0x")).unwrap();
-                return <[u8; 4]>::try_from(bytes).unwrap();
-            }
-        }
-    }
-    panic!("No constructor found, or there's multiple constructor but no one without arguments");
-}
-
-// Format the hex input to a human-readable string
-// 0x229b553f9400000000000000000027272727272727272700002727272727272727272727
-// register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }
-// THIS IS EXTREMELY SLOW!
-pub(crate) fn bytes_to_debug(
-    message: Vec<u8>,
-    transcoder: &ContractMessageTranscoder,
-) -> anyhow::Result<contract_transcode::Value> {
-    transcoder.decode_contract_message(&mut &*message)
-}
-
-pub(crate) fn initialize_transcoder(
-    cargo_toml: &PathBuf,
-) -> Result<ContractMessageTranscoder, String> {
-    let result: Result<ContractMessageTranscoder, String> = ContractMessageTranscoder::load(
-        CrateMetadata::from_manifest_path(Some(cargo_toml), contract_build::Target::Wasm)
-            .map_err(|e| e.to_string())
-            .unwrap()
-            .metadata_path(),
-    )
-    .map_err(|e| e.to_string());
-    result
 }
 
 #[test]
@@ -114,7 +129,7 @@ fn fetch_correct_flipper_selectors() {
 #[test]
 fn fetch_correct_dns_constructor() {
     let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-    let ctor: [u8; 4] = constructor(dns_spec);
+    let ctor: Selector = PayloadCrafter::get_constructor(dns_spec).unwrap();
 
     // DNS default selectors
     assert_eq!(hex::encode(ctor), "9bae9d5e");
@@ -144,20 +159,7 @@ fn decode_works_good() {
     let encoded_bytes =
         hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
             .unwrap();
-    let hex = transcoder
-        .decode_contract_message(&mut &encoded_bytes[..])
-        .unwrap();
-
-    println!("{}", hex);
+    let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
+    assert!(hex.is_ok());
+    println!("{:?}", hex);
 }
-
-// #[test]
-// fn bytes_to_command() {
-//     let message = "0x229b553f9400000000000000000027272727272727272700002727272727272727272727";
-//     let decoded_data = bytes_to_debug(&message, &PathBuf::from("sample/dns/Cargo.toml"));
-//     assert_eq!(
-//         decoded_data.to_string(),
-//         "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
-//     );
-// }
-//

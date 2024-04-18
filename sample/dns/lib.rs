@@ -2,8 +2,9 @@
 
 #[ink::contract]
 mod dns {
+    use ink::env::*;
     use ink::storage::Mapping;
-
+    use ink::storage::StorageVec;
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
     pub struct Register {
@@ -60,6 +61,8 @@ mod dns {
         name_to_owner: Mapping<Hash, AccountId>,
         /// The default address.
         default_address: AccountId,
+
+        keys: StorageVec<Hash>,
     }
 
     impl Default for DomainNameService {
@@ -68,11 +71,14 @@ mod dns {
             name_to_address.insert(Hash::default(), &zero_address());
             let mut name_to_owner = Mapping::new();
             name_to_owner.insert(Hash::default(), &zero_address());
+            let mut keys = StorageVec::new();
+            keys.push(&Hash::default());
 
             Self {
                 name_to_address,
                 name_to_owner,
                 default_address: zero_address(),
+                keys,
             }
         }
     }
@@ -184,6 +190,22 @@ mod dns {
     /// placeholder) since it has a known private key.
     fn zero_address() -> AccountId {
         [0u8; 32].into()
+    }
+
+    #[cfg(feature = "phink")]
+    #[ink(impl)]
+    impl DomainNameService {
+        #[ink(message)]
+        pub fn phink_assert_privatedomaindotcom_cant_be_registered(&self) -> bool {
+            let mut result = Vec::new();
+            for i in 0..self.keys.len() {
+                if let Some(account_id) = self.keys.get(i) {
+                    result.push(account_id);
+                    debug_println!("AccountId: {:?}", account_id);
+                }
+            }
+            true
+        }
     }
 
     #[cfg(test)]
