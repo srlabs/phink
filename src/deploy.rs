@@ -5,11 +5,10 @@ use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::BuildStorage;
 
 use crate::{
+    payload,
     runtime::{BalancesConfig, Contracts, RuntimeGenesisConfig},
-    selectors, AccountIdOf, Test, ALICE,
+    AccountIdOf, Test, ALICE,
 };
-
-pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
 #[derive(Clone)]
 pub struct DeployedSetup {
@@ -37,7 +36,7 @@ impl DeployedSetup {
     //         .to_vec();
     // let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
     // let ct =
-    //     deploy::initialize_contract(dns_wasm, dns_wasm_bytes, dns_specs.clone());
+    //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
     /// ```
     pub fn initialize_contract(wasm_bytes: Vec<u8>, json_specs: String) -> DeployedSetup {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
@@ -51,7 +50,7 @@ impl DeployedSetup {
                 // We verify if the contract is correctly instantiated
                 assert!(
                     pallet_contracts::migration::v13::ContractInfoOf::<Test>::contains_key(
-                        &contract_addr
+                        &contract_addr.unwrap()
                     )
                 );
             });
@@ -66,26 +65,29 @@ impl DeployedSetup {
     }
 }
 
-
 fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
-    Some(Contracts::bare_instantiate(
-        ALICE,
-        0,
-        GAS_LIMIT,
-        None,
-        Code::Existing(code_hash),
-        Vec::from(selectors::PayloadCrafter::get_constructor(json_specs).clone()?),
-        vec![],
-        DebugInfo::UnsafeDebug,
-        CollectEvents::UnsafeCollect,
+    const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+
+    Some(
+        Contracts::bare_instantiate(
+            ALICE,
+            0,
+            GAS_LIMIT,
+            None,
+            Code::Existing(code_hash),
+            Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
+            vec![],
+            DebugInfo::UnsafeDebug,
+            CollectEvents::UnsafeCollect,
+        )
+        .result
+        .unwrap()
+        .account_id,
     )
-    .result
-    .unwrap()
-    .account_id)
 }
 
 fn upload(wasm_bytes: &Vec<u8>) -> H256 {
-    let code_hash = Contracts::bare_upload_code(ALICE, *wasm_bytes, None, Determinism::Relaxed)
+    let code_hash = Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
         .unwrap()
         .code_hash;
     code_hash

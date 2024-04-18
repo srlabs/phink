@@ -12,25 +12,25 @@ use std::path::{Path, PathBuf};
 
 pub type Selector = [u8; 4];
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PayloadCrafter {}
 
 impl PayloadCrafter {
     /// Extract all selectors for a given spec
-    ///
+    /// Parses a JSON and returns a list of all possibles messages
     /// # Arguments
     ///
-    /// * `json_data`:
+    /// * `json_data`: The JSON metadata of the smart-contract
     ///
-    /// returns: Vec<[u8; 4], Global>
+    /// returns: Vec<Selector>
     ///
     /// # Examples
     ///
     /// ```
-    ///
+    /// PayloadCrafter::extract(flipper_specs)
     /// ```
-    // Parses a JSON and returns a list of all possibles messages
-    pub fn extract_all(json_data: String) -> Vec<Selector> {
+
+    pub fn extract(json_data: String) -> Vec<Selector> {
         #[derive(Deserialize)]
         struct Spec {
             constructors: Vec<SelectorEntry>,
@@ -56,16 +56,6 @@ impl PayloadCrafter {
             selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
         }
         selectors
-    }
-
-    fn create_call(data: &[u8], all_selectors: &Vec<Selector>) -> Option<Vec<u8>> {
-        let selector_slice = u32::from_ne_bytes(data[0..4].try_into().unwrap());
-        if selector_slice as usize >= all_selectors.len() {
-            return None;
-        }
-        let fuzzed_func = all_selectors[selector_slice as usize];
-        let arguments = &data[4..];
-        Some((fuzzed_func, arguments.to_vec()).encode())
     }
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
@@ -101,8 +91,10 @@ impl PayloadCrafter {
 /// Helper function to decode a hexadecimal string selector into a byte array of length 4.
 /// Returns `None` if the decoding or conversion fails.
 fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
-    let bytes = hex::decode(selector_str.trim_start_matches("0x")).ok()?;
-    bytes.try_into().ok()
+    hex::decode(selector_str.trim_start_matches("0x"))
+        .ok()?
+        .try_into()
+        .ok()
 }
 
 /// A simple helper used to directly encode a message i.e. `flip` to a proper selector `[u8; 4]`
@@ -117,7 +109,7 @@ macro_rules! message_to_bytes {
 #[test]
 fn fetch_correct_flipper_selectors() {
     let flipper_specs = fs::read_to_string("sample/flipper/target/ink/flipper.json").unwrap();
-    let extracted: String = extract_all(flipper_specs)
+    let extracted: String = crate::payload::PayloadCrafter::extract(flipper_specs)
         .iter()
         .map(|x| hex::encode(x) + " ")
         .collect();
@@ -129,7 +121,7 @@ fn fetch_correct_flipper_selectors() {
 #[test]
 fn fetch_correct_dns_constructor() {
     let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-    let ctor: Selector = PayloadCrafter::get_constructor(dns_spec).unwrap();
+    let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
 
     // DNS default selectors
     assert_eq!(hex::encode(ctor), "9bae9d5e");

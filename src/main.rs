@@ -32,8 +32,8 @@ type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 mod deploy;
 mod fuzzer;
+mod payload;
 mod runtime;
-mod selectors;
 
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
@@ -57,16 +57,4 @@ fn main() {
 // On each iteration, we check if all stats are good.
 fn check_invariants() {
     println!("WE PASSED!!!!!");
-}
-
-fn timestamp() {
-    let mut block: u32 = 1;
-    Timestamp::set(RuntimeOrigin::none(), block as u64 * SLOT_DURATION).unwrap();
-    let lapse: u32 = 0; //for now, we set lapse always to zero
-    if lapse > 0 {
-        <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
-        block += u32::from(lapse);
-        <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
-        Timestamp::set(RuntimeOrigin::none(), SLOT_DURATION * block as u64).unwrap();
-    }
 }
