@@ -25,7 +25,7 @@ impl PayloadCrafter {
     /// # Examples
     ///
     /// ```
-    /// PayloadCrafter::extract(flipper_specs)
+    /// PayloadCrafter::extract(specs)
     /// ```
 
     pub fn extract_all(json_data: &String) -> Vec<Selector> {
@@ -129,9 +129,9 @@ macro_rules! message_to_bytes {
 
 #[test]
 fn fetch_correct_dns_invariant() {
-    let flipper_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+    let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
 
-    let extracted: String = PayloadCrafter::extract_invariants(&flipper_specs)
+    let extracted: String = PayloadCrafter::extract_invariants(&specs)
         .iter()
         .map(|x| hex::encode(x) + " ")
         .collect();
@@ -139,62 +139,70 @@ fn fetch_correct_dns_invariant() {
     assert_eq!(extracted, "2e15cab0 5d17ca7f ");
 }
 
-#[test]
-fn fetch_correct_flipper_selectors() {
-    let flipper_specs = fs::read_to_string("sample/flipper/target/ink/flipper.json").unwrap();
-    let extracted: String = PayloadCrafter::extract_all(&flipper_specs)
-        .iter()
-        .map(|x| hex::encode(x) + " ")
-        .collect();
+mod test {
+    use std::fs;
+    use std::path::Path;
+    use contract_transcode::ContractMessageTranscoder;
+    use sp_core::H256;
+    use crate::payload::{PayloadCrafter, Selector};
 
-    // Flipper default selectors
-    assert_eq!(extracted, "9bae9d5e ed4b9d1b 633aa551 2f865bd9 ");
-}
+    #[test]
+    fn fetch_correct_selectors() {
+        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let extracted: String = PayloadCrafter::extract_all(&specs)
+            .iter()
+            .map(|x| hex::encode(x) + " ")
+            .collect();
 
-#[test]
-fn fetch_correct_dns_constructor() {
-    let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-    let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
+        // DNS selectors
+        assert_eq!(extracted, "9bae9d5e 229b553f b8a4d3d9 84a15da1 d259f7ba 07fcd0b1 2e15cab0 5d17ca7f ");
+    }
 
-    // DNS default selectors
-    assert_eq!(hex::encode(ctor), "9bae9d5e");
-}
+    #[test]
+    fn fetch_correct_dns_constructor() {
+        let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
 
-#[test]
-fn encode_works_good() {
-    let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-    let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
-    let constructor = "set_address";
-    let args = [
-        //name: Hash, new_address: AccountId
-        "re",
-        "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-    ];
-    let data = transcoder.encode(&constructor, args).unwrap();
-    let hex = hex::encode(data);
-    println!("Encoded constructor data {}", hex);
-    assert!(!hex.is_empty())
-}
+        // DNS default selectors
+        assert_eq!(hex::encode(ctor), "9bae9d5e");
+    }
 
-#[test]
-fn decode_works_good() {
-    let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-    let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
+    #[test]
+    fn encode_works_good() {
+        let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+        let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
+        let constructor = "set_address";
+        let args = [
+            //name: Hash, new_address: AccountId
+            "re",
+            "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        ];
+        let data = transcoder.encode(&constructor, args).unwrap();
+        let hex = hex::encode(data);
+        println!("Encoded constructor data {}", hex);
+        assert!(!hex.is_empty())
+    }
 
-    let encoded_bytes =
-        hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
-            .unwrap();
-    let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
-    assert!(hex.is_ok());
-    println!("{:?}", hex);
-}
+    #[test]
+    fn decode_works_good() {
+        let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+        let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
 
-#[test]
-fn basic_h256_for_ink() {
-    let binding = H256::from_slice(&[
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
-        6, 9,
-    ]);
-    let binding = binding.as_fixed_bytes();
-    println!("H256 de 'abc': {:?}", binding);
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .unwrap();
+        let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
+        assert!(hex.is_ok());
+        println!("{:?}", hex);
+    }
+
+    #[test]
+    fn basic_h256_for_ink() {
+        let binding = H256::from_slice(&[
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
+            6, 9,
+        ]);
+        let binding = binding.as_fixed_bytes();
+        println!("H256 de 'abc': {:?}", binding);
+    }
 }
