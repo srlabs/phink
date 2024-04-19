@@ -195,6 +195,9 @@ mod test {
             hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
                 .unwrap();
         let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
-        assert_eq!(hex.unwrap().to_string(), "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }");
+        assert_eq!(
+            hex.unwrap().to_string(),
+            "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
+        );
     }
 }
