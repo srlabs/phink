@@ -1,8 +1,4 @@
-use crate::{
-    deploy::ContractBridge,
-    payload::{PayloadCrafter, Selector},
-    runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION},
-};
+use crate::{deploy::ContractBridge, invariants, payload::{PayloadCrafter, Selector}, runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION}};
 
 use prettytable::{row, Cell, Row, Table};
 
@@ -19,6 +15,7 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
+use crate::invariants::Invariants;
 
 #[derive(Clone)]
 pub struct ContractFuzzer {
@@ -37,8 +34,7 @@ impl ContractFuzzer {
 
     /// Accept some raw bytes `[u8]` and return the appropriate
     fn parse_args(self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
-        // Our payload must be at least `1_000` sized, and min `4`
-        // TODO! Figure out what's the minimum size
+        // Our payload must be at least `1_500` sized, and min `4`
         if data.len() > 1_500 || data.len() <= 4 {
             return None;
         }
@@ -65,9 +61,10 @@ impl ContractFuzzer {
             if raw_call.is_none() {
                 return;
             }
+            let call = raw_call.expect("`raw_call` wasn't None; QED");
             match ContractFuzzer::create_call(
-                raw_call.clone().unwrap().0,
-                raw_call.clone().unwrap().1,
+                call.0,
+                call.1,
             ) {
                 // Successfully encoded
                 Some(full_call) => {
@@ -78,16 +75,16 @@ impl ContractFuzzer {
                     if let Err(_) = decoded_msg {
                         return;
                     }
-
                     let mut chain = BasicExternalities::new(self.setup.genesis.clone());
                     chain.execute_with(|| {
+
                         timestamp();
-
-                        //TODO!
                         let result = self.setup.clone().call(&full_call);
-                        // check_invariants();
 
-                        //We pretty-print all information that we need to debug
+                        // For each call, we verify that invariants aren't broken
+                        Invariants::verify();
+
+                        // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
                         {
                             let mut table = Table::new();
@@ -95,7 +92,7 @@ impl ContractFuzzer {
                             table.add_row(row!["Decoded call", "Encoded call", "Result"]);
                             table.add_row(row![
                                 decoded_msg.unwrap().to_string(),
-                                hex::encode(full_call.clone().clone()),
+                                hex::encode(full_call),
                                 result
                             ]);
                             table.printstd();

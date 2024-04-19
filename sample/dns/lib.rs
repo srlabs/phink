@@ -38,21 +38,11 @@ mod dns {
         new_owner: AccountId,
     }
 
-    /// Domain name service contract inspired by
-    /// [this blog post](https://medium.com/@chainx_org/secure-and-decentralized-polkadot-domain-name-system-e06c35c2a48d).
-    ///
-    /// # Note
-    ///
-    /// This is a port from the blog post's ink! 1.0 based version of the contract
-    /// to ink! 2.0.
-    ///
-    /// # Description
-    ///
-    /// The main function of this contract is domain name resolution which
-    /// refers to the retrieval of numeric values corresponding to readable
-    /// and easily memorable names such as "polka.dot" which can be used
-    /// to facilitate transfers, voting and DApp-related operations instead
-    /// of resorting to long IP addresses that are hard to remember.
+    const forbidden_domain: [u8; 32] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
+        6, 9,
+    ];
+
     #[ink(storage)]
     pub struct DomainNameService {
         /// A hashmap to store all name to addresses mapping.
@@ -62,7 +52,7 @@ mod dns {
         /// The default address.
         default_address: AccountId,
 
-        keys: StorageVec<Hash>,
+        domains: StorageVec<Hash>,
     }
 
     impl Default for DomainNameService {
@@ -71,14 +61,14 @@ mod dns {
             name_to_address.insert(Hash::default(), &zero_address());
             let mut name_to_owner = Mapping::new();
             name_to_owner.insert(Hash::default(), &zero_address());
-            let mut keys = StorageVec::new();
-            keys.push(&Hash::default());
+            let mut domains = StorageVec::new();
+            domains.push(&Hash::default());
 
             Self {
                 name_to_address,
                 name_to_owner,
                 default_address: zero_address(),
-                keys,
+                domains,
             }
         }
     }
@@ -91,6 +81,8 @@ mod dns {
         NameAlreadyExists,
         /// Returned if caller is not owner while required to.
         CallerIsNotOwner,
+        /// Forbidden domain, we can't register that one... except if ?
+        ForbiddenDomain,
     }
 
     /// Type alias for the contract's result type.
@@ -111,8 +103,14 @@ mod dns {
                 return Err(Error::NameAlreadyExists);
             }
 
+            // We effectively check that we can't register the forbidden domain
+            if name.clone().as_mut() == forbidden_domain {
+                return Err(Error::ForbiddenDomain);
+            }
+
             self.name_to_owner.insert(name, &caller);
             self.env().emit_event(Register { name, from: caller });
+            self.domains.push(&name);
 
             Ok(())
         }
@@ -143,12 +141,15 @@ mod dns {
         pub fn transfer(&mut self, name: Hash, to: AccountId) -> Result<()> {
             let caller = self.env().caller();
             let owner = self.get_owner_or_default(name);
-            if caller != owner {
-                return Err(Error::CallerIsNotOwner);
-            }
+            // Let's assume we still transfer if the caller isn't the owner
+            // if caller != owner {
+            //     return Err(Error::CallerIsNotOwner);
+            // }
 
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
+
+            self.domains.push(&name);
 
             self.env().emit_event(Transfer {
                 name,
@@ -195,13 +196,14 @@ mod dns {
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl DomainNameService {
+        /// We have    self.domains: StorageVec<Hash>,
         #[ink(message)]
-        pub fn phink_assert_privatedomaindotcom_cant_be_registered(&self) -> bool {
-            let mut result = Vec::new();
-            for i in 0..self.keys.len() {
-                if let Some(account_id) = self.keys.get(i) {
-                    result.push(account_id);
-                    debug_println!("AccountId: {:?}", account_id);
+        pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {
+            for i in 0..self.domains.len() {
+                if let Some(domain) = self.domains.get(i) {
+                    if domain.clone().as_mut() == forbidden_domain {
+                        panic!("Invariant triggered! We received an invalid domain... weird, I thought I filtered that illegal domain ?");
+                    }
                 }
             }
             true
@@ -210,6 +212,8 @@ mod dns {
 
     #[cfg(test)]
     mod tests {
+        use sp_io::hashing::sha2_256;
+
         use super::*;
 
         fn default_accounts() -> ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> {
@@ -218,6 +222,15 @@ mod dns {
 
         fn set_next_caller(caller: AccountId) {
             ink::env::test::set_caller::<Environment>(caller);
+        }
+
+        #[ink::test]
+        fn tauz() {
+            let default_accounts = default_accounts();
+            let name = Hash::from([0x99; 32]);
+
+            set_next_caller(default_accounts.alice);
+            let mut contract = DomainNameService::new();
         }
 
         #[ink::test]
@@ -235,7 +248,7 @@ mod dns {
         #[ink::test]
         fn set_address_works() {
             let accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
+            let name = Hash::from(sha2_256(b"abc.com"));
 
             set_next_caller(accounts.alice);
 
@@ -253,6 +266,7 @@ mod dns {
             set_next_caller(accounts.alice);
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
             assert_eq!(contract.get_address(name), accounts.bob);
+            contract.phink_assert_abc_dot_com_cant_be_registered();
         }
 
         #[ink::test]
@@ -264,9 +278,15 @@ mod dns {
 
             let mut contract = DomainNameService::new();
             assert_eq!(contract.register(name), Ok(()));
+            contract.phink_assert_abc_dot_com_cant_be_registered();
+
+            let illegal = Hash::from(forbidden_domain);
 
             // Test transfer of owner.
-            assert_eq!(contract.transfer(name, accounts.bob), Ok(()));
+            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+
+            // This should panick..
+            contract.phink_assert_abc_dot_com_cant_be_registered();
 
             // Owner is bob, alice `set_address` should fail.
             assert_eq!(

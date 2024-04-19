@@ -2,7 +2,12 @@ use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
 use std::fs;
+use std::hash::Hash;
 use std::path::Path;
+use contract_transcode::ContractMessageTranscoder;
+use sp_core::H256;
+use sp_io::hashing::sha2_256;
+
 pub type Selector = [u8; 4];
 
 #[derive(Default, Clone)]
@@ -11,7 +16,7 @@ pub struct PayloadCrafter {}
 impl PayloadCrafter {
     /// Extract all selectors for a given spec
     /// Parses a JSON and returns a list of all possibles messages
-    /// # Arguments
+    /// # Argument
     ///
     /// * `json_data`: The JSON metadata of the smart-contract
     ///
@@ -102,7 +107,7 @@ macro_rules! message_to_bytes {
 #[test]
 fn fetch_correct_flipper_selectors() {
     let flipper_specs = fs::read_to_string("sample/flipper/target/ink/flipper.json").unwrap();
-    let extracted: String = crate::payload::PayloadCrafter::extract(flipper_specs)
+    let extracted: String = crate::payload::PayloadCrafter::extract(&flipper_specs)
         .iter()
         .map(|x| hex::encode(x) + " ")
         .collect();
@@ -147,4 +152,11 @@ fn decode_works_good() {
     let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
     assert!(hex.is_ok());
     println!("{:?}", hex);
+}
+
+#[test]
+fn basic_h256_for_ink() {
+    let binding = H256::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2, 6, 9]);
+    let binding = binding.as_fixed_bytes();
+    println!("H256 de 'abc': {:?}", binding);
 }

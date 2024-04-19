@@ -19,7 +19,7 @@ pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 102
 #[derive(Clone)]
 pub struct ContractBridge {
     pub genesis: Storage,
-    pub contract: AccountIdOf<Test>,
+    pub contract_address: AccountIdOf<Test>,
     pub json_specs: String,
 }
 impl ContractBridge {
@@ -64,7 +64,7 @@ impl ContractBridge {
 
         Self {
             genesis: genesis_storage,
-            contract: contract_addr,
+            contract_address: contract_addr,
             json_specs,
         }
     }
@@ -72,7 +72,7 @@ impl ContractBridge {
     pub fn call(self, payload: &Vec<u8>) -> Result<ExecReturnValue, DispatchError> {
         return Contracts::bare_call(
             ALICE,
-            self.contract,
+            self.contract_address,
             0,
             GAS_LIMIT,
             None,

@@ -7,6 +7,7 @@ use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 
 use std::fs;
+use sp_core::H256;
 
 use crate::deploy::ContractBridge;
 use crate::fuzzer::ContractFuzzer;
@@ -21,6 +22,7 @@ mod deploy;
 mod fuzzer;
 mod payload;
 mod runtime;
+mod invariants;
 
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
@@ -39,9 +41,4 @@ fn main() {
 
     let fuzzer: ContractFuzzer = ContractFuzzer::new(setup);
     fuzzer.fuzz();
-}
-
-// On each iteration, we check if all stats are good.
-fn check_invariants() {
-    println!("WE PASSED!!!!!");
 }
