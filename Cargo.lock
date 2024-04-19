@@ -3347,6 +3347,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "contract-build",
+ "contract-metadata",
  "contract-transcode",
  "env_logger",
  "frame-support",

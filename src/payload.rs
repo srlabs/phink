@@ -23,7 +23,7 @@ impl PayloadCrafter {
     /// PayloadCrafter::extract(flipper_specs)
     /// ```
 
-    pub fn extract(json_data: String) -> Vec<Selector> {
+    pub fn extract(json_data: &String) -> Vec<Selector> {
         #[derive(Deserialize)]
         struct Spec {
             constructors: Vec<SelectorEntry>,

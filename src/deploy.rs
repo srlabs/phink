@@ -1,5 +1,7 @@
+use contract_metadata::ContractMetadata;
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
+use ink_metadata::InkProject;
 use pallet_contracts::{
     Code, CollectEvents, ContractExecResult, DebugInfo, Determinism, ExecReturnValue,
 };
@@ -20,7 +22,6 @@ pub struct ContractBridge {
     pub contract: AccountIdOf<Test>,
     pub json_specs: String,
 }
-
 impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
     ///

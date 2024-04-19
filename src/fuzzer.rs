@@ -12,6 +12,8 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
+use anyhow::Context;
+use ink_metadata::InkProject;
 use parity_scale_codec::Encode;
 use std::{
     path::Path,
@@ -34,33 +36,32 @@ impl ContractFuzzer {
     }
 
     /// Accept some raw bytes `[u8]` and return the appropriate
-    fn parse_args(self, data: &[u8]) -> Option<Box<(Selector, &[u8])>> {
+    fn parse_args(self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
         // Our payload must be at least `1_000` sized, and min `4`
         // TODO! Figure out what's the minimum size
-        if data.len() > 1_000 || data.len() < 4 {
+        if data.len() > 1_000 || data.len() < 5 {
             return None;
         }
-
-        let selectors: Vec<Selector> = PayloadCrafter::extract(self.setup.json_specs);
         // 4 bytes are allocated to the selector fuzz
-        if let selector_slice =
-            u32::from_ne_bytes(data[0..4].try_into().unwrap()) as usize >= selectors.len()
-        {
-            let fuzzed_func = selectors[selector_slice as usize];
-            let arguments = &data[4..];
+        let selector_slice: usize = u32::from_ne_bytes(data[0..4].try_into().unwrap()) as usize;
+        if selector_slice < selectors.len() {
+            let fuzzed_func = selectors[selector_slice];
+            let arguments = &data[5..];
             return Some(Box::new((fuzzed_func, arguments)));
         }
         None
     }
-
+    #[warn(unused_variables)]
     pub fn fuzz(self) {
         let transcoder_loader = Arc::new(Mutex::new(
             //TODO! That's not supposed to be hardcoded
             ContractMessageTranscoder::load(Path::new("sample/dns/target/ink/dns.json")).unwrap(),
         ));
 
+        let selectors: Vec<Selector> = PayloadCrafter::extract(&self.setup.json_specs);
+
         ziggy::fuzz!(|data: &[u8]| {
-            let raw_call = self.clone().parse_args(data);
+            let raw_call = self.clone().parse_args(data, selectors.clone());
             if raw_call.is_none() {
                 return;
             }
@@ -90,7 +91,7 @@ impl ContractFuzzer {
                         #[cfg(not(fuzzing))]
                         {
                             let mut table = Table::new();
-                            let result: String = format!("{:?}" ,result.unwrap());
+                            let result: String = format!("{:?}", result.unwrap());
                             table.add_row(row!["Decoded call", "Encoded call", "Result"]);
                             table.add_row(row![
                                 decoded_msg.unwrap().to_string(),
