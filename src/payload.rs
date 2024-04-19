@@ -57,21 +57,21 @@ impl PayloadCrafter {
     }
 
     pub fn extract_invariants(json_data: &str) -> Vec<Selector> {
-        let data: Value = serde_json::from_str(json_data)
-            .expect("JSON was not well-formatted");
+        let data: Value = serde_json::from_str(json_data).expect("JSON was not well-formatted");
 
-        data["spec"]["messages"].as_array()
+        data["spec"]["messages"]
+            .as_array()
             .unwrap_or(&Vec::new())
             .iter()
             .filter_map(|message| {
-                message["label"].as_str()
+                message["label"]
+                    .as_str()
                     .filter(|label| label.starts_with("phink_"))
                     .and_then(|_| message["selector"].as_str())
                     .and_then(|selector| Some(decode_selector(selector)))
             })
             .collect()
     }
-
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there
@@ -140,11 +140,11 @@ fn fetch_correct_dns_invariant() {
 }
 
 mod test {
-    use std::fs;
-    use std::path::Path;
+    use crate::payload::{PayloadCrafter, Selector};
     use contract_transcode::ContractMessageTranscoder;
     use sp_core::H256;
-    use crate::payload::{PayloadCrafter, Selector};
+    use std::fs;
+    use std::path::Path;
 
     #[test]
     fn fetch_correct_selectors() {
@@ -155,7 +155,10 @@ mod test {
             .collect();
 
         // DNS selectors
-        assert_eq!(extracted, "9bae9d5e 229b553f b8a4d3d9 84a15da1 d259f7ba 07fcd0b1 2e15cab0 5d17ca7f ");
+        assert_eq!(
+            extracted,
+            "9bae9d5e 229b553f b8a4d3d9 84a15da1 d259f7ba 07fcd0b1 2e15cab0 5d17ca7f "
+        );
     }
 
     #[test]
@@ -192,17 +195,6 @@ mod test {
             hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
                 .unwrap();
         let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
-        assert!(hex.is_ok());
-        println!("{:?}", hex);
-    }
-
-    #[test]
-    fn basic_h256_for_ink() {
-        let binding = H256::from_slice(&[
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
-            6, 9,
-        ]);
-        let binding = binding.as_fixed_bytes();
-        println!("H256 de 'abc': {:?}", binding);
+        assert_eq!(hex.unwrap().to_string(), "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }");
     }
 }
