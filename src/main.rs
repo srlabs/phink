@@ -12,11 +12,9 @@ use crate::deploy::ContractBridge;
 use crate::fuzzer::ContractFuzzer;
 use crate::runtime::Runtime;
 
-type CodeHash<T> = <T as frame_system::Config>::Hash;
 type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 type Test = Runtime;
-type AccountIdLookupOf<T> = <<T as frame_system::Config>::Lookup as StaticLookup>::Source;
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 mod deploy;

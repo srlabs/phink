@@ -1,4 +1,3 @@
-use contract_transcode::ContractMessageTranscoder;
 use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
@@ -51,8 +50,6 @@ impl PayloadCrafter {
         }
         selectors
     }
-
-    pub fn execute() {}
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there

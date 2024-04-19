@@ -35,29 +35,28 @@ impl ContractBridge {
     ///
     /// ```
     ///let dns_wasm: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap();
-    // let dns_wasm_bytes: Vec<u8> =
-    //     include_bytes!(".../dns/target/ink/dns.wasm")[..]
-    //         .to_vec();
+    // let dns_wasm_bytes: Vec<u8> = include_bytes!(".../dns/target/ink/dns.wasm")[..].to_vec();
     // let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
     // let ct =
     //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
     /// ```
     pub fn initialize_contract(wasm_bytes: Vec<u8>, json_specs: String) -> ContractBridge {
-        let contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
+        let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
 
         let genesis_storage: Storage = {
             let storage = storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let code_hash = upload(&wasm_bytes);
-                let contract_addr = instantiate(&json_specs, code_hash);
+                contract_addr = instantiate(&json_specs, code_hash).expect(
+                    "Can't fetch the contract address because because of incorrect instantiation",
+                );
                 // We verify if the contract is correctly instantiated
                 assert!(
                     pallet_contracts::migration::v13::ContractInfoOf::<Test>::contains_key(
-                        &contract_addr.unwrap()
+                        &contract_addr
                     )
                 );
-                // println!("{:?}", contract_addr.clone().unwrap());
             });
             chain.into_storages()
         };
