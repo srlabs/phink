@@ -1,4 +1,9 @@
-use crate::{deploy::ContractBridge, invariants, payload::{PayloadCrafter, Selector}, runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION}};
+use crate::{
+    deploy::ContractBridge,
+    invariants,
+    payload::{PayloadCrafter, Selector},
+    runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION},
+};
 
 use prettytable::{row, Cell, Row, Table};
 
@@ -8,6 +13,7 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
+use crate::invariants::Invariants;
 use anyhow::Context;
 use ink_metadata::InkProject;
 use parity_scale_codec::Encode;
@@ -15,7 +21,6 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-use crate::invariants::Invariants;
 
 #[derive(Clone)]
 pub struct ContractFuzzer {
@@ -54,7 +59,9 @@ impl ContractFuzzer {
             ContractMessageTranscoder::load(Path::new("sample/dns/target/ink/dns.json")).unwrap(),
         ));
 
-        let selectors: Vec<Selector> = PayloadCrafter::extract(&self.setup.json_specs);
+        let selectors: Vec<Selector> = PayloadCrafter::extract_all(&self.setup.json_specs);
+        // let invariant_manager: Invariants =
+        //     Invariants::from(PayloadCrafter::extract_invariants(&self.setup.json_specs));
 
         ziggy::fuzz!(|data: &[u8]| {
             let raw_call = self.clone().parse_args(data, selectors.clone());
@@ -62,10 +69,7 @@ impl ContractFuzzer {
                 return;
             }
             let call = raw_call.expect("`raw_call` wasn't None; QED");
-            match ContractFuzzer::create_call(
-                call.0,
-                call.1,
-            ) {
+            match ContractFuzzer::create_call(call.0, call.1) {
                 // Successfully encoded
                 Some(full_call) => {
                     let decoded_msg = transcoder_loader
@@ -77,12 +81,13 @@ impl ContractFuzzer {
                     }
                     let mut chain = BasicExternalities::new(self.setup.genesis.clone());
                     chain.execute_with(|| {
-
                         timestamp();
                         let result = self.setup.clone().call(&full_call);
 
                         // For each call, we verify that invariants aren't broken
-                        Invariants::verify();
+                        // if !&invariant_manager.are_invariants_passing() {
+                        //     panic!("Invariant triggered -- oupsi")
+                        // }
 
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]

@@ -1,12 +1,12 @@
+use contract_transcode::ContractMessageTranscoder;
 use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
+use sp_core::H256;
+use sp_io::hashing::sha2_256;
 use std::fs;
 use std::hash::Hash;
 use std::path::Path;
-use contract_transcode::ContractMessageTranscoder;
-use sp_core::H256;
-use sp_io::hashing::sha2_256;
 
 pub type Selector = [u8; 4];
 
@@ -28,7 +28,7 @@ impl PayloadCrafter {
     /// PayloadCrafter::extract(flipper_specs)
     /// ```
 
-    pub fn extract(json_data: &String) -> Vec<Selector> {
+    pub fn extract_all(json_data: &String) -> Vec<Selector> {
         #[derive(Deserialize)]
         struct Spec {
             constructors: Vec<SelectorEntry>,
@@ -55,6 +55,23 @@ impl PayloadCrafter {
         }
         selectors
     }
+
+    pub fn extract_invariants(json_data: &str) -> Vec<Selector> {
+        let data: Value = serde_json::from_str(json_data)
+            .expect("JSON was not well-formatted");
+
+        data["spec"]["messages"].as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .filter_map(|message| {
+                message["label"].as_str()
+                    .filter(|label| label.starts_with("phink_"))
+                    .and_then(|_| message["selector"].as_str())
+                    .and_then(|selector| Some(decode_selector(selector)))
+            })
+            .collect()
+    }
+
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there
@@ -86,6 +103,12 @@ impl PayloadCrafter {
     }
 }
 
+/// Encode `Strong("0xbabe")` to a proper `Selector`
+fn decode_selector(encoded: &str) -> Selector {
+    let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
+    <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
+}
+
 /// Helper function to decode a hexadecimal string selector into a byte array of length 4.
 /// Returns `None` if the decoding or conversion fails.
 fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
@@ -105,9 +128,21 @@ macro_rules! message_to_bytes {
 }
 
 #[test]
+fn fetch_correct_dns_invariant() {
+    let flipper_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+
+    let extracted: String = PayloadCrafter::extract_invariants(&flipper_specs)
+        .iter()
+        .map(|x| hex::encode(x) + " ")
+        .collect();
+
+    assert_eq!(extracted, "2e15cab0 5d17ca7f ");
+}
+
+#[test]
 fn fetch_correct_flipper_selectors() {
     let flipper_specs = fs::read_to_string("sample/flipper/target/ink/flipper.json").unwrap();
-    let extracted: String = crate::payload::PayloadCrafter::extract(&flipper_specs)
+    let extracted: String = PayloadCrafter::extract_all(&flipper_specs)
         .iter()
         .map(|x| hex::encode(x) + " ")
         .collect();
@@ -156,7 +191,10 @@ fn decode_works_good() {
 
 #[test]
 fn basic_h256_for_ink() {
-    let binding = H256::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2, 6, 9]);
+    let binding = H256::from_slice(&[
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
+        6, 9,
+    ]);
     let binding = binding.as_fixed_bytes();
     println!("H256 de 'abc': {:?}", binding);
 }

@@ -168,7 +168,7 @@ impl pallet_contracts::Config for Runtime {
     type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Debug = ();
-    type Environment = () ; //pallet_contracts::Environment<Self>
+    type Environment = (); //pallet_contracts::Environment<Self>
     type ApiVersion = ();
     type Xcm = ();
     type UploadOrigin = EnsureSigned<Self::AccountId>;

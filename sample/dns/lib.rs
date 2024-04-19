@@ -38,7 +38,7 @@ mod dns {
         new_owner: AccountId,
     }
 
-    const forbidden_domain: [u8; 32] = [
+    const FORBIDDEN_DOMAIN: [u8; 32] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
         6, 9,
     ];
@@ -51,7 +51,7 @@ mod dns {
         name_to_owner: Mapping<Hash, AccountId>,
         /// The default address.
         default_address: AccountId,
-
+        /// Simple storage vec that contains every registered domain
         domains: StorageVec<Hash>,
     }
 
@@ -104,7 +104,7 @@ mod dns {
             }
 
             // We effectively check that we can't register the forbidden domain
-            if name.clone().as_mut() == forbidden_domain {
+            if name.clone().as_mut() == FORBIDDEN_DOMAIN {
                 return Err(Error::ForbiddenDomain);
             }
 
@@ -196,23 +196,27 @@ mod dns {
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl DomainNameService {
-        /// We have    self.domains: StorageVec<Hash>,
+        /// This invariant should be triggered at some point... the contract being vulnerable
         #[ink(message)]
         pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {
             for i in 0..self.domains.len() {
                 if let Some(domain) = self.domains.get(i) {
-                    if domain.clone().as_mut() == forbidden_domain {
+                    if domain.clone().as_mut() == FORBIDDEN_DOMAIN {
                         panic!("Invariant triggered! We received an invalid domain... weird, I thought I filtered that illegal domain ?");
                     }
                 }
             }
             true
         }
+
+        #[ink(message)]
+        pub fn phink_assert_another_invariant(&self) -> bool {
+            true
+        }
     }
 
     #[cfg(test)]
     mod tests {
-        use sp_io::hashing::sha2_256;
 
         use super::*;
 
@@ -222,15 +226,6 @@ mod dns {
 
         fn set_next_caller(caller: AccountId) {
             ink::env::test::set_caller::<Environment>(caller);
-        }
-
-        #[ink::test]
-        fn tauz() {
-            let default_accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
-
-            set_next_caller(default_accounts.alice);
-            let mut contract = DomainNameService::new();
         }
 
         #[ink::test]
@@ -248,7 +243,7 @@ mod dns {
         #[ink::test]
         fn set_address_works() {
             let accounts = default_accounts();
-            let name = Hash::from(sha2_256(b"abc.com"));
+            let name = Hash::from([0x99; 32]);
 
             set_next_caller(accounts.alice);
 
@@ -280,7 +275,7 @@ mod dns {
             assert_eq!(contract.register(name), Ok(()));
             contract.phink_assert_abc_dot_com_cant_be_registered();
 
-            let illegal = Hash::from(forbidden_domain);
+            let illegal = Hash::from(FORBIDDEN_DOMAIN);
 
             // Test transfer of owner.
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));

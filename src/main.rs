@@ -6,8 +6,8 @@ use pallet_contracts::Config;
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 
-use std::fs;
 use sp_core::H256;
+use std::fs;
 
 use crate::deploy::ContractBridge;
 use crate::fuzzer::ContractFuzzer;
@@ -20,9 +20,9 @@ type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
 mod deploy;
 mod fuzzer;
+mod invariants;
 mod payload;
 mod runtime;
-mod invariants;
 
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
