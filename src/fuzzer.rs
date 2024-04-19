@@ -39,14 +39,14 @@ impl ContractFuzzer {
     fn parse_args(self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
         // Our payload must be at least `1_000` sized, and min `4`
         // TODO! Figure out what's the minimum size
-        if data.len() > 1_000 || data.len() < 5 {
+        if data.len() > 1_500 || data.len() <= 4 {
             return None;
         }
         // 4 bytes are allocated to the selector fuzz
         let selector_slice: usize = u32::from_ne_bytes(data[0..4].try_into().unwrap()) as usize;
         if selector_slice < selectors.len() {
             let fuzzed_func = selectors[selector_slice];
-            let arguments = &data[5..];
+            let arguments = &data[4..];
             return Some(Box::new((fuzzed_func, arguments)));
         }
         None
