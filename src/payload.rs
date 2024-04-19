@@ -1,17 +1,23 @@
-use contract_transcode::ContractMessageTranscoder;
+use std::fs;
+use std::hash::Hash;
+
 use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
-use sp_core::H256;
-use sp_io::hashing::sha2_256;
-use std::fs;
-use std::hash::Hash;
-use std::path::Path;
 
 pub type Selector = [u8; 4];
 
 #[derive(Default, Clone)]
 pub struct PayloadCrafter {}
+
+/// This prefix defines the way a property start with
+/// # Example
+/// ```
+/// #[ink(message)]
+///  pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool
+/// ...
+/// ```
+pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
 
 impl PayloadCrafter {
     /// Extract all selectors for a given spec
@@ -56,6 +62,20 @@ impl PayloadCrafter {
         selectors
     }
 
+    /// Extract every selector associated to the invariants defined in the ink! smart-contract
+    /// See the documentation of `DEFAULT_PHINK_PREFIX` to know more about how to create a propertys
+    /// 
+    /// # Arguments
+    ///
+    /// * `json_data`: The JSON specs of the smart-contract
+    ///
+    /// returns: `Vec<Selector>`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// PayloadCrafter::extract_invariants("dns.json");
+    /// ```
     pub fn extract_invariants(json_data: &str) -> Vec<Selector> {
         let data: Value = serde_json::from_str(json_data).expect("JSON was not well-formatted");
 
@@ -66,7 +86,9 @@ impl PayloadCrafter {
             .filter_map(|message| {
                 message["label"]
                     .as_str()
-                    .filter(|label| label.starts_with("phink_"))
+                    .filter(|label| {
+                        label.starts_with(DEFAULT_PHINK_PREFIX)
+                    })
                     .and_then(|_| message["selector"].as_str())
                     .and_then(|selector| Some(decode_selector(selector)))
             })
@@ -140,11 +162,12 @@ fn fetch_correct_dns_invariant() {
 }
 
 mod test {
-    use crate::payload::{PayloadCrafter, Selector};
-    use contract_transcode::ContractMessageTranscoder;
-    use sp_core::H256;
     use std::fs;
     use std::path::Path;
+
+    use contract_transcode::ContractMessageTranscoder;
+
+    use crate::payload::{PayloadCrafter, Selector};
 
     #[test]
     fn fetch_correct_selectors() {

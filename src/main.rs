@@ -9,8 +9,8 @@ use sp_runtime::traits::StaticLookup;
 use sp_core::H256;
 use std::fs;
 
-use crate::deploy::ContractBridge;
 use crate::fuzzer::ContractFuzzer;
+use crate::remote::ContractBridge;
 use crate::runtime::Runtime;
 
 type BalanceOf<T> =
@@ -18,10 +18,10 @@ type BalanceOf<T> =
 type Test = Runtime;
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-mod deploy;
 mod fuzzer;
 mod invariants;
 mod payload;
+mod remote;
 mod runtime;
 
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);

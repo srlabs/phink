@@ -1,21 +1,26 @@
 use crate::payload::Selector;
+use crate::remote::ContractBridge;
 
 pub struct Invariants {
+    contract_bridge: ContractBridge,
     invariant_selectors: Vec<Selector>,
 }
 
 impl Invariants {
-    ///To calculate the selector we:
-    //
-    // Grab the name of the trait and the name of the message, Frobinate::frobinate
-    // Compute BLAKE2("Frobinate::frobinate") = 0x8915412ad772b2a116917cf75df4ba461b5808556a73f729bce582fb79200c5b
-    // Grab the first four bytes, 0x8915412a
-    pub fn from(invariant_selectors: Vec<Selector>) -> Self {
+
+    pub fn from(invariant_selectors: Vec<Selector>, contract_bridge: ContractBridge) -> Self {
         Self {
+            contract_bridge,
             invariant_selectors,
         }
     }
+
+    /// This function aims to call every invariant function via `invariant_selectors`.
     pub fn are_invariants_passing(&self) -> bool {
+        for invariant in self.invariant_selectors {
+            let toz = self.contract_bridge.clone().call(&invariant.to_vec()).unwrap();
+            println!("{:?}", toz);
+        }
         true
     }
 }

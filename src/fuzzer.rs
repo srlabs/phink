@@ -1,7 +1,7 @@
 use crate::{
-    deploy::ContractBridge,
     invariants,
     payload::{PayloadCrafter, Selector},
+    remote::ContractBridge,
     runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION},
 };
 
@@ -38,7 +38,7 @@ impl ContractFuzzer {
     }
 
     /// Accept some raw bytes `[u8]` and return the appropriate
-    fn parse_args(self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
+    fn parse_args(&self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
         // Our payload must be at least `1_500` sized, and min `4`
         if data.len() > 1_500 || data.len() <= 4 {
             return None;
@@ -52,6 +52,8 @@ impl ContractFuzzer {
         }
         None
     }
+
+    /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[warn(unused_variables)]
     pub fn fuzz(self) {
         let transcoder_loader = Arc::new(Mutex::new(
@@ -60,8 +62,10 @@ impl ContractFuzzer {
         ));
 
         let selectors: Vec<Selector> = PayloadCrafter::extract_all(&self.setup.json_specs);
-        // let invariant_manager: Invariants =
-        //     Invariants::from(PayloadCrafter::extract_invariants(&self.setup.json_specs));
+        let invariant_manager: Invariants = Invariants::from(
+            PayloadCrafter::extract_invariants(&self.setup.json_specs),
+            self.setup,
+        );
 
         ziggy::fuzz!(|data: &[u8]| {
             let raw_call = self.clone().parse_args(data, selectors.clone());
@@ -85,9 +89,9 @@ impl ContractFuzzer {
                         let result = self.setup.clone().call(&full_call);
 
                         // For each call, we verify that invariants aren't broken
-                        // if !&invariant_manager.are_invariants_passing() {
-                        //     panic!("Invariant triggered -- oupsi")
-                        // }
+                        if !&invariant_manager.are_invariants_passing() {
+                            panic!("Invariant triggered -- oupsi")
+                        }
 
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
