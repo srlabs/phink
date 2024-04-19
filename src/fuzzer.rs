@@ -84,7 +84,6 @@ impl ContractFuzzer {
 
                         //TODO!
                         let result = self.setup.clone().call(&full_call);
-
                         // check_invariants();
 
                         //We pretty-print all information that we need to debug
