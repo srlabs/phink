@@ -38,7 +38,11 @@ impl ContractFuzzer {
     }
 
     /// Accept some raw bytes `[u8]` and return the appropriate
-    fn parse_args(&self, data: &[u8], selectors: Vec<Selector>) -> Option<Box<(Selector, &[u8])>> {
+    fn parse_args<'a>(
+        &'a self,
+        data: &'a [u8],
+        selectors: Vec<Selector>,
+    ) -> Option<Box<(Selector, &[u8])>> {
         // Our payload must be at least `1_500` sized, and min `4`
         if data.len() > 1_500 || data.len() <= 4 {
             return None;
@@ -56,19 +60,24 @@ impl ContractFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[warn(unused_variables)]
     pub fn fuzz(self) {
-        let transcoder_loader = Arc::new(Mutex::new(
-            //TODO! That's not supposed to be hardcoded
-            ContractMessageTranscoder::load(Path::new("sample/dns/target/ink/dns.json")).unwrap(),
-        ));
+        //TODO! That's not supposed to be hardcoded
+        let specs_dir = "sample/dns/target/ink/dns.json";
 
-        let selectors: Vec<Selector> = PayloadCrafter::extract_all(&self.setup.json_specs);
-        let invariant_manager: Invariants = Invariants::from(
-            PayloadCrafter::extract_invariants(&self.setup.json_specs),
-            self.setup,
-        );
+        let transcoder_loader =
+            Mutex::new(ContractMessageTranscoder::load(Path::new(specs_dir)).unwrap());
+
+        //TODO! We should use only one `ContractMessageTranscoder` but... cargo.
+        let invariant_coder =
+            Mutex::new(ContractMessageTranscoder::load(Path::new(specs_dir)).unwrap());
+
+        let specs = &self.setup.json_specs;
+        let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
+        let invariants = PayloadCrafter::extract_invariants(specs);
+        let invariant_manager: Invariants = Invariants::from(invariants, self.setup.clone());
 
         ziggy::fuzz!(|data: &[u8]| {
-            let raw_call = self.clone().parse_args(data, selectors.clone());
+            let binding = self.clone();
+            let raw_call = binding.parse_args(data, selectors.clone());
             if raw_call.is_none() {
                 return;
             }
@@ -88,11 +97,6 @@ impl ContractFuzzer {
                         timestamp();
                         let result = self.setup.clone().call(&full_call);
 
-                        // For each call, we verify that invariants aren't broken
-                        if !&invariant_manager.are_invariants_passing() {
-                            panic!("Invariant triggered -- oupsi")
-                        }
-
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
                         {
@@ -105,6 +109,11 @@ impl ContractFuzzer {
                                 result
                             ]);
                             table.printstd();
+                        }
+
+                        // For each call, we verify that invariants aren't broken
+                        if !invariant_manager.are_invariants_passing() {
+                            panic!("Invariant triggered -- oupsi")
                         }
                     });
                 }

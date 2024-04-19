@@ -64,7 +64,7 @@ impl PayloadCrafter {
 
     /// Extract every selector associated to the invariants defined in the ink! smart-contract
     /// See the documentation of `DEFAULT_PHINK_PREFIX` to know more about how to create a propertys
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `json_data`: The JSON specs of the smart-contract
@@ -86,9 +86,7 @@ impl PayloadCrafter {
             .filter_map(|message| {
                 message["label"]
                     .as_str()
-                    .filter(|label| {
-                        label.starts_with(DEFAULT_PHINK_PREFIX)
-                    })
+                    .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
                     .and_then(|_| message["selector"].as_str())
                     .and_then(|selector| Some(decode_selector(selector)))
             })

@@ -39,9 +39,9 @@ mod dns {
     }
 
     const FORBIDDEN_DOMAIN: [u8; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 4, 2,
-        6, 9,
-    ];
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        4, 2,
+    ]; //42 is l33t, we forbid it :/
 
     #[ink(storage)]
     pub struct DomainNameService {
@@ -198,21 +198,15 @@ mod dns {
     impl DomainNameService {
         /// This invariant should be triggered at some point... the contract being vulnerable
         #[ink(message)]
-        pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {
+        pub fn phink_assert_abc_dot_com_cant_be_registered(&self) {
             for i in 0..self.domains.len() {
                 if let Some(domain) = self.domains.get(i) {
-                    if domain.clone().as_mut() == FORBIDDEN_DOMAIN {
-                        panic!("Invariant triggered! We received an invalid domain... weird, I thought I filtered that illegal domain ?");
-                    }
+                    // Invariant triggered! We received an invalid domain...
+                    assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
                 }
             }
-            true
         }
-
-        #[ink(message)]
-        pub fn phink_assert_another_invariant(&self) -> bool {
-            true
-        }
+ 
     }
 
     #[cfg(test)]

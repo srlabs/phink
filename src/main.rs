@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 extern crate core;
 
 use frame_support::traits::fungible::Inspect;
