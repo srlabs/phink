@@ -2,6 +2,8 @@
 
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect vulnerabilities and ensure contract reliability before deployment.
 
+**Note:** This project is actively under development with new features and improvements being made regularly. Contributions and feedback are welcome!
+
 ## Install  
   
 ```  
