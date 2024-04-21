@@ -1,7 +1,6 @@
-
 # 🐙 Phink  
 
-**Phink** is a blazing-fast⚡ ink! smart-contract property-based coverage-guided fuzzer. It allows ink! developpers to integrate inviolable properties into their smart contract testing workflow, providing them with the tools to automatically detect vulnerabilities and ensure contract reliability before deployment. 
+**Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect vulnerabilities and ensure contract reliability before deployment.
 
 ## Install  
   
@@ -13,7 +12,8 @@ cargo ziggy run
   
 ## Example  
 #### Creating an invariant  
-You can find below some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs) contract.
+Below are some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs) contract.
+
 
   ```rust
 #[cfg(feature = "phink")]
@@ -40,19 +40,19 @@ impl DomainNameService {
 ```
    
     
-## Features and incoming ideas  
+## Features and upcoming ideas  
   
  - [x] Custom runtime integration 
  - [x] Invariants-based fuzzing
- - [x] Incorrect arithmetic, reentrancy and panic handers
- - [x] Handling ink! specific encoding and constructors
+ - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
+ - [x] Handling of ink! specific encoding and constructors
  - [x] Automatic contract instantiation
  - [ ] LLM-based invariant creation
  - [ ] Proper binary usage
  - [ ] Fuzzing guidance through WASM coverage
  - [ ] Custom fuzzing dashboard
- - [ ] Providing a given on-chain state
- - [ ] Handling multiple blocks within the same state
- - [ ] Crafting multiple `messages` in the same state
- - [ ] Integrating [LibAFL](https://github.com/AFLplusplus/LibAFL/) for a better synergy 
+ - [ ] Provision of a specified on-chain state
+ - [ ] Handling of multiple blocks within the same state
+ - [ ] Crafting multiple `messages` in the same transaction
+ - [ ] Integration [LibAFL](https://github.com/AFLplusplus/LibAFL/) for enhanced synergy 
  
