@@ -49,7 +49,7 @@ impl DomainNameService {
  - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
  - [x] Handling of ink! specific encoding and constructors
  - [x] Automatic contract instantiation
- - [ ] LLM-based invariant creation
+ - [ ] LLM-based invariant creation using (rust-llama)[https://github.com/mdrokz/rust-llama.cpp]
  - [ ] Proper binary usage
  - [ ] Fuzzing guidance through WASM coverage
  - [ ] Custom fuzzing dashboard
