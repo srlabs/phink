@@ -6,7 +6,7 @@
 
 ## Install  
   
-```  
+```bash
 git clone https://github.com/kevin-valerio/phink
 cd phink/
 cargo ziggy run   
