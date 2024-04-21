@@ -2,7 +2,6 @@
 
 #[ink::contract]
 mod dns {
-    use ink::env::*;
     use ink::storage::Mapping;
     use ink::storage::StorageVec;
     /// Emitted whenever a new name is being registered.
@@ -40,7 +39,7 @@ mod dns {
 
     const FORBIDDEN_DOMAIN: [u8; 32] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        4, 2,
+        0, 1,
     ]; //42 is l33t, we forbid it :/
 
     #[ink(storage)]
@@ -53,6 +52,8 @@ mod dns {
         default_address: AccountId,
         /// Simple storage vec that contains every registered domain
         domains: StorageVec<Hash>,
+        /// Another invariant testing
+        dangerous_number: i32,
     }
 
     impl Default for DomainNameService {
@@ -69,6 +70,7 @@ mod dns {
                 name_to_owner,
                 default_address: zero_address(),
                 domains,
+                dangerous_number: 42_i32,
             }
         }
     }
@@ -137,11 +139,14 @@ mod dns {
         }
 
         /// Transfer owner to another address.
+        /// Don't tell anyone, but this contract is vulnerable!
+        /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`
         #[ink(message)]
-        pub fn transfer(&mut self, name: Hash, to: AccountId) -> Result<()> {
+        pub fn transfer(&mut self, name: Hash, to: AccountId, number: i32) -> Result<()> {
             let caller = self.env().caller();
-            let owner = self.get_owner_or_default(name);
             // Let's assume we still transfer if the caller isn't the owner
+
+            // let owner = self.get_owner_or_default(name);
             // if caller != owner {
             //     return Err(Error::CallerIsNotOwner);
             // }
@@ -149,6 +154,7 @@ mod dns {
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
 
+            self.dangerous_number = number;
             self.domains.push(&name);
 
             self.env().emit_event(Transfer {
@@ -198,15 +204,21 @@ mod dns {
     impl DomainNameService {
         /// This invariant should be triggered at some point... the contract being vulnerable
         #[ink(message)]
-        pub fn phink_assert_abc_dot_com_cant_be_registered(&self) {
+        pub fn phink_assert_hash42_cant_be_registered(&self) {
             for i in 0..self.domains.len() {
                 if let Some(domain) = self.domains.get(i) {
-                    // Invariant triggered! We received an invalid domain...
+                    // Invariant triggered! We caught an invalid domain in the storage...
+                    // How did that happen ?
                     assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
                 }
             }
         }
- 
+
+        #[ink(message)]
+        pub fn phink_assert_dangerous_number(&self) {
+            let FORBIDDEN_NUMBER = 69;
+            assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
+        }
     }
 
     #[cfg(test)]
@@ -255,9 +267,18 @@ mod dns {
             set_next_caller(accounts.alice);
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
             assert_eq!(contract.get_address(name), accounts.bob);
-            contract.phink_assert_abc_dot_com_cant_be_registered();
+            contract.phink_assert_hash42_cant_be_registered();
         }
-
+        #[ink::test]
+        fn should_panic() {
+            let accounts = default_accounts();
+            set_next_caller(accounts.alice);
+            let mut contract = DomainNameService::new();
+            let illegal = Hash::from(FORBIDDEN_DOMAIN);
+            println!("{:?}", illegal);
+            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+            contract.phink_assert_hash42_cant_be_registered();
+        }
         #[ink::test]
         fn transfer_works() {
             let accounts = default_accounts();
@@ -267,7 +288,7 @@ mod dns {
 
             let mut contract = DomainNameService::new();
             assert_eq!(contract.register(name), Ok(()));
-            contract.phink_assert_abc_dot_com_cant_be_registered();
+            contract.phink_assert_hash42_cant_be_registered();
 
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
 
@@ -275,7 +296,7 @@ mod dns {
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
 
             // This should panick..
-            contract.phink_assert_abc_dot_com_cant_be_registered();
+            contract.phink_assert_hash42_cant_be_registered();
 
             // Owner is bob, alice `set_address` should fail.
             assert_eq!(

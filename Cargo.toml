@@ -1,5 +1,10 @@
 [package]
 name = "phink"
+description = "ink! smart-contract invariant-based coverage-guided fuzzer"
+repository = "https://github.com/kevin-valerio/phink"
+keywords = ["ink", "fuzz", "substrate"]
+readme = "README.md"
+authors = ["Kevin Valerio <kevin@srlabs.de>"]
 version = "0.1.0"
 edition = "2021"
 build = "sample/build.rs"
@@ -41,6 +46,7 @@ itertools = "0.10.5"
 strsim = "0.10.0"
 tracing = "0.1.40"
 ink_metadata = "5.0.0"
+
 [features]
 default = ["std"]
 std = [

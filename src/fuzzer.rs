@@ -113,7 +113,7 @@ impl ContractFuzzer {
 
                         // For each call, we verify that invariants aren't broken
                         if !invariant_manager.are_invariants_passing() {
-                            panic!("Invariant triggered -- oupsi")
+                            panic!("Invariant triggered! ")
                         }
                     });
                 }
