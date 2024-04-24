@@ -53,6 +53,7 @@ impl DomainNameService {
  - [ ] Proper binary usage
  - [ ] Fuzzing guidance through WASM coverage
  - [ ] Custom fuzzing dashboard
+ - [ ] Seeds and constants extraction out of code-base
  - [ ] Provision of a specified on-chain state
  - [ ] Handling of multiple blocks within the same state
  - [ ] Crafting multiple `messages` in the same transaction
