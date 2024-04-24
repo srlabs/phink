@@ -13,6 +13,7 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
+use crate::fuzzer_engine::FuzzerEngine;
 use crate::invariants::Invariants;
 use anyhow::Context;
 use ink_metadata::InkProject;
@@ -23,12 +24,12 @@ use std::{
 };
 
 #[derive(Clone)]
-pub struct ContractFuzzer {
+pub struct ZiggyContractFuzer {
     setup: ContractBridge,
 }
 
-impl ContractFuzzer {
-    pub fn new(setup: ContractBridge) -> ContractFuzzer {
+impl ZiggyContractFuzer {
+    pub fn new(setup: ContractBridge) -> ZiggyContractFuzer {
         Self { setup }
     }
 
@@ -56,18 +57,16 @@ impl ContractFuzzer {
         }
         None
     }
+}
 
+impl FuzzerEngine for ZiggyContractFuzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[warn(unused_variables)]
-    pub fn fuzz(self) {
+    fn fuzz(self) {
         //TODO! That's not supposed to be hardcoded
         let specs_dir = "sample/dns/target/ink/dns.json";
 
         let transcoder_loader =
-            Mutex::new(ContractMessageTranscoder::load(Path::new(specs_dir)).unwrap());
-
-        //TODO! We should use only one `ContractMessageTranscoder` but... cargo.
-        let invariant_coder =
             Mutex::new(ContractMessageTranscoder::load(Path::new(specs_dir)).unwrap());
 
         let specs = &self.setup.json_specs;
@@ -81,8 +80,8 @@ impl ContractFuzzer {
             if raw_call.is_none() {
                 return;
             }
-            let call = raw_call.expect("`raw_call` wasn't None; QED");
-            match ContractFuzzer::create_call(call.0, call.1) {
+            let call = raw_call.expect("`raw_call` wasn't `None`; QED");
+            match ZiggyContractFuzer::create_call(call.0, call.1) {
                 // Successfully encoded
                 Some(full_call) => {
                     let decoded_msg = transcoder_loader

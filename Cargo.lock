@@ -3346,6 +3346,7 @@ name = "phink"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "contract-build",
  "contract-metadata",
  "contract-transcode",

@@ -42,10 +42,11 @@ contract-build = { version = "4.1.0" }
 paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
 contract-transcode = { version = "4.1.0" }
-itertools = "0.10.5"
-strsim = "0.10.0"
-tracing = "0.1.40"
-ink_metadata = "5.0.0"
+itertools = { version = "0.10.5" }
+strsim = { version = "0.10.0" }
+tracing = { version = "0.1.40" }
+ink_metadata = { version = "5.0.0" }
+clap = { version = "4.5.4" , features = ["derive"]}
 
 [features]
 default = ["std"]
