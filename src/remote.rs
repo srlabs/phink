@@ -1,3 +1,5 @@
+use std::fs;
+use std::path::PathBuf;
 use contract_metadata::ContractMetadata;
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
@@ -21,7 +23,10 @@ pub struct ContractBridge {
     pub genesis: Storage,
     pub contract_address: AccountIdOf<Test>,
     pub json_specs: String,
+    pub path_to_specs: PathBuf
 }
+
+
 impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
     ///
@@ -41,9 +46,9 @@ impl ContractBridge {
     // let ct =
     //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
     /// ```
-    pub fn initialize_contract(wasm_bytes: Vec<u8>, json_specs: String) -> ContractBridge {
+    pub fn initialize_contract(wasm_bytes: Vec<u8>, path_to_specs: PathBuf) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
-
+        let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
         let genesis_storage: Storage = {
             let storage = storage();
             let mut chain = BasicExternalities::new(storage.clone());
@@ -66,6 +71,7 @@ impl ContractBridge {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
+            path_to_specs
         }
     }
 

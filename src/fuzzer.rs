@@ -24,12 +24,12 @@ use std::{
 };
 
 #[derive(Clone)]
-pub struct ZiggyContractFuzer {
+pub struct ZiggyFuzzer {
     setup: ContractBridge,
 }
 
-impl ZiggyContractFuzer {
-    pub fn new(setup: ContractBridge) -> ZiggyContractFuzer {
+impl ZiggyFuzzer {
+    pub fn new(setup: ContractBridge) -> ZiggyFuzzer {
         Self { setup }
     }
 
@@ -59,15 +59,12 @@ impl ZiggyContractFuzer {
     }
 }
 
-impl FuzzerEngine for ZiggyContractFuzer {
+impl FuzzerEngine for ZiggyFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[warn(unused_variables)]
     fn fuzz(self) {
-        //TODO! That's not supposed to be hardcoded
-        let specs_dir = "sample/dns/target/ink/dns.json";
-
         let transcoder_loader =
-            Mutex::new(ContractMessageTranscoder::load(Path::new(specs_dir)).unwrap());
+            Mutex::new(ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap());
 
         let specs = &self.setup.json_specs;
         let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
@@ -81,7 +78,7 @@ impl FuzzerEngine for ZiggyContractFuzer {
                 return;
             }
             let call = raw_call.expect("`raw_call` wasn't `None`; QED");
-            match ZiggyContractFuzer::create_call(call.0, call.1) {
+            match ZiggyFuzzer::create_call(call.0, call.1) {
                 // Successfully encoded
                 Some(full_call) => {
                     let decoded_msg = transcoder_loader

@@ -10,8 +10,9 @@ use sp_runtime::traits::StaticLookup;
 
 use sp_core::H256;
 use std::fs;
+use std::path::PathBuf;
 
-use crate::fuzzer::ZiggyContractFuzer;
+use crate::fuzzer::ZiggyFuzzer;
 use crate::fuzzer_engine::FuzzerEngine;
 use crate::remote::ContractBridge;
 use crate::runtime::Runtime;
@@ -33,11 +34,11 @@ pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 fn main() {
     let dns_wasm_bytes: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
 
-    let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+    let dns_specs = PathBuf::from("sample/dns/target/ink/dns.json");
 
     let setup: ContractBridge =
-        ContractBridge::initialize_contract(dns_wasm_bytes, dns_specs.clone());
+        ContractBridge::initialize_contract(dns_wasm_bytes, dns_specs);
 
-    let fuzzer: ZiggyContractFuzer = ZiggyContractFuzer::new(setup);
+    let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
     fuzzer.fuzz();
 }
