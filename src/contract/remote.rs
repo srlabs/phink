@@ -2,17 +2,22 @@ use contract_metadata::ContractMetadata;
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
 use ink_metadata::InkProject;
-use pallet_contracts::{
-    Code, CollectEvents, ContractExecResult, DebugInfo, Determinism, ExecReturnValue,
-};
+use pallet_contracts::{Code, CollectEvents, Config, ContractExecResult, DebugInfo, Determinism, ExecReturnValue};
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 use std::fs;
 use std::path::PathBuf;
+use frame_support::traits::fungible::Inspect;
 
 use crate::contract::payload;
-use crate::contract::runtime::{BalancesConfig, Contracts, RuntimeGenesisConfig};
-use crate::{AccountIdOf, Test, ALICE};
+use crate::contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig};
+
+pub type BalanceOf<T> =
+<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+pub type Test = Runtime;
+pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
 pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 

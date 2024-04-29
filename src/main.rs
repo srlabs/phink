@@ -18,12 +18,6 @@ use std::{fs, path::PathBuf};
 mod contract;
 mod fuzzer;
 
-type BalanceOf<T> =
-    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-type Test = Runtime;
-type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-
-pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
 /// TODO: Use Clippy
 fn main() {
