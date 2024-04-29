@@ -11,10 +11,10 @@ use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 
 use crate::{
-    payload,
-    runtime::{BalancesConfig, Contracts, RuntimeGenesisConfig},
     AccountIdOf, Test, ALICE,
 };
+use crate::contract::payload;
+use crate::contract::runtime::{BalancesConfig, Contracts, RuntimeGenesisConfig};
 
 pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 

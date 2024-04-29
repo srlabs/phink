@@ -8,32 +8,27 @@ use pallet_contracts::Config;
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 
-use sp_core::H256;
 use std::fs;
 use std::path::PathBuf;
+use crate::contract::remote::ContractBridge;
+use crate::contract::runtime::Runtime;
+use crate::fuzz::engine::FuzzerEngine;
+use crate::fuzz::fuzz::ZiggyFuzzer;
 
-use crate::fuzzer::ZiggyFuzzer;
-use crate::fuzzer_engine::FuzzerEngine;
-use crate::remote::ContractBridge;
-use crate::runtime::Runtime;
 
 type BalanceOf<T> =
 <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 type Test = Runtime;
 type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
-mod fuzzer;
-mod fuzzer_engine;
-mod invariants;
-mod payload;
-mod remote;
-mod runtime;
+
+mod fuzz;
+mod contract;
 
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
 fn main() {
     let dns_wasm_bytes: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
-
     let dns_specs = PathBuf::from("sample/dns/target/ink/dns.json");
 
     let setup: ContractBridge =

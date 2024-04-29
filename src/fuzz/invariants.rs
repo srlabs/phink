@@ -1,10 +1,11 @@
-use crate::payload::Selector;
-use crate::remote::ContractBridge;
+
 use contract_transcode::ContractMessageTranscoder;
 use pallet_contracts::ExecReturnValue;
 use parity_scale_codec::Decode;
 use sp_runtime::{DispatchError, ModuleError};
 use std::sync::MutexGuard;
+use crate::contract::payload::Selector;
+use crate::contract::remote::ContractBridge;
 
 pub struct Invariants {
     contract_bridge: ContractBridge,

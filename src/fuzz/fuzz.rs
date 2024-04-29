@@ -1,11 +1,6 @@
-use crate::{
-    invariants,
-    payload::{PayloadCrafter, Selector},
-    remote::ContractBridge,
-    runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION},
-};
 
-use prettytable::{row, Cell, Row, Table};
+
+use prettytable::{row, Table};
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::{
@@ -13,15 +8,16 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
-use crate::fuzzer_engine::FuzzerEngine;
-use crate::invariants::Invariants;
-use anyhow::Context;
-use ink_metadata::InkProject;
+use crate::fuzz::engine::FuzzerEngine;
+use crate::fuzz::invariants::Invariants;
 use parity_scale_codec::Encode;
 use std::{
     path::Path,
-    sync::{Arc, Mutex},
+    sync::Mutex,
 };
+use crate::contract::payload::{PayloadCrafter, Selector};
+use crate::contract::remote::ContractBridge;
+use crate::contract::runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, SLOT_DURATION, Timestamp};
 
 #[derive(Clone)]
 pub struct ZiggyFuzzer {
