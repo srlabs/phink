@@ -1,5 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
 use contract_metadata::ContractMetadata;
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
@@ -9,12 +7,12 @@ use pallet_contracts::{
 };
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
+use std::fs;
+use std::path::PathBuf;
 
-use crate::{
-    AccountIdOf, Test, ALICE,
-};
 use crate::contract::payload;
 use crate::contract::runtime::{BalancesConfig, Contracts, RuntimeGenesisConfig};
+use crate::{AccountIdOf, Test, ALICE};
 
 pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
@@ -23,9 +21,8 @@ pub struct ContractBridge {
     pub genesis: Storage,
     pub contract_address: AccountIdOf<Test>,
     pub json_specs: String,
-    pub path_to_specs: PathBuf
+    pub path_to_specs: PathBuf,
 }
-
 
 impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
@@ -71,7 +68,7 @@ impl ContractBridge {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
-            path_to_specs
+            path_to_specs,
         }
     }
 

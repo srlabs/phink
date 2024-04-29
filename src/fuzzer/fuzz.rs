@@ -1,5 +1,3 @@
-
-
 use prettytable::{row, Table};
 
 use contract_transcode::ContractMessageTranscoder;
@@ -8,16 +6,15 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
-use crate::fuzz::engine::FuzzerEngine;
-use crate::fuzz::invariants::Invariants;
-use parity_scale_codec::Encode;
-use std::{
-    path::Path,
-    sync::Mutex,
-};
 use crate::contract::payload::{PayloadCrafter, Selector};
 use crate::contract::remote::ContractBridge;
-use crate::contract::runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, SLOT_DURATION, Timestamp};
+use crate::contract::runtime::{
+    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
+};
+use crate::fuzzer::engine::FuzzerEngine;
+use crate::fuzzer::invariants::Invariants;
+use parity_scale_codec::Encode;
+use std::{path::Path, sync::Mutex};
 
 #[derive(Clone)]
 pub struct ZiggyFuzzer {
@@ -59,8 +56,9 @@ impl FuzzerEngine for ZiggyFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[warn(unused_variables)]
     fn fuzz(self) {
-        let transcoder_loader =
-            Mutex::new(ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap());
+        let transcoder_loader = Mutex::new(
+            ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
+        );
 
         let specs = &self.setup.json_specs;
         let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);

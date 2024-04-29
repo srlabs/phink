@@ -163,10 +163,9 @@ mod test {
     use std::fs;
     use std::path::Path;
 
-    use contract_transcode::ContractMessageTranscoder;
     use crate::contract::payload::PayloadCrafter;
     use crate::contract::payload::Selector;
-
+    use contract_transcode::ContractMessageTranscoder;
 
     #[test]
     fn fetch_correct_selectors() {
