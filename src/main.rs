@@ -8,6 +8,7 @@ use pallet_contracts::Config;
 use sp_core::crypto::AccountId32;
 use sp_runtime::traits::StaticLookup;
 
+use crate::fuzzer::coverage::CoverageEngine;
 use crate::{
     contract::remote::ContractBridge, contract::runtime::Runtime, fuzzer::engine::FuzzerEngine,
     fuzzer::fuzz::ZiggyFuzzer,
@@ -21,17 +22,17 @@ mod fuzzer;
 /// TODO: Use Clippy
 fn main() {
     let dns_wasm_bytes: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
-    let dns_wat: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
     let dns_specs = PathBuf::from("sample/dns/target/ink/dns.json");
+    let lib_rs = PathBuf::from("sample/dns/lib.rs");
 
-    // We use a WASM blob
-    // let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, dns_specs);
 
-    // We use a WAT file
-    let setup: ContractBridge = ContractBridge::initialize_wat(dns_wasm_bytes, dns_specs);
-
-    let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
-    fuzzer.fuzz();
+    let instrument: CoverageEngine = CoverageEngine::new(lib_rs);
+    // If instrumentation goes well, we can fuzz
+    if instrument.instrument().is_ok() {
+        let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, dns_specs);
+        let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
+        fuzzer.fuzz();
+    }
 }
 
 /// This struct defines the command line arguments expected by Phink.
