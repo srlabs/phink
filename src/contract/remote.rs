@@ -1,19 +1,21 @@
 use contract_metadata::ContractMetadata;
 use frame_support::__private::BasicExternalities;
 use frame_support::pallet_prelude::Weight;
+use frame_support::traits::fungible::Inspect;
 use ink_metadata::InkProject;
-use pallet_contracts::{Code, CollectEvents, Config, ContractExecResult, DebugInfo, Determinism, ExecReturnValue};
+use pallet_contracts::{
+    Code, CollectEvents, Config, ContractExecResult, DebugInfo, Determinism, ExecReturnValue,
+};
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 use std::fs;
 use std::path::PathBuf;
-use frame_support::traits::fungible::Inspect;
 
 use crate::contract::payload;
 use crate::contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig};
 
 pub type BalanceOf<T> =
-<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 pub type Test = Runtime;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 
@@ -48,7 +50,7 @@ impl ContractBridge {
     // let ct =
     //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
     /// ```
-    pub fn initialize_contract(wasm_bytes: Vec<u8>, path_to_specs: PathBuf) -> ContractBridge {
+    pub fn initialize_wasm(wasm_bytes: Vec<u8>, path_to_specs: PathBuf) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
         let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
         let genesis_storage: Storage = {
@@ -75,6 +77,11 @@ impl ContractBridge {
             json_specs,
             path_to_specs,
         }
+    }
+
+    pub fn initialize_wat(wat: Vec<u8>, dns_specs: PathBuf) -> ContractBridge {
+        let wasm = wat::parse_str(String::from_utf8(wat).unwrap()).unwrap();
+        ContractBridge::initialize_wasm(wasm, dns_specs)
     }
 
     pub fn call(self, payload: &Vec<u8>) -> Result<ExecReturnValue, DispatchError> {
@@ -136,4 +143,22 @@ fn storage() -> Storage {
     .build_storage()
     .unwrap();
     storage
+}
+
+mod test {
+    use std::fs;
+
+    #[test]
+    fn wasm_to_wat() {
+        let vec = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
+
+        let wat = wat::parse_file("sample/dns/target/ink/dns.wat").unwrap();
+        let binary = wat::parse_bytes(&*wat).unwrap().to_vec();
+        assert_eq!(vec, binary);
+
+        // Altered wasm
+        let wat2 = wat::parse_file("sample/dns/target/ink/dns_altered.wat").unwrap();
+        let binary2 = wat::parse_bytes(&*wat2).unwrap().to_vec();
+        assert_ne!(vec, binary2);
+    }
 }

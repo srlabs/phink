@@ -10,6 +10,7 @@ edition = "2021"
 build = "sample/build.rs"
 
 [dependencies]
+
 parity-scale-codec = { version = "3.6.9", default-features = false }
 scale-info = { version = "2.6.0", default-features = false }
 prettytable-rs = { version = "0.10.0" }
@@ -47,6 +48,9 @@ strsim = { version = "0.10.0" }
 tracing = { version = "0.1.40" }
 ink_metadata = { version = "5.0.0" }
 clap = { version = "4.5.4" , features = ["derive"]}
+syn = { version = "2.0.60" , features = ["parsing", "full", "visit-mut"]}
+quote = "1.0.36"
+proc-macro2 = "1.0.81"
 
 [features]
 default = ["std"]

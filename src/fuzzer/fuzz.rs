@@ -13,7 +13,9 @@ use crate::contract::runtime::{
 };
 use crate::fuzzer::engine::FuzzerEngine;
 use crate::fuzzer::invariants::Invariants;
+use pallet_contracts::ExecReturnValue;
 use parity_scale_codec::Encode;
+use sp_runtime::DispatchError;
 use std::{path::Path, sync::Mutex};
 
 #[derive(Clone)]
@@ -37,15 +39,17 @@ impl ZiggyFuzzer {
         data: &'a [u8],
         selectors: Vec<Selector>,
     ) -> Option<Box<(Selector, &[u8])>> {
+        // TODO! 1500 shouldn't be static
         // Our payload must be at least `1_500` sized, and min `4`
-        if data.len() > 1_500 || data.len() <= 4 {
+        let selector_size = 4; //where 4 is *at least* the selector size
+        if data.len() > 1_500 || data.len() <= selector_size {
             return None;
         }
-        // 4 bytes are allocated to the selector fuzz
-        let selector_slice: usize = u32::from_ne_bytes(data[0..4].try_into().unwrap()) as usize;
+        let selector_slice: usize =
+            u32::from_ne_bytes(data[0..selector_size].try_into().unwrap()) as usize;
         if selector_slice < selectors.len() {
             let fuzzed_func = selectors[selector_slice];
-            let arguments = &data[4..];
+            let arguments = &data[selector_size..];
             return Some(Box::new((fuzzed_func, arguments)));
         }
         None
@@ -72,6 +76,7 @@ impl FuzzerEngine for ZiggyFuzzer {
                 return;
             }
             let call = raw_call.expect("`raw_call` wasn't `None`; QED");
+
             match ZiggyFuzzer::create_call(call.0, call.1) {
                 // Successfully encoded
                 Some(full_call) => {
@@ -89,17 +94,7 @@ impl FuzzerEngine for ZiggyFuzzer {
 
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
-                        {
-                            let mut table = Table::new();
-                            let result: String = format!("{:?}", result.unwrap());
-                            table.add_row(row!["Decoded call", "Encoded call", "Result"]);
-                            table.add_row(row![
-                                decoded_msg.unwrap().to_string(),
-                                hex::encode(full_call),
-                                result
-                            ]);
-                            table.printstd();
-                        }
+                        pretty_print(result, decoded_msg.unwrap().to_string(), full_call);
 
                         // For each call, we verify that invariants aren't broken
                         if !invariant_manager.are_invariants_passing() {
@@ -113,6 +108,18 @@ impl FuzzerEngine for ZiggyFuzzer {
             }
         });
     }
+}
+
+fn pretty_print(
+    result: Result<ExecReturnValue, DispatchError>,
+    decoded_msg: String,
+    full_call: Vec<u8>,
+) {
+    let mut table = Table::new();
+    let result: String = format!("{:?}", result.unwrap());
+    table.add_row(row!["Decoded call", "Encoded call", "Result"]);
+    table.add_row(row![decoded_msg, hex::encode(full_call), result]);
+    table.printstd();
 }
 
 /// We need to instantiate a proper timestamp on each call

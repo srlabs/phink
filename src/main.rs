@@ -18,13 +18,17 @@ use std::{fs, path::PathBuf};
 mod contract;
 mod fuzzer;
 
-
 /// TODO: Use Clippy
 fn main() {
     let dns_wasm_bytes: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
+    let dns_wat: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
     let dns_specs = PathBuf::from("sample/dns/target/ink/dns.json");
 
-    let setup: ContractBridge = ContractBridge::initialize_contract(dns_wasm_bytes, dns_specs);
+    // We use a WASM blob
+    // let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, dns_specs);
+
+    // We use a WAT file
+    let setup: ContractBridge = ContractBridge::initialize_wat(dns_wasm_bytes, dns_specs);
 
     let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
     fuzzer.fuzz();
@@ -58,7 +62,7 @@ fn _main() {
     let cli = Cli::parse();
     match &cli.command {
         Commands::Fuzz => {
-            let setup: ContractBridge = ContractBridge::initialize_contract(
+            let setup: ContractBridge = ContractBridge::initialize_wasm(
                 fs::read(&cli.wasm).unwrap().to_vec(),
                 PathBuf::from(&cli.specs),
             );

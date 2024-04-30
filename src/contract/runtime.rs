@@ -1,3 +1,4 @@
+use crate::contract::remote::BalanceOf;
 use frame_support::{
     construct_runtime, derive_impl, parameter_types, traits,
     traits::{ConstU16, ConstU32},
@@ -14,7 +15,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentifyAccount, Verify},
     FixedPointNumber, MultiSignature, Perbill, Perquintill,
 };
-use crate::contract::remote::BalanceOf;
 
 pub type BlockNumber = u32;
 
