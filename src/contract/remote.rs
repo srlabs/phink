@@ -57,8 +57,8 @@ impl ContractBridge {
             let storage = storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
-                let code_hash = upload(&wasm_bytes);
-                contract_addr = instantiate(&json_specs, code_hash).expect(
+                let code_hash = Self::upload(&wasm_bytes);
+                contract_addr = Self::instantiate(&json_specs, code_hash).expect(
                     "Can't fetch the contract address because because of incorrect instantiation",
                 );
                 // We verify if the contract is correctly instantiated
@@ -79,11 +79,29 @@ impl ContractBridge {
         }
     }
 
+    /// Instantiate a contract using its WAT representation, instead of WASM
+    ///
+    /// # Arguments
+    ///
+    /// * `wat`: WAT-version of the WASM blob
+    /// * `dns_specs`: JSON specs of the contract
     pub fn initialize_wat(wat: Vec<u8>, dns_specs: PathBuf) -> ContractBridge {
         let wasm = wat::parse_str(String::from_utf8(wat).unwrap()).unwrap();
         ContractBridge::initialize_wasm(wasm, dns_specs)
     }
 
+    /// Execute a function (`payload`) from the instantiated contract
+    ///
+    /// # Arguments
+    ///
+    /// * `payload`: The scale-encoded `data` to pass to the contract
+    ///
+    /// returns: Result<ExecReturnValue, DispatchError>
+    ///
+    /// # Examples
+    /// ```
+    /// self.setup.clone().call(&full_call)
+    /// ```
     pub fn call(self, payload: &Vec<u8>) -> Result<ExecReturnValue, DispatchError> {
         return Contracts::bare_call(
             ALICE,
@@ -98,33 +116,33 @@ impl ContractBridge {
         )
         .result;
     }
-}
 
-fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
-    Some(
-        Contracts::bare_instantiate(
-            ALICE,
-            0,
-            GAS_LIMIT,
-            None,
-            Code::Existing(code_hash),
-            Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
-            vec![],
-            DebugInfo::UnsafeDebug,
-            CollectEvents::UnsafeCollect,
-        )
-        .result
-        .unwrap()
-        .account_id,
-    )
-}
+    pub fn upload(wasm_bytes: &Vec<u8>) -> H256 {
+        let code_hash =
+            Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
+                .unwrap()
+                .code_hash;
+        code_hash
+    }
 
-fn upload(wasm_bytes: &Vec<u8>) -> H256 {
-    let code_hash =
-        Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
+    pub fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
+        Some(
+            Contracts::bare_instantiate(
+                ALICE,
+                0,
+                GAS_LIMIT,
+                None,
+                Code::Existing(code_hash),
+                Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
+                vec![],
+                DebugInfo::UnsafeDebug,
+                CollectEvents::UnsafeCollect,
+            )
+            .result
             .unwrap()
-            .code_hash;
-    code_hash
+            .account_id,
+        )
+    }
 }
 
 fn storage() -> Storage {

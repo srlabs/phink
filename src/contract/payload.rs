@@ -123,7 +123,7 @@ impl PayloadCrafter {
     }
 }
 
-/// Encode `Strong("0xbabe")` to a proper `Selector`
+/// Decode `encoded` to a proper `Selector`
 fn decode_selector(encoded: &str) -> Selector {
     let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
     <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
@@ -147,18 +147,6 @@ macro_rules! message_to_bytes {
     }};
 }
 
-#[test]
-fn fetch_correct_dns_invariant() {
-    let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-
-    let extracted: String = PayloadCrafter::extract_invariants(&specs)
-        .iter()
-        .map(|x| hex::encode(x) + " ")
-        .collect();
-
-    assert_eq!(extracted, "2e15cab0 5d17ca7f ");
-}
-
 mod test {
     use std::fs;
     use std::path::Path;
@@ -166,6 +154,18 @@ mod test {
     use crate::contract::payload::PayloadCrafter;
     use crate::contract::payload::Selector;
     use contract_transcode::ContractMessageTranscoder;
+
+    #[test]
+    fn fetch_correct_dns_invariant() {
+        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+
+        let extracted: String = PayloadCrafter::extract_invariants(&specs)
+            .iter()
+            .map(|x| hex::encode(x) + " ")
+            .collect();
+
+        assert_eq!(extracted, "2e15cab0 5d17ca7f ");
+    }
 
     #[test]
     fn fetch_correct_selectors() {

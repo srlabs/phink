@@ -40,7 +40,7 @@ mod dns {
     const FORBIDDEN_DOMAIN: [u8; 32] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 1,
-    ]; //42 is l33t, we forbid it :/
+    ]; //we forbid it :/
 
     #[ink(storage)]
     pub struct DomainNameService {
