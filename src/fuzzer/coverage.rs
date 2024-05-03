@@ -55,15 +55,15 @@ impl CoverageEngine {
         let code = fs::read_to_string(forked_lib).unwrap();
         let mut ast = parse_file(&code).unwrap();
 
-        let mut visitor_updated = ContractCovUpdater;
+        let mut visitor_updated = ContractCovUpdater::default();
         visitor_updated.visit_file_mut(&mut ast);
         let mut modified_code = quote!(#ast).to_string();
 
         ast = parse_file(&modified_code).unwrap();
-
         let mut visitor_instantiation = ContractMapInstantiation;
         visitor_instantiation.visit_file_mut(&mut ast);
         modified_code = quote!(#ast).to_string();
+
         save_instrumented(modified_code);
         Ok(())
     }
@@ -113,7 +113,10 @@ mod instrumentor_visitors {
         }
     }
 
-    pub struct ContractCovUpdater;
+    #[derive(Default)]
+    pub struct ContractCovUpdater {}
+
+    impl ContractCovUpdater {}
 
     impl VisitMut for ContractCovUpdater {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
@@ -122,9 +125,8 @@ mod instrumentor_visitors {
             let mut stmts = std::mem::replace(&mut block.stmts, Vec::new());
 
             for mut stmt in stmts.drain(..) {
-                let line = stmt.span().start().line;
-
-                let line_lit = LitInt::new(&line.to_string(), Span::call_site());
+                let line_lit =
+                    LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
 
                 // Assuming line_lit is of a type that needs to be handled directly as a value,
                 // use the parsed expression directly in your parse_quote!
@@ -134,27 +136,11 @@ mod instrumentor_visitors {
 
                 // Convert this expression into a statement
                 let pre_stmt: Stmt = Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
-
                 new_stmts.push(pre_stmt);
 
-                match stmt.clone() {
-                    Stmt::Item(expr) => {
-                        new_stmts.push(Stmt::Item(expr.clone()));
-
-                        // Insert the COV_MAP update after the current statement
-                        let post_stmt: Stmt = syn::parse_quote! {
-                             self.env().emit_event(Coverage { cov_of: #line_lit });
-                        };
-                        new_stmts.push(post_stmt);
-                    }
-
-                    // For each type of statement, handle appropriately, ensuring pre- and post-insertion
-                    _ => {
-                        // Use recursive visitation to handle nested blocks and other statement types
-                        self.visit_stmt_mut(&mut stmt);
-                        new_stmts.push(stmt.clone());
-                    }
-                }
+                // Use recursive visitation to handle nested blocks and other statement types
+                self.visit_stmt_mut(&mut stmt);
+                new_stmts.push(stmt.clone());
             }
 
             block.stmts = new_stmts;
