@@ -1,4 +1,4 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "1024"]
 
 extern crate core;
 
@@ -20,20 +20,14 @@ mod fuzzer;
 
 /// TODO: Use Clippy
 fn main() {
-    let dns_wasm_bytes: Vec<u8> = fs::read("sample/dns_instrumented/dns.wasm")
-        .unwrap()
-        .to_vec();
-    let dns_specs = PathBuf::from("sample/dns_instrumented/dns.json");
     let dir = PathBuf::from("sample/dns");
 
-    let instrument: CoverageEngine = CoverageEngine::new(dir);
-    instrument.instrument().unwrap();
-    // If instrumentation goes well, we can fuzz
-    // if instrument.instrument().is_ok() {
-    let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, dns_specs);
+    let (wasm_blob, json_spec) = CoverageEngine::new(dir).instrument().build();
+    let dns_wasm_bytes: Vec<u8> = fs::read(wasm_blob).unwrap().to_vec();
+    let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, json_spec);
     let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
+
     fuzzer.fuzz();
-    // }
 }
 
 /// This struct defines the command line arguments expected by Phink.

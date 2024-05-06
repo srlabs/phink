@@ -63,13 +63,21 @@ pub trait FuzzerEngine {
     /// TODO! the fuzzer will correctly find the block
     fn timestamp() {
         let mut block: u32 = 1;
-        Timestamp::set(RuntimeOrigin::none(), block as u64 * SLOT_DURATION).unwrap();
+        Timestamp::set(
+            RuntimeOrigin::none(),
+            (block as u64).saturating_mul(SLOT_DURATION),
+        )
+        .unwrap();
         let lapse: u32 = 0; //for now, we set lapse always to zero
         if lapse > 0 {
             <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
-            block += u32::from(lapse);
+            block = block.saturating_add(u32::from(lapse));
             <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
-            Timestamp::set(RuntimeOrigin::none(), SLOT_DURATION * block as u64).unwrap();
+            Timestamp::set(
+                RuntimeOrigin::none(),
+                SLOT_DURATION.saturating_mul(block as u64),
+            )
+            .unwrap();
         }
     }
 }

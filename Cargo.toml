@@ -34,7 +34,7 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk
 pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
-libafl = { version = "0.12.0" }
+libafl = { version = "0.12.0", features = ["default"] }
 libafl_bolts = { version = "0.12.0" }
 
 env_logger = { version = "0.11.3" }

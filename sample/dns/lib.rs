@@ -60,16 +60,16 @@ mod dns {
     impl Default for DomainNameService {
         fn default() -> Self {
             let mut name_to_address = Mapping::new();
-            name_to_address.insert(Hash::default(), &zero_address());
+            name_to_address.insert(Hash::default(), &Self::zero_address());
             let mut name_to_owner = Mapping::new();
-            name_to_owner.insert(Hash::default(), &zero_address());
+            name_to_owner.insert(Hash::default(), &Self::zero_address());
             let mut domains = StorageVec::new();
             domains.push(&Hash::default());
 
             Self {
                 name_to_address,
                 name_to_owner,
-                default_address: zero_address(),
+                default_address: Self::zero_address(),
                 domains,
                 dangerous_number: 42_i32,
             }
@@ -191,14 +191,16 @@ mod dns {
                 .get(name)
                 .unwrap_or(self.default_address)
         }
+
+        /// Helper for referencing the zero address (`0x00`). Note that in practice this
+        /// address should not be treated in any special way (such as a default
+        /// placeholder) since it has a known private key.
+        fn zero_address() -> AccountId {
+            [0u8; 32].into()
+        }
     }
 
-    /// Helper for referencing the zero address (`0x00`). Note that in practice this
-    /// address should not be treated in any special way (such as a default
-    /// placeholder) since it has a known private key.
-    fn zero_address() -> AccountId {
-        [0u8; 32].into()
-    }
+
 
     #[cfg(test)]
     mod tests {

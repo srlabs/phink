@@ -8,7 +8,7 @@ use std::fs;
 use std::fs::{copy, File};
 use std::io::{Take, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 use syn::parse_file;
 use syn::visit_mut::VisitMut;
 use walkdir::WalkDir;
@@ -22,7 +22,7 @@ use walkdir::WalkDir;
 /// Phink opted for a Rust AST approach. For each code instruction on the smart-contract, Phink will
 /// automatically add a tracing code, which will then be fetched at the end of the input execution
 /// in order to get coverage.
-
+#[derive(Default)]
 pub struct CoverageEngine {
     pub dir: PathBuf,
 }
@@ -30,6 +30,18 @@ pub struct CoverageEngine {
 impl CoverageEngine {
     pub fn new(dir: PathBuf) -> Self {
         Self { dir }
+    }
+
+    /// Compile the instrumented smart-contract.
+    /// By default, `cargo contract build`
+    /// Returns a pair of `PathBuf` containing Cargo.toml and lib.rs path
+    pub(crate) fn build(&self) -> (PathBuf, PathBuf) {
+        Command::new("cargo")
+            .args(["contract", "build"])
+            .status()
+            .unwrap();
+
+        (self.dir.join("Cargo.toml"), self.dir.join("lib.rs"))
     }
 
     /// This function _forks_ the code base in order to instrument it safely
@@ -67,7 +79,7 @@ impl CoverageEngine {
         new_dir
     }
 
-    pub fn instrument(&self) -> Result<(), ()> {
+    pub fn instrument(&self) -> &CoverageEngine {
         //TODO: Shouldn't be only lib.rs
         //For now we assume one smart contract is only one file
         let lib_rs = self.fork().join("lib.rs");
@@ -78,7 +90,7 @@ impl CoverageEngine {
 
         save_and_format(modified_code, lib_rs.clone());
 
-        Ok(())
+        self
     }
 }
 
@@ -156,7 +168,11 @@ mod instrumentor_visitors {
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
 
                 let insert_expr: Expr = parse_quote! {
+                    {
+                      use ink::codegen::StaticEnv;
                    Self::env().emit_event(Coverage { cov_of: #line_lit })
+
+                    }
                 };
 
                 // Convert this expression into a statement

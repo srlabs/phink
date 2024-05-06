@@ -55,11 +55,7 @@ static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
 fn signals_set(idx: usize) {
     unsafe { write(SIGNALS_PTR.add(idx), 1) };
 }
-impl LibAFLFuzzer {
-    fn new(setup: ContractBridge) -> crate::fuzzer::libafl::LibAFLFuzzer {
-        Self { setup }
-    }
-}
+
 impl FuzzerEngine for LibAFLFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     fn fuzz(self) {
