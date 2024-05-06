@@ -24,9 +24,9 @@ fn main() {
         .unwrap()
         .to_vec();
     let dns_specs = PathBuf::from("sample/dns_instrumented/dns.json");
-    let lib_rs = PathBuf::from("sample/dns/lib.rs");
+    let dir = PathBuf::from("sample/dns");
 
-    let instrument: CoverageEngine = CoverageEngine::new(lib_rs);
+    let instrument: CoverageEngine = CoverageEngine::new(dir);
     instrument.instrument().unwrap();
     // If instrumentation goes well, we can fuzz
     // if instrument.instrument().is_ok() {

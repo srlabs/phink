@@ -7,6 +7,10 @@ mod dns {
     }
     use ink::storage::Mapping;
     use ink::storage::StorageVec;
+    #[ink(event, anonymous)]
+    pub struct Coverage {
+        cov_of: i32,
+    }
     #[doc = " Emitted whenever a new name is being registered."]
     #[ink(event)]
     pub struct Register {
@@ -56,19 +60,19 @@ mod dns {
     }
     impl Default for DomainNameService {
         fn default() -> Self {
-            self.env().emit_event(Coverage { cov_of: 61 });
+            Self::env().emit_event(Coverage { cov_of: 66 });
             let mut name_to_address = Mapping::new();
-            self.env().emit_event(Coverage { cov_of: 62 });
+            Self::env().emit_event(Coverage { cov_of: 67 });
             name_to_address.insert(Hash::default(), &zero_address());
-            self.env().emit_event(Coverage { cov_of: 63 });
+            Self::env().emit_event(Coverage { cov_of: 68 });
             let mut name_to_owner = Mapping::new();
-            self.env().emit_event(Coverage { cov_of: 64 });
+            Self::env().emit_event(Coverage { cov_of: 69 });
             name_to_owner.insert(Hash::default(), &zero_address());
-            self.env().emit_event(Coverage { cov_of: 65 });
+            Self::env().emit_event(Coverage { cov_of: 70 });
             let mut domains = StorageVec::new();
-            self.env().emit_event(Coverage { cov_of: 66 });
+            Self::env().emit_event(Coverage { cov_of: 71 });
             domains.push(&Hash::default());
-            self.env().emit_event(Coverage { cov_of: 68 });
+            Self::env().emit_event(Coverage { cov_of: 73 });
             Self {
                 name_to_address,
                 name_to_owner,
@@ -95,57 +99,57 @@ mod dns {
         #[doc = " Creates a new domain name service contract."]
         #[ink(constructor)]
         pub fn new() -> Self {
-            self.env().emit_event(Coverage { cov_of: 97 });
+            Self::env().emit_event(Coverage { cov_of: 102 });
             Default::default()
         }
         #[doc = " Register specific name with caller as owner."]
         #[ink(message)]
         pub fn register(&mut self, name: Hash) -> Result<()> {
-            self.env().emit_event(Coverage { cov_of: 103 });
+            Self::env().emit_event(Coverage { cov_of: 108 });
             let caller = self.env().caller();
-            self.env().emit_event(Coverage { cov_of: 104 });
+            Self::env().emit_event(Coverage { cov_of: 109 });
             if self.name_to_owner.contains(name) {
-                self.env().emit_event(Coverage { cov_of: 105 });
+                Self::env().emit_event(Coverage { cov_of: 110 });
                 return Err(Error::NameAlreadyExists);
             }
-            self.env().emit_event(Coverage { cov_of: 109 });
+            Self::env().emit_event(Coverage { cov_of: 114 });
             if name.clone().as_mut() == FORBIDDEN_DOMAIN {
-                self.env().emit_event(Coverage { cov_of: 110 });
+                Self::env().emit_event(Coverage { cov_of: 115 });
                 return Err(Error::ForbiddenDomain);
             }
-            self.env().emit_event(Coverage { cov_of: 113 });
+            Self::env().emit_event(Coverage { cov_of: 118 });
             self.name_to_owner.insert(name, &caller);
-            self.env().emit_event(Coverage { cov_of: 114 });
+            Self::env().emit_event(Coverage { cov_of: 119 });
             self.env().emit_event(Register { name, from: caller });
-            self.env().emit_event(Coverage { cov_of: 115 });
+            Self::env().emit_event(Coverage { cov_of: 120 });
             self.domains.push(&name);
-            self.env().emit_event(Coverage { cov_of: 117 });
+            Self::env().emit_event(Coverage { cov_of: 122 });
             Ok(())
         }
         #[doc = " Set address for specific name."]
         #[ink(message)]
         pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
-            self.env().emit_event(Coverage { cov_of: 123 });
+            Self::env().emit_event(Coverage { cov_of: 128 });
             let caller = self.env().caller();
-            self.env().emit_event(Coverage { cov_of: 124 });
+            Self::env().emit_event(Coverage { cov_of: 129 });
             let owner = self.get_owner_or_default(name);
-            self.env().emit_event(Coverage { cov_of: 125 });
+            Self::env().emit_event(Coverage { cov_of: 130 });
             if caller != owner {
-                self.env().emit_event(Coverage { cov_of: 126 });
+                Self::env().emit_event(Coverage { cov_of: 131 });
                 return Err(Error::CallerIsNotOwner);
             }
-            self.env().emit_event(Coverage { cov_of: 129 });
+            Self::env().emit_event(Coverage { cov_of: 134 });
             let old_address = self.name_to_address.get(name);
-            self.env().emit_event(Coverage { cov_of: 130 });
+            Self::env().emit_event(Coverage { cov_of: 135 });
             self.name_to_address.insert(name, &new_address);
-            self.env().emit_event(Coverage { cov_of: 132 });
+            Self::env().emit_event(Coverage { cov_of: 137 });
             self.env().emit_event(SetAddress {
                 name,
                 from: caller,
                 old_address,
                 new_address,
             });
-            self.env().emit_event(Coverage { cov_of: 138 });
+            Self::env().emit_event(Coverage { cov_of: 143 });
             Ok(())
         }
         #[doc = " Transfer owner to another address."]
@@ -153,46 +157,48 @@ mod dns {
         #[doc = " A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`"]
         #[ink(message)]
         pub fn transfer(&mut self, name: Hash, to: AccountId, number: i32) -> Result<()> {
-            self.env().emit_event(Coverage { cov_of: 146 });
+            Self::env().emit_event(Coverage { cov_of: 151 });
             let caller = self.env().caller();
-            self.env().emit_event(Coverage { cov_of: 154 });
+            Self::env().emit_event(Coverage { cov_of: 159 });
             let old_owner = self.name_to_owner.get(name);
-            self.env().emit_event(Coverage { cov_of: 155 });
+            Self::env().emit_event(Coverage { cov_of: 160 });
             self.name_to_owner.insert(name, &to);
-            self.env().emit_event(Coverage { cov_of: 157 });
+            Self::env().emit_event(Coverage { cov_of: 162 });
             self.dangerous_number = number;
-            self.env().emit_event(Coverage { cov_of: 158 });
+            Self::env().emit_event(Coverage { cov_of: 163 });
             self.domains.push(&name);
-            self.env().emit_event(Coverage { cov_of: 160 });
+            Self::env().emit_event(Coverage { cov_of: 165 });
             self.env().emit_event(Transfer {
                 name,
                 from: caller,
                 old_owner,
                 new_owner: to,
             });
-            self.env().emit_event(Coverage { cov_of: 167 });
+            Self::env().emit_event(Coverage { cov_of: 172 });
             Ok(())
         }
         #[doc = " Get address for specific name."]
         #[ink(message)]
         pub fn get_address(&self, name: Hash) -> AccountId {
-            self.env().emit_event(Coverage { cov_of: 173 });
+            Self::env().emit_event(Coverage { cov_of: 178 });
             self.get_address_or_default(name)
         }
         #[doc = " Get owner of specific name."]
         #[ink(message)]
         pub fn get_owner(&self, name: Hash) -> AccountId {
-            self.env().emit_event(Coverage { cov_of: 179 });
+            Self::env().emit_event(Coverage { cov_of: 184 });
+            Self::env().emit_event(Coverage { cov_of: 1 });
+            Self::env().emit_event(Coverage { cov_of: 185 });
             self.get_owner_or_default(name)
         }
         #[doc = " Returns the owner given the hash or the default address."]
         fn get_owner_or_default(&self, name: Hash) -> AccountId {
-            self.env().emit_event(Coverage { cov_of: 184 });
+            Self::env().emit_event(Coverage { cov_of: 190 });
             self.name_to_owner.get(name).unwrap_or(self.default_address)
         }
         #[doc = " Returns the address given the hash or the default address."]
         fn get_address_or_default(&self, name: Hash) -> AccountId {
-            self.env().emit_event(Coverage { cov_of: 189 });
+            Self::env().emit_event(Coverage { cov_of: 195 });
             self.name_to_address
                 .get(name)
                 .unwrap_or(self.default_address)
@@ -202,31 +208,8 @@ mod dns {
     #[doc = " address should not be treated in any special way (such as a default"]
     #[doc = " placeholder) since it has a known private key."]
     fn zero_address() -> AccountId {
-        self.env().emit_event(Coverage { cov_of: 199 });
+        Self::env().emit_event(Coverage { cov_of: 205 });
         [0u8; 32].into()
-    }
-    #[cfg(feature = "phink")]
-    #[ink(impl)]
-    impl DomainNameService {
-        #[doc = " This invariant should be triggered at some point... the contract being vulnerable"]
-        #[ink(message)]
-        pub fn phink_assert_hash42_cant_be_registered(&self) {
-            self.env().emit_event(Coverage { cov_of: 208 });
-            for i in 0..self.domains.len() {
-                self.env().emit_event(Coverage { cov_of: 209 });
-                if let Some(domain) = self.domains.get(i) {
-                    self.env().emit_event(Coverage { cov_of: 212 });
-                    assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-                }
-            }
-        }
-        #[ink(message)]
-        pub fn phink_assert_dangerous_number(&self) {
-            self.env().emit_event(Coverage { cov_of: 219 });
-            let FORBIDDEN_NUMBER = 69;
-            self.env().emit_event(Coverage { cov_of: 220 });
-            assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
-        }
     }
     #[cfg(test)]
     mod tests {
@@ -236,103 +219,103 @@ mod dns {
         }
         use super::*;
         fn default_accounts() -> ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> {
-            self.env().emit_event(Coverage { cov_of: 230 });
+            Self::env().emit_event(Coverage { cov_of: 213 });
             ink::env::test::default_accounts::<Environment>()
         }
         fn set_next_caller(caller: AccountId) {
-            self.env().emit_event(Coverage { cov_of: 234 });
+            Self::env().emit_event(Coverage { cov_of: 217 });
             ink::env::test::set_caller::<Environment>(caller);
         }
         #[ink::test]
         fn register_works() {
-            self.env().emit_event(Coverage { cov_of: 239 });
+            Self::env().emit_event(Coverage { cov_of: 222 });
             let default_accounts = default_accounts();
-            self.env().emit_event(Coverage { cov_of: 240 });
+            Self::env().emit_event(Coverage { cov_of: 223 });
             let name = Hash::from([0x99; 32]);
-            self.env().emit_event(Coverage { cov_of: 242 });
+            Self::env().emit_event(Coverage { cov_of: 225 });
             set_next_caller(default_accounts.alice);
-            self.env().emit_event(Coverage { cov_of: 243 });
+            Self::env().emit_event(Coverage { cov_of: 226 });
             let mut contract = DomainNameService::new();
-            self.env().emit_event(Coverage { cov_of: 245 });
+            Self::env().emit_event(Coverage { cov_of: 228 });
             assert_eq!(contract.register(name), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 246 });
+            Self::env().emit_event(Coverage { cov_of: 229 });
             assert_eq!(contract.register(name), Err(Error::NameAlreadyExists));
         }
         #[ink::test]
         fn set_address_works() {
-            self.env().emit_event(Coverage { cov_of: 251 });
+            Self::env().emit_event(Coverage { cov_of: 234 });
             let accounts = default_accounts();
-            self.env().emit_event(Coverage { cov_of: 252 });
+            Self::env().emit_event(Coverage { cov_of: 235 });
             let name = Hash::from([0x99; 32]);
-            self.env().emit_event(Coverage { cov_of: 254 });
+            Self::env().emit_event(Coverage { cov_of: 237 });
             set_next_caller(accounts.alice);
-            self.env().emit_event(Coverage { cov_of: 256 });
+            Self::env().emit_event(Coverage { cov_of: 239 });
             let mut contract = DomainNameService::new();
-            self.env().emit_event(Coverage { cov_of: 257 });
+            Self::env().emit_event(Coverage { cov_of: 240 });
             assert_eq!(contract.register(name), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 260 });
+            Self::env().emit_event(Coverage { cov_of: 243 });
             set_next_caller(accounts.bob);
-            self.env().emit_event(Coverage { cov_of: 261 });
+            Self::env().emit_event(Coverage { cov_of: 244 });
             assert_eq!(
                 contract.set_address(name, accounts.bob),
                 Err(Error::CallerIsNotOwner)
             );
-            self.env().emit_event(Coverage { cov_of: 267 });
+            Self::env().emit_event(Coverage { cov_of: 250 });
             set_next_caller(accounts.alice);
-            self.env().emit_event(Coverage { cov_of: 268 });
+            Self::env().emit_event(Coverage { cov_of: 251 });
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 269 });
+            Self::env().emit_event(Coverage { cov_of: 252 });
             assert_eq!(contract.get_address(name), accounts.bob);
-            self.env().emit_event(Coverage { cov_of: 270 });
+            Self::env().emit_event(Coverage { cov_of: 253 });
             contract.phink_assert_hash42_cant_be_registered();
         }
         #[ink::test]
         fn should_panic() {
-            self.env().emit_event(Coverage { cov_of: 274 });
+            Self::env().emit_event(Coverage { cov_of: 258 });
             let accounts = default_accounts();
-            self.env().emit_event(Coverage { cov_of: 275 });
+            Self::env().emit_event(Coverage { cov_of: 259 });
             set_next_caller(accounts.alice);
-            self.env().emit_event(Coverage { cov_of: 276 });
+            Self::env().emit_event(Coverage { cov_of: 260 });
             let mut contract = DomainNameService::new();
-            self.env().emit_event(Coverage { cov_of: 277 });
+            Self::env().emit_event(Coverage { cov_of: 261 });
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
-            self.env().emit_event(Coverage { cov_of: 278 });
+            Self::env().emit_event(Coverage { cov_of: 262 });
             println!("{:?}", illegal);
-            self.env().emit_event(Coverage { cov_of: 279 });
+            Self::env().emit_event(Coverage { cov_of: 263 });
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 280 });
+            Self::env().emit_event(Coverage { cov_of: 264 });
             contract.phink_assert_hash42_cant_be_registered();
         }
         #[ink::test]
         fn transfer_works() {
-            self.env().emit_event(Coverage { cov_of: 284 });
+            Self::env().emit_event(Coverage { cov_of: 269 });
             let accounts = default_accounts();
-            self.env().emit_event(Coverage { cov_of: 285 });
+            Self::env().emit_event(Coverage { cov_of: 270 });
             let name = Hash::from([0x99; 32]);
-            self.env().emit_event(Coverage { cov_of: 287 });
+            Self::env().emit_event(Coverage { cov_of: 272 });
             set_next_caller(accounts.alice);
-            self.env().emit_event(Coverage { cov_of: 289 });
+            Self::env().emit_event(Coverage { cov_of: 274 });
             let mut contract = DomainNameService::new();
-            self.env().emit_event(Coverage { cov_of: 290 });
+            Self::env().emit_event(Coverage { cov_of: 275 });
             assert_eq!(contract.register(name), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 291 });
+            Self::env().emit_event(Coverage { cov_of: 276 });
             contract.phink_assert_hash42_cant_be_registered();
-            self.env().emit_event(Coverage { cov_of: 293 });
+            Self::env().emit_event(Coverage { cov_of: 278 });
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
-            self.env().emit_event(Coverage { cov_of: 296 });
+            Self::env().emit_event(Coverage { cov_of: 281 });
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 299 });
+            Self::env().emit_event(Coverage { cov_of: 284 });
             contract.phink_assert_hash42_cant_be_registered();
-            self.env().emit_event(Coverage { cov_of: 302 });
+            Self::env().emit_event(Coverage { cov_of: 287 });
             assert_eq!(
                 contract.set_address(name, accounts.bob),
                 Err(Error::CallerIsNotOwner)
             );
-            self.env().emit_event(Coverage { cov_of: 307 });
+            Self::env().emit_event(Coverage { cov_of: 292 });
             set_next_caller(accounts.bob);
-            self.env().emit_event(Coverage { cov_of: 309 });
+            Self::env().emit_event(Coverage { cov_of: 294 });
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
-            self.env().emit_event(Coverage { cov_of: 310 });
+            Self::env().emit_event(Coverage { cov_of: 295 });
             assert_eq!(contract.get_address(name), accounts.bob);
         }
     }

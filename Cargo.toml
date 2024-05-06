@@ -52,6 +52,7 @@ syn = { version = "2.0.60" , features = ["parsing", "full", "visit-mut"]}
 quote = { version = "1.0.36" }
 proc-macro2 = { version = "1.0.81", features = ["span-locations"]}
 rand = { version = "0.8" }
+walkdir = { version = "2.5.0" }
 
 [features]
 default = ["std"]

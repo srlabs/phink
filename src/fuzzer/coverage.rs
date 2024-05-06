@@ -5,11 +5,13 @@ use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use std::fs;
-use std::fs::File;
+use std::fs::{copy, File};
 use std::io::{Take, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use syn::parse_file;
 use syn::visit_mut::VisitMut;
+use walkdir::WalkDir;
 
 /// The objective of this `struct` is to assist Phink in instrumenting ink! smart contracts.
 /// In a fuzzing context, instrumenting a smart contract involves modifying the target (i.e., the WASM blob),
@@ -22,16 +24,16 @@ use syn::visit_mut::VisitMut;
 /// in order to get coverage.
 
 pub struct CoverageEngine {
-    pub lib_path: PathBuf,
+    pub dir: PathBuf,
 }
 
 impl CoverageEngine {
-    pub fn new(lib_path: PathBuf) -> Self {
-        Self { lib_path }
+    pub fn new(dir: PathBuf) -> Self {
+        Self { dir }
     }
 
     /// This function _forks_ the code base in order to instrument it safely
-    /// The fork is performed by default in `/tmp/`, with the format `/tmp/lib.rs_rndnumber.rs`
+    /// The fork is performed by default in `/tmp/`, with the format `/tmp/ink_fuzzed_random/`
     /// Returns the new path of the directory
     fn fork(&self) -> PathBuf {
         let random_string: String = rand::thread_rng()
@@ -40,39 +42,67 @@ impl CoverageEngine {
             .map(char::from)
             .collect();
 
-        let new_path = PathBuf::from("/tmp").join(format!(
-            "{}_{}.rs",
-            self.lib_path.file_name().unwrap().to_string_lossy(),
-            random_string
-        ));
+        let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
+        fs::create_dir_all(&new_dir).expect("Failed to create directory");
 
-        fs::copy(&self.lib_path, &new_path).unwrap();
+        // Copy files and subdirectories from the source path to the new directory
+        for entry in WalkDir::new(&self.dir) {
+            let entry = entry.expect("Failed to read entry");
+            let target_path = new_dir.join(
+                entry
+                    .path()
+                    .strip_prefix(&self.dir)
+                    .expect("Failed to strip prefix"),
+            );
 
-        new_path
+            if entry.path().is_dir() {
+                fs::create_dir_all(&target_path).expect("Failed to create subdirectory");
+            } else {
+                copy(entry.path(), &target_path).expect("Failed to copy file");
+            }
+        }
+
+        println!("{:?}", new_dir);
+
+        new_dir
     }
+
     pub fn instrument(&self) -> Result<(), ()> {
-        let forked_lib = self.fork();
-        let code = fs::read_to_string(forked_lib).unwrap();
-        let mut ast = parse_file(&code).unwrap();
+        //TODO: Shouldn't be only lib.rs
+        //For now we assume one smart contract is only one file
+        let lib_rs = self.fork().join("lib.rs");
+        let code = fs::read_to_string(lib_rs.clone()).unwrap();
 
-        let mut visitor_updated = ContractCovUpdater::default();
-        visitor_updated.visit_file_mut(&mut ast);
-        let mut modified_code = quote!(#ast).to_string();
+        let mut modified_code = parse_and_visit(&code, ContractCovUpdater).unwrap();
+        modified_code = parse_and_visit(&modified_code, ContractMapInstantiation).unwrap();
 
-        ast = parse_file(&modified_code).unwrap();
-        let mut visitor_instantiation = ContractMapInstantiation;
-        visitor_instantiation.visit_file_mut(&mut ast);
-        modified_code = quote!(#ast).to_string();
+        save_and_format(modified_code, lib_rs.clone());
 
-        save_instrumented(modified_code);
         Ok(())
     }
 }
 
-fn save_instrumented(source_code: String) {
-    let mut file = File::create("instrumented_lib.rs").unwrap();
+/// This function parses a source code, and runs a VisitMut to visit the code and apply
+/// the required transformation
+/// # Arguments
+///
+/// * `code`: Source code of the Rust file to modify
+/// * `visitor`: Type of mutation to apply. Must `impl VisitMut`
+///
+fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
+    let mut ast = syn::parse_file(code).unwrap();
+    visitor.visit_file_mut(&mut ast);
+    Ok(quote!(#ast).to_string())
+}
+
+/// This function export `source_code` to `lib_rs`, and format it
+/// Works only for one file.
+fn save_and_format(source_code: String, lib_rs: PathBuf) {
+    let mut file = File::create(lib_rs.clone()).unwrap();
     file.write_all(source_code.as_bytes()).unwrap();
     file.flush().unwrap();
+
+    Command::new("rustfmt").arg(lib_rs).status().unwrap();
 }
 
 mod instrumentor_visitors {
@@ -113,10 +143,7 @@ mod instrumentor_visitors {
         }
     }
 
-    #[derive(Default)]
-    pub struct ContractCovUpdater {}
-
-    impl ContractCovUpdater {}
+    pub struct ContractCovUpdater;
 
     impl VisitMut for ContractCovUpdater {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
@@ -128,10 +155,8 @@ mod instrumentor_visitors {
                 let line_lit =
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
 
-                // Assuming line_lit is of a type that needs to be handled directly as a value,
-                // use the parsed expression directly in your parse_quote!
                 let insert_expr: Expr = parse_quote! {
-                   self.env().emit_event(Coverage { cov_of: #line_lit })
+                   Self::env().emit_event(Coverage { cov_of: #line_lit })
                 };
 
                 // Convert this expression into a statement
@@ -178,7 +203,7 @@ mod test {
 
     #[test]
     fn do_fork() {
-        let engine: CoverageEngine = CoverageEngine::new(PathBuf::from("sample/dns/lib.rs"));
+        let engine: CoverageEngine = CoverageEngine::new(PathBuf::from("sample/dns"));
         let fork = engine.fork();
         println!("{:?}", fork);
         let exists = fork.exists();
