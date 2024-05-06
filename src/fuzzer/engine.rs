@@ -1,11 +1,18 @@
+use crate::contract::payload::{PayloadCrafter, Selector};
+use crate::contract::remote::ContractBridge;
+use crate::contract::runtime::{
+    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
+};
+use crate::fuzzer::invariants::Invariants;
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::__private::BasicExternalities;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use pallet_contracts::ExecReturnValue;
-use crate::contract::payload::Selector;
-use crate::contract::remote::ContractBridge;
 use parity_scale_codec::Encode;
 use prettytable::{row, Table};
 use sp_runtime::DispatchError;
-use crate::contract::runtime::{AllPalletsWithSystem, BlockNumber, RuntimeOrigin, SLOT_DURATION, Timestamp};
+use std::path::Path;
+use std::sync::Mutex;
 
 pub trait FuzzerEngine {
     fn fuzz(self);
@@ -50,7 +57,6 @@ pub trait FuzzerEngine {
         table.add_row(row![decoded_msg, hex::encode(full_call), result]);
         table.printstd();
     }
-
 
     /// We need to instantiate a proper timestamp on each call
     /// TODO! Lapse should be fuzzed, so if the contract depends on a block number,

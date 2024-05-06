@@ -27,12 +27,10 @@ impl ZiggyFuzzer {
     pub fn new(setup: ContractBridge) -> ZiggyFuzzer {
         Self { setup }
     }
-
 }
 
 impl FuzzerEngine for ZiggyFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
-    #[warn(unused_variables)]
     fn fuzz(self) {
         let transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
@@ -63,7 +61,7 @@ impl FuzzerEngine for ZiggyFuzzer {
                     }
                     let mut chain = BasicExternalities::new(self.setup.genesis.clone());
                     chain.execute_with(|| {
-                        timestamp();
+                        Self::timestamp();
                         let result = self.setup.clone().call(&full_call);
 
                         // We pretty-print all information that we need to debug
@@ -81,22 +79,5 @@ impl FuzzerEngine for ZiggyFuzzer {
                 None => return,
             }
         });
-    }
-}
-
-
-
-/// We need to instantiate a proper timestamp on each call
-/// TODO! Lapse should be fuzzed, so if the contract depends on a block number,
-/// TODO! the fuzzer will correctly find the block
-fn timestamp() {
-    let mut block: u32 = 1;
-    Timestamp::set(RuntimeOrigin::none(), block as u64 * SLOT_DURATION).unwrap();
-    let lapse: u32 = 0; //for now, we set lapse always to zero
-    if lapse > 0 {
-        <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
-        block += u32::from(lapse);
-        <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
-        Timestamp::set(RuntimeOrigin::none(), SLOT_DURATION * block as u64).unwrap();
     }
 }
