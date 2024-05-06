@@ -275,7 +275,7 @@ mod dns {
             // Test transfer of owner.
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
 
-            // This should panick..
+            // This should panic..
             // contract.phink_assert_hash42_cant_be_registered();
 
             // Owner is bob, alice `set_address` should fail.

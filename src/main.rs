@@ -8,7 +8,7 @@ use pallet_contracts::Config;
 use crate::fuzzer::coverage::CoverageEngine;
 use crate::{
     contract::remote::ContractBridge, contract::runtime::Runtime, fuzzer::engine::FuzzerEngine,
-    fuzzer::fuzz::ZiggyFuzzer,
+    fuzzer::ziggy::ZiggyFuzzer,
 };
 use clap::Parser;
 use sp_core::crypto::AccountId32;
