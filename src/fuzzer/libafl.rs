@@ -13,18 +13,14 @@ use crate::contract::runtime::{
 };
 use crate::fuzzer::engine::FuzzerEngine;
 use crate::fuzzer::invariants::Invariants;
-use pallet_contracts::ExecReturnValue;
-use parity_scale_codec::Encode;
-use sp_runtime::DispatchError;
-use std::{path::Path, sync::Mutex};
-use std::{path::PathBuf, ptr::write};
-
 use crate::fuzzer::ziggy::ZiggyFuzzer;
+use libafl::corpus::Corpus;
 #[cfg(feature = "tui")]
 use libafl::monitors::tui::{ui::TuiUI, TuiMonitor};
 #[cfg(not(feature = "tui"))]
 use libafl::monitors::SimpleMonitor;
 use libafl::mutators::havoc_mutations;
+use libafl::state::HasCorpus;
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
     events::SimpleEventManager,
@@ -41,6 +37,11 @@ use libafl::{
 };
 use libafl_bolts::rands::RandomSeed;
 use libafl_bolts::{rands::StdRand, tuples::tuple_list, AsSlice};
+use pallet_contracts::ExecReturnValue;
+use parity_scale_codec::Encode;
+use sp_runtime::DispatchError;
+use std::{path::Path, sync::Mutex};
+use std::{path::PathBuf, ptr::write};
 
 #[derive(Clone)]
 pub struct LibAFLFuzzer {
@@ -54,6 +55,12 @@ static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
 /// Assign a signal to the signals map
 fn signals_set(idx: usize) {
     unsafe { write(SIGNALS_PTR.add(idx), 1) };
+}
+
+impl LibAFLFuzzer {
+    pub fn new(setup: ContractBridge) -> LibAFLFuzzer {
+        LibAFLFuzzer { setup }
+    }
 }
 
 impl FuzzerEngine for LibAFLFuzzer {
@@ -178,12 +185,27 @@ impl FuzzerEngine for LibAFLFuzzer {
                 BytesInput::new(vec![b'a']),
             )
             .unwrap();
+        // In case the corpus is empty (i.e. on first run), load existing test cases from on-disk
+        // corpus
+        let corpus_dirs = vec![PathBuf::from("./output/phink/corpus")];
+
+        if state.corpus().count() < 1 {
+            state
+                .load_initial_inputs(&mut fuzzer, &mut executor, &mut mgr, &corpus_dirs)
+                .unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to load initial corpus at {:?}: {:?}",
+                        &corpus_dirs, err
+                    )
+                });
+            println!("We imported {} inputs from disk.", state.corpus().count());
+        }
 
         // Setup a mutational stage with a basic bytes mutator
         let mutator = StdScheduledMutator::new(havoc_mutations());
         let mut stages = tuple_list!(StdMutationalStage::new(mutator));
         fuzzer
             .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
-            .expect("Error in the fuzzing loop");
+            .unwrap()
     }
 }

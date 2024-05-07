@@ -4,6 +4,7 @@ use crate::fuzzer::coverage::instrumentor_visitors::{
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use std::ffi::OsStr;
 use std::fs;
 use std::fs::{copy, File};
 use std::io::{Take, Write};
@@ -57,7 +58,7 @@ impl CoverageEngine {
                     .filter_map(|entry| {
                         let path = entry.ok().unwrap().path();
                         if path.is_file()
-                            && path.extension().and_then(std::ffi::OsStr::to_str) == Some("wasm")
+                            && path.extension().and_then(OsStr::to_str) == Some("wasm")
                         {
                             Some(path)
                         } else {

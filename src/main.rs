@@ -6,6 +6,7 @@ use frame_support::traits::fungible::Inspect;
 use pallet_contracts::Config;
 
 use crate::fuzzer::coverage::CoverageEngine;
+use crate::fuzzer::libafl::LibAFLFuzzer;
 use crate::{
     contract::remote::ContractBridge, contract::runtime::Runtime, fuzzer::engine::FuzzerEngine,
     fuzzer::ziggy::ZiggyFuzzer,
@@ -26,7 +27,7 @@ fn main() {
 
     let dns_wasm_bytes: Vec<u8> = fs::read(engine.wasm_path).unwrap().to_vec();
     let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, engine.specs_path);
-    let fuzzer: ZiggyFuzzer = ZiggyFuzzer::new(setup);
+    let fuzzer: LibAFLFuzzer = LibAFLFuzzer::new(setup);
 
     fuzzer.fuzz();
 }
