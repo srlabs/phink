@@ -14,6 +14,7 @@ use crate::contract::runtime::{
 use crate::fuzzer::engine::FuzzerEngine;
 use crate::fuzzer::invariants::Invariants;
 use crate::fuzzer::ziggy::ZiggyFuzzer;
+use frame_support::traits::Len;
 use libafl::corpus::Corpus;
 #[cfg(feature = "tui")]
 use libafl::monitors::tui::{ui::TuiUI, TuiMonitor};
@@ -53,7 +54,7 @@ static mut SIGNALS: [u8; 255] = [0; 255];
 static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
 
 /// Assign a signal to the signals map
-fn signals_set(idx: usize) {
+fn coverage(idx: usize) {
     unsafe { write(SIGNALS_PTR.add(idx), 1) };
 }
 
@@ -61,6 +62,8 @@ impl LibAFLFuzzer {
     pub fn new(setup: ContractBridge) -> LibAFLFuzzer {
         LibAFLFuzzer { setup }
     }
+
+
 }
 
 impl FuzzerEngine for LibAFLFuzzer {
@@ -78,66 +81,7 @@ impl FuzzerEngine for LibAFLFuzzer {
 
         // The closure that we want to fuzz
         let mut harness = |input: &BytesInput| {
-            let target = input.target_bytes();
-            let payload = target.as_slice();
-            signals_set(1);
-
-            let binding = self.clone();
-            let raw_call = binding.parse_args(payload, selectors.clone());
-            if raw_call.is_none() {
-                return ExitKind::Ok;
-            }
-            signals_set(2);
-
-            let call = raw_call.expect("`raw_call` wasn't `None`; QED");
-
-            match ZiggyFuzzer::create_call(call.0, call.1) {
-                // Successfully encoded
-                Some(full_call) => {
-                    signals_set(3);
-
-                    let decoded_msg = transcoder_loader
-                        .lock()
-                        .unwrap()
-                        .decode_contract_message(&mut &*full_call);
-                    if let Err(_) = decoded_msg {
-                        return ExitKind::Ok;
-                    }
-                    signals_set(4);
-
-                    let mut chain = BasicExternalities::new(self.setup.genesis.clone());
-                    chain.execute_with(|| {
-                        //todo
-                        Self::timestamp();
-                        let result = self.setup.clone().call(&full_call);
-
-                        let mut i = 5;
-                        for event in result.events.unwrap_or(Vec::new()) {
-                            println!("{:?}", event);
-                            i += 1;
-                            signals_set(i);
-                        }
-
-                        // We pretty-print all information that we need to debug
-                        #[cfg(not(fuzzing))]
-                        Self::pretty_print(
-                            result.result,
-                            decoded_msg.unwrap().to_string(),
-                            full_call,
-                        );
-
-                        // For each call, we verify that invariants aren't broken
-                        if !invariant_manager.are_invariants_passing() {
-                            panic!("Invariant triggered! ")
-                        }
-                    });
-                }
-
-                // Encoding failed, we try again
-                None => return ExitKind::Ok,
-            }
-
-            ExitKind::Ok
+            harness(self.clone(), transcoder_loader, selectors, invariant_manager, input)
         };
 
         // Create an observation channel using the signals map
@@ -221,4 +165,73 @@ impl FuzzerEngine for LibAFLFuzzer {
             .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
             .unwrap()
     }
+}
+
+fn harness(
+    client: LibAFLFuzzer,
+    transcoder_loader: Mutex<ContractMessageTranscoder>,
+    selectors: Vec<Selector>,
+    invariant_manager: Invariants,
+    input: &BytesInput,
+) -> ExitKind {
+    let target = input.target_bytes();
+    let payload = target.as_slice();
+    coverage(1);
+    let binding = client.clone();
+    let raw_call = binding.parse_args(payload, selectors.clone());
+    coverage(2);
+    if raw_call.is_none() {
+        return ExitKind::Ok;
+    }
+    coverage(3);
+    let call = raw_call.expect("`raw_call` wasn't `None`; QED");
+    match ZiggyFuzzer::create_call(call.0, call.1) {
+        // Successfully encoded
+        Some(full_call) => {
+            coverage(3);
+
+            let decoded_msg = transcoder_loader
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &*full_call);
+            coverage(4);
+
+            if let Err(_) = decoded_msg {
+                return ExitKind::Ok;
+            }
+            coverage(5);
+            let mut chain = BasicExternalities::new(client.setup.genesis.clone());
+            chain.execute_with(|| {
+                //todo
+                client.timestamp();
+                let result = client.setup.clone().call(&full_call);
+                coverage(5);
+
+                let mut i = 6;
+                #[cfg(not(feature = "tui"))]
+                println!("Events -- {:?}", result.events.len());
+
+                for event in result.events.unwrap_or_default() {
+                    #[cfg(not(feature = "tui"))]
+
+                    println!("{:?}", event);
+                    i += 1;
+                    coverage(i);
+                }
+
+                // We pretty-print all information that we need to debug
+                #[cfg(not(feature = "tui"))]
+                client.pretty_print(result.result, decoded_msg.unwrap().to_string(), full_call);
+
+                // For each call, we verify that invariants aren't broken
+                if !invariant_manager.are_invariants_passing() {
+                    panic!("Invariant triggered! ")
+                }
+            });
+        }
+
+        None => return ExitKind::Ok,
+    }
+
+    ExitKind::Ok
 }
