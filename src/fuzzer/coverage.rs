@@ -24,24 +24,66 @@ use walkdir::WalkDir;
 /// in order to get coverage.
 #[derive(Default)]
 pub struct CoverageEngine {
-    pub dir: PathBuf,
+    pub contract_dir: PathBuf,
+}
+
+#[derive(Debug)]
+pub struct InkFilesPath {
+    pub wasm_path: PathBuf,
+    pub specs_path: PathBuf,
 }
 
 impl CoverageEngine {
+    /// # Argument
+    /// * `dir`: Directory containing the smart contract code base
     pub fn new(dir: PathBuf) -> Self {
-        Self { dir }
+        Self { contract_dir: dir }
     }
 
     /// Compile the instrumented smart-contract.
     /// By default, `cargo contract build`
-    /// Returns a pair of `PathBuf` containing Cargo.toml and lib.rs path
-    pub(crate) fn build(&self) -> (PathBuf, PathBuf) {
-        Command::new("cargo")
+    /// Returns a `InkFilesPath` containing `contract.wasm` and `specs.json` path
+    pub(crate) fn build(&self) -> InkFilesPath {
+        // We compile the contract with `cargo contract build`
+        match Command::new("cargo")
+            .current_dir(&self.contract_dir)
             .args(["contract", "build"])
             .status()
-            .unwrap();
+        {
+            // We search for the .wasm blob
+            Ok(status) if status.success() => {
+                let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
+                    .unwrap()
+                    .filter_map(|entry| {
+                        let path = entry.ok().unwrap().path();
+                        if path.is_file()
+                            && path.extension().and_then(std::ffi::OsStr::to_str) == Some("wasm")
+                        {
+                            Some(path)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                    .unwrap();
 
-        (self.dir.join("Cargo.toml"), self.dir.join("lib.rs"))
+                // We assert that if the file is `mycontract.wasm`, then metadata will be
+                // `mycontract.json`
+                let specs_path =
+                    PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+
+                InkFilesPath {
+                    wasm_path,
+                    specs_path,
+                }
+            }
+            e => panic!(
+                "It seems that your instrumented smart contract did not compile properly.\
+                Please go to {:?}, edit the lib.rs file, and run cargo contract build again\
+                Detailed error — {:?}",
+                &self.contract_dir, e
+            ),
+        }
     }
 
     /// This function _forks_ the code base in order to instrument it safely
@@ -58,12 +100,12 @@ impl CoverageEngine {
         fs::create_dir_all(&new_dir).expect("Failed to create directory");
 
         // Copy files and subdirectories from the source path to the new directory
-        for entry in WalkDir::new(&self.dir) {
+        for entry in WalkDir::new(&self.contract_dir) {
             let entry = entry.expect("Failed to read entry");
             let target_path = new_dir.join(
                 entry
                     .path()
-                    .strip_prefix(&self.dir)
+                    .strip_prefix(&self.contract_dir)
                     .expect("Failed to strip prefix"),
             );
 
