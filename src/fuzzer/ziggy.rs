@@ -66,7 +66,11 @@ impl FuzzerEngine for ZiggyFuzzer {
 
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
-                        Self::pretty_print(result, decoded_msg.unwrap().to_string(), full_call);
+                        Self::pretty_print(
+                            result.result,
+                            decoded_msg.unwrap().to_string(),
+                            full_call,
+                        );
 
                         // For each call, we verify that invariants aren't broken
                         if !invariant_manager.are_invariants_passing() {

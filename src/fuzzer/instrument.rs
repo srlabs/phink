@@ -1,6 +1,4 @@
-use crate::fuzzer::coverage::instrumentor_visitors::{
-    ContractCovUpdater, ContractMapInstantiation,
-};
+use crate::fuzzer::instrument::instrument::{ContractCovUpdater, ContractMapInstantiation};
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -160,7 +158,7 @@ fn save_and_format(source_code: String, lib_rs: PathBuf) {
     Command::new("rustfmt").arg(lib_rs).status().unwrap();
 }
 
-mod instrumentor_visitors {
+mod instrument {
     use proc_macro2::{Span, TokenStream};
     use quote::quote;
     use syn::token::Semi;
@@ -237,13 +235,13 @@ mod test {
     use std::path::PathBuf;
     use std::{fs, fs::File, io::Write, process::Command};
 
-    use crate::fuzzer::coverage::CoverageEngine;
+    use crate::fuzzer::instrument::CoverageEngine;
     use quote::quote;
     use syn::__private::ToTokens;
     use syn::parse_file;
     use syn::visit_mut::VisitMut;
 
-    use crate::fuzzer::coverage::instrumentor_visitors::*;
+    use crate::fuzzer::instrument::instrument::*;
 
     #[test]
     fn adding_cov_insertion_works() {

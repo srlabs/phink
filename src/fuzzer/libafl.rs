@@ -49,7 +49,7 @@ pub struct LibAFLFuzzer {
 }
 
 /// Coverage map with explicit assignments due to the lack of instrumentation
-static mut SIGNALS: [u8; 64] = [0; 64];
+static mut SIGNALS: [u8; 255] = [0; 255];
 static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
 
 /// Assign a signal to the signals map
@@ -65,6 +65,7 @@ impl LibAFLFuzzer {
 
 impl FuzzerEngine for LibAFLFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
+    #[no_mangle]
     fn fuzz(self) {
         let transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
@@ -79,16 +80,22 @@ impl FuzzerEngine for LibAFLFuzzer {
         let mut harness = |input: &BytesInput| {
             let target = input.target_bytes();
             let payload = target.as_slice();
+            signals_set(1);
+
             let binding = self.clone();
             let raw_call = binding.parse_args(payload, selectors.clone());
             if raw_call.is_none() {
                 return ExitKind::Ok;
             }
+            signals_set(2);
+
             let call = raw_call.expect("`raw_call` wasn't `None`; QED");
 
             match ZiggyFuzzer::create_call(call.0, call.1) {
                 // Successfully encoded
                 Some(full_call) => {
+                    signals_set(3);
+
                     let decoded_msg = transcoder_loader
                         .lock()
                         .unwrap()
@@ -96,15 +103,28 @@ impl FuzzerEngine for LibAFLFuzzer {
                     if let Err(_) = decoded_msg {
                         return ExitKind::Ok;
                     }
+                    signals_set(4);
+
                     let mut chain = BasicExternalities::new(self.setup.genesis.clone());
                     chain.execute_with(|| {
                         //todo
                         Self::timestamp();
                         let result = self.setup.clone().call(&full_call);
 
+                        let mut i = 5;
+                        for event in result.events.unwrap_or(Vec::new()) {
+                            println!("{:?}", event);
+                            i += 1;
+                            signals_set(i);
+                        }
+
                         // We pretty-print all information that we need to debug
                         #[cfg(not(fuzzing))]
-                        Self::pretty_print(result, decoded_msg.unwrap().to_string(), full_call);
+                        Self::pretty_print(
+                            result.result,
+                            decoded_msg.unwrap().to_string(),
+                            full_call,
+                        );
 
                         // For each call, we verify that invariants aren't broken
                         if !invariant_manager.are_invariants_passing() {
@@ -116,7 +136,6 @@ impl FuzzerEngine for LibAFLFuzzer {
                 // Encoding failed, we try again
                 None => return ExitKind::Ok,
             }
-            //signals_set(i);
 
             ExitKind::Ok
         };
@@ -192,13 +211,7 @@ impl FuzzerEngine for LibAFLFuzzer {
         if state.corpus().count() < 1 {
             state
                 .load_initial_inputs(&mut fuzzer, &mut executor, &mut mgr, &corpus_dirs)
-                .unwrap_or_else(|err| {
-                    panic!(
-                        "Failed to load initial corpus at {:?}: {:?}",
-                        &corpus_dirs, err
-                    )
-                });
-            println!("We imported {} inputs from disk.", state.corpus().count());
+                .unwrap();
         }
 
         // Setup a mutational stage with a basic bytes mutator

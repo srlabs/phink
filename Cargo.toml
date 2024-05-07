@@ -15,6 +15,19 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[features]
+default = ["std"]
+tui = []
+std = [
+    "pallet-balances/std",
+    "pallet-timestamp/std",
+    "pallet-transaction-payment/std",
+    "pallet-contracts/std",
+    "pallet-insecure-randomness-collective-flip/std",
+    "parity-scale-codec/std",
+    "scale-info/std",
+]
+
 [dependencies]
 parity-scale-codec = { version = "3.6.9", default-features = false }
 scale-info = { version = "2.6.0", default-features = false }
@@ -61,14 +74,3 @@ proc-macro2 = { version = "1.0.81", features = ["span-locations"]}
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
 
-[features]
-default = ["std"]
-std = [
-    "pallet-balances/std",
-    "pallet-timestamp/std",
-    "pallet-transaction-payment/std",
-    "pallet-contracts/std",
-    "pallet-insecure-randomness-collective-flip/std",
-    "parity-scale-codec/std",
-    "scale-info/std",
-]

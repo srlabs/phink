@@ -13,12 +13,15 @@ use std::path::PathBuf;
 
 use crate::contract::payload;
 use crate::contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig};
-
+use pallet_contracts::ContractResult;
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 pub type Test = Runtime;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-
+type EventRecord = frame_system::EventRecord<
+    <Runtime as frame_system::Config>::RuntimeEvent,
+    <Runtime as frame_system::Config>::Hash,
+>;
 pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
 
 pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
@@ -102,8 +105,11 @@ impl ContractBridge {
     /// ```
     /// self.setup.clone().call(&full_call)
     /// ```
-    pub fn call(self, payload: &Vec<u8>) -> Result<ExecReturnValue, DispatchError> {
-        return Contracts::bare_call(
+    pub fn call(
+        self,
+        payload: &Vec<u8>,
+    ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
+        Contracts::bare_call(
             ALICE,
             self.contract_address,
             0,
@@ -114,7 +120,6 @@ impl ContractBridge {
             CollectEvents::UnsafeCollect,
             Determinism::Relaxed,
         )
-        .result;
     }
 
     pub fn upload(wasm_bytes: &Vec<u8>) -> H256 {

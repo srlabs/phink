@@ -32,7 +32,7 @@ impl Invariants {
     pub fn are_invariants_passing(&self) -> bool {
         for invariant in &self.invariant_selectors {
             let toz = self.contract_bridge.clone().call(&invariant.to_vec());
-            if let Err(_) = toz {
+            if let Err(_) = toz.result {
                 return false;
             }
         }

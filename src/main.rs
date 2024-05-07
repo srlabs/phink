@@ -5,7 +5,7 @@ extern crate core;
 use frame_support::traits::fungible::Inspect;
 use pallet_contracts::Config;
 
-use crate::fuzzer::coverage::CoverageEngine;
+use crate::fuzzer::instrument::CoverageEngine;
 use crate::fuzzer::libafl::LibAFLFuzzer;
 use crate::{
     contract::remote::ContractBridge, contract::runtime::Runtime, fuzzer::engine::FuzzerEngine,
