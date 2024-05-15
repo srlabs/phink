@@ -43,6 +43,8 @@ use parity_scale_codec::Encode;
 use sp_runtime::DispatchError;
 use std::{path::Path, sync::Mutex};
 use std::{path::PathBuf, ptr::write};
+use std::borrow::Cow;
+use std::collections::HashSet;
 
 #[derive(Clone)]
 pub struct LibAFLFuzzer {
@@ -54,7 +56,7 @@ static mut SIGNALS: [u16; 65535] = [0; 65535];
 static mut SIGNALS_PTR: *mut u16 = unsafe { SIGNALS.as_mut_ptr() };
 /// Assign a signal to the signals map
 fn coverage(idx: u16) {
-    unsafe { write(SIGNALS_PTR.add(idx), 1) };
+    unsafe { write(SIGNALS_PTR.add(idx as usize), 1) };
 }
 
 impl LibAFLFuzzer {
@@ -211,14 +213,16 @@ fn harness(
 
                 let mut i = 6;
 
-                let debug_str = String::from_utf8_lossy(&*result.debug_message);
-                println!("{:?}", debug_str);
+                let mut coverage_str = deduplicate(&*String::from_utf8_lossy(&*result.debug_message));
+                println!("{:?}", coverage_str);
 
-                for line in debug_str.lines() {
-                    #[cfg(not(feature = "tui"))]
-                    println!("We found the coverage for the line {:?}", line);
-                    i += 1;
-                    coverage(i);
+                for line in coverage_str.lines() {
+                    if line.starts_with("COV="){
+                        #[cfg(not(feature = "tui"))]
+                        println!("We found the coverage for the line {:?}", line);
+                        i += 1;
+                        coverage(i);
+                    }
                 }
 
                 // We pretty-print all information that we need to debug
@@ -241,3 +245,60 @@ fn harness(
 
     ExitKind::Ok
 }
+
+/// A simple helper to remove some duplicated lines from a `&str`
+/// This is used mainly to remove coverage returns being inserted many times in the debug vector
+/// in case of any `iter()`, `for` loop and so on
+/// # Arguments
+///
+/// * `input`: The string to deduplicate
+///
+/// returns: String
+fn deduplicate(input: &str) -> String {
+    let mut unique_lines = HashSet::new();
+    input.lines()
+        .filter(|&line| unique_lines.insert(line))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn test_deduplicate() {
+        // Test case: input with duplicate lines
+        let input = "line1\nline2\nline1\nline3\nline2";
+        let expected = "line1\nline2\nline3";
+        let cow_input = Cow::Borrowed(input);
+        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
+
+        // Test case: input without duplicate lines
+        let input = "line1\nline2\nline3";
+        let expected = "line1\nline2\nline3";
+        let cow_input = Cow::Borrowed(input);
+        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
+
+        // Test case: empty input
+        let input = "";
+        let expected = "";
+        let cow_input = Cow::Borrowed(input);
+        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
+
+        // Test case: input with consecutive duplicate lines
+        let input = "line1\nline1\nline2\nline2\nline3\nline3";
+        let expected = "line1\nline2\nline3";
+        let cow_input = Cow::Borrowed(input);
+        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
+
+        // Test case: input with non-consecutive duplicate lines
+        let input = "line1\nline2\nline3\nline1\nline2";
+        let expected = "line1\nline2\nline3";
+        let cow_input = Cow::Borrowed(input);
+        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
+
+    }
+}
+

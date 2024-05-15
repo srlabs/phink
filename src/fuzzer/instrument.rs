@@ -182,7 +182,7 @@ mod instrument {
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
 
                 let insert_expr: Expr = parse_quote! {
-                    ink::env::debug_println!("{}", #line_lit)
+                    ink::env::debug_println!("COV={}", #line_lit)
                 };
 
                 // Convert this expression into a statement
