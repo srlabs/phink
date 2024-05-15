@@ -4,7 +4,7 @@
 mod dns {
     use ink::storage::Mapping;
     use ink::storage::StorageVec;
-     /// Emitted whenever a new name is being registered.
+    /// Emitted whenever a new name is being registered.
     #[ink(event)]
     pub struct Register {
         #[ink(topic)]
@@ -121,6 +121,13 @@ mod dns {
         #[ink(message)]
         pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
             let caller = self.env().caller();
+            
+            //Random code for coverage purposes below
+            let a = 1;
+            let b = 3;
+            assert_eq!(a, b-2);
+            let c = true && false;
+
             let owner = self.get_owner_or_default(name);
             if caller != owner {
                 return Err(Error::CallerIsNotOwner);
@@ -190,14 +197,35 @@ mod dns {
                 .get(name)
                 .unwrap_or(self.default_address)
         }
- 
-       
     }
 
     fn zero_address() -> AccountId {
-        ink::env::debug_println!("AAAAAA");
-
         [0u8; 32].into()
+    }
+
+    #[cfg(feature = "phink")]
+    #[ink(impl)]
+    impl DomainNameService {
+        // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter
+
+        #[cfg(feature = "phink")]
+        #[ink(message)]
+        pub fn phink_assert_hash42_cant_be_registered(&self) {
+            for i in 0..self.domains.len() {
+                if let Some(domain) = self.domains.get(i) {
+                    // Invariant triggered! We caught an invalid domain in the storage...
+                    assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+                }
+            }
+        }
+
+        // This invariant ensures that nobody registed the forbidden number
+        #[cfg(feature = "phink")]
+        #[ink(message)]
+        pub fn phink_assert_dangerous_number(&self) {
+            let FORBIDDEN_NUMBER = 69;
+            assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
+        }
     }
 
     #[cfg(test)]
@@ -214,12 +242,16 @@ mod dns {
 
         #[ink::test]
         fn register_works() {
-            let default_accounts: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> = default_accounts();
+            let default_accounts: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> =
+                default_accounts();
             let hex_str = "7c00000101000e00a3e7e7e7e7e7e7e7e7e79f959596800000957d9580010101";
-    
+
             // Convert hex string to byte array
-            let bytes: [u8; 32] = hex::decode(hex_str).expect("Decoding failed").try_into().expect("Invalid length");
-            
+            let bytes: [u8; 32] = hex::decode(hex_str)
+                .expect("Decoding failed")
+                .try_into()
+                .expect("Invalid length");
+
             let name = Hash::from(bytes);
 
             set_next_caller(default_accounts.alice);

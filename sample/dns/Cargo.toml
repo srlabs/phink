@@ -19,6 +19,8 @@ default = ["std"]
 std = [
     "ink/std",
 ]
+
 phink = []
+
 ink-as-dependency = []
 e2e-tests = []

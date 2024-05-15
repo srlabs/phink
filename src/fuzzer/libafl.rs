@@ -41,10 +41,10 @@ use libafl_bolts::{rands::StdRand, tuples::tuple_list, AsSlice};
 use pallet_contracts::ExecReturnValue;
 use parity_scale_codec::Encode;
 use sp_runtime::DispatchError;
-use std::{path::Path, sync::Mutex};
-use std::{path::PathBuf, ptr::write};
 use std::borrow::Cow;
 use std::collections::HashSet;
+use std::{path::Path, sync::Mutex};
+use std::{path::PathBuf, ptr::write};
 
 #[derive(Clone)]
 pub struct LibAFLFuzzer {
@@ -119,7 +119,7 @@ impl FuzzerEngine for LibAFLFuzzer {
         #[cfg(not(feature = "tui"))]
         let mon = SimpleMonitor::new(|s| println!("{s}"));
         #[cfg(feature = "tui")]
-        let ui = TuiUI::with_version(String::from("Phink"), String::from("0.1"), false);
+        let ui = TuiUI::with_version(String::from("Phink"), String::from("0.1"), true);
         #[cfg(feature = "tui")]
         let mon = TuiMonitor::new(ui);
 
@@ -213,13 +213,13 @@ fn harness(
 
                 let mut i = 6;
 
-                let mut coverage_str = deduplicate(&*String::from_utf8_lossy(&*result.debug_message));
-                println!("{:?}", coverage_str);
+                let mut coverage_str =
+                    deduplicate(&*String::from_utf8_lossy(&*result.debug_message));
 
                 for line in coverage_str.lines() {
-                    if line.starts_with("COV="){
+                    if line.starts_with("COV=") {
                         #[cfg(not(feature = "tui"))]
-                        println!("We found the coverage for the line {:?}", line);
+                        println!("We found the coverage for the line: {:?}", line);
                         i += 1;
                         coverage(i);
                     }
@@ -256,12 +256,12 @@ fn harness(
 /// returns: String
 fn deduplicate(input: &str) -> String {
     let mut unique_lines = HashSet::new();
-    input.lines()
+    input
+        .lines()
         .filter(|&line| unique_lines.insert(line))
         .collect::<Vec<_>>()
         .join("\n")
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -298,7 +298,5 @@ mod tests {
         let expected = "line1\nline2\nline3";
         let cow_input = Cow::Borrowed(input);
         assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-
     }
 }
-
