@@ -164,6 +164,7 @@ impl pallet_contracts::Config for Runtime {
     type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
     type MaxStorageKeyLen = ConstU32<128>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
+    /// This must be `true` in order to get proper coverage feedback
     type UnsafeUnstableInterface = ConstBool<true>;
     type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
     type RuntimeHoldReason = RuntimeHoldReason;

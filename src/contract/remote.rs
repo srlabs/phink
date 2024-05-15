@@ -110,43 +110,41 @@ impl ContractBridge {
         payload: &Vec<u8>,
     ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
         Contracts::bare_call(
-            ALICE,
+            ALICE, // Todo: fuzz this
             self.contract_address,
-            0,
+            0, //Todo: Fuzz this, if it is payable
             GAS_LIMIT,
             None,
             payload.clone(),
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
-            Determinism::Relaxed,
+            Determinism::Enforced,
         )
     }
 
     pub fn upload(wasm_bytes: &Vec<u8>) -> H256 {
         let code_hash =
-            Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Relaxed)
+            Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Enforced)
                 .unwrap()
                 .code_hash;
         code_hash
     }
 
     pub fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
-        Some(
-            Contracts::bare_instantiate(
-                ALICE,
-                0,
-                GAS_LIMIT,
-                None,
-                Code::Existing(code_hash),
-                Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
-                vec![],
-                DebugInfo::UnsafeDebug,
-                CollectEvents::UnsafeCollect,
-            )
-            .result
-            .unwrap()
-            .account_id,
-        )
+        let instantiate = Contracts::bare_instantiate(
+            ALICE,
+            0,
+            GAS_LIMIT,
+            None,
+            Code::Existing(code_hash),
+            Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
+            vec![],
+            DebugInfo::UnsafeDebug,
+            CollectEvents::UnsafeCollect,
+        );
+
+        println!("{:?}", instantiate.events.unwrap());
+        Some(instantiate.result.unwrap().account_id)
     }
 }
 

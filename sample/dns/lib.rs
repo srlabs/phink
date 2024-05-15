@@ -4,8 +4,7 @@
 mod dns {
     use ink::storage::Mapping;
     use ink::storage::StorageVec;
-
-    /// Emitted whenever a new name is being registered.
+     /// Emitted whenever a new name is being registered.
     #[ink(event)]
     pub struct Register {
         #[ink(topic)]
@@ -60,16 +59,15 @@ mod dns {
     impl Default for DomainNameService {
         fn default() -> Self {
             let mut name_to_address = Mapping::new();
-            name_to_address.insert(Hash::default(), &Self::zero_address());
+            name_to_address.insert(Hash::default(), &zero_address());
             let mut name_to_owner = Mapping::new();
-            name_to_owner.insert(Hash::default(), &Self::zero_address());
+            name_to_owner.insert(Hash::default(), &zero_address());
             let mut domains = StorageVec::new();
             domains.push(&Hash::default());
-
             Self {
                 name_to_address,
                 name_to_owner,
-                default_address: Self::zero_address(),
+                default_address: zero_address(),
                 domains,
                 dangerous_number: 42_i32,
             }
@@ -102,6 +100,7 @@ mod dns {
         #[ink(message)]
         pub fn register(&mut self, name: Hash) -> Result<()> {
             let caller = self.env().caller();
+
             if self.name_to_owner.contains(name) {
                 return Err(Error::NameAlreadyExists);
             }
@@ -150,7 +149,7 @@ mod dns {
             // let owner = self.get_owner_or_default(name);
             // if caller != owner {
             //     return Err(Error::CallerIsNotOwner);
-            // }
+            // }2
 
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
@@ -191,16 +190,15 @@ mod dns {
                 .get(name)
                 .unwrap_or(self.default_address)
         }
-
-        /// Helper for referencing the zero address (`0x00`). Note that in practice this
-        /// address should not be treated in any special way (such as a default
-        /// placeholder) since it has a known private key.
-        fn zero_address() -> AccountId {
-            [0u8; 32].into()
-        }
+ 
+       
     }
 
+    fn zero_address() -> AccountId {
+        ink::env::debug_println!("AAAAAA");
 
+        [0u8; 32].into()
+    }
 
     #[cfg(test)]
     mod tests {
@@ -216,13 +214,18 @@ mod dns {
 
         #[ink::test]
         fn register_works() {
-            let default_accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
+            let default_accounts: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> = default_accounts();
+            let hex_str = "7c00000101000e00a3e7e7e7e7e7e7e7e7e79f959596800000957d9580010101";
+    
+            // Convert hex string to byte array
+            let bytes: [u8; 32] = hex::decode(hex_str).expect("Decoding failed").try_into().expect("Invalid length");
+            
+            let name = Hash::from(bytes);
 
             set_next_caller(default_accounts.alice);
             let mut contract = DomainNameService::new();
-
-            assert_eq!(contract.register(name), Ok(()));
+            let x = contract.register(name);
+            assert_eq!(x, Ok(()));
             assert_eq!(contract.register(name), Err(Error::NameAlreadyExists));
         }
 
@@ -257,7 +260,7 @@ mod dns {
             let mut contract = DomainNameService::new();
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
             println!("{:?}", illegal);
-            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+            assert_eq!(contract.transfer(illegal, accounts.bob, 44), Ok(()));
             // contract.phink_assert_hash42_cant_be_registered();
         }
 
@@ -275,7 +278,7 @@ mod dns {
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
 
             // Test transfer of owner.
-            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+            assert_eq!(contract.transfer(illegal, accounts.bob, 43), Ok(()));
 
             // This should panic..
             // contract.phink_assert_hash42_cant_be_registered();

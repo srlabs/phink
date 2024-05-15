@@ -47,7 +47,7 @@ impl FuzzerEngine for ZiggyFuzzer {
             if raw_call.is_none() {
                 return;
             }
-            let call = raw_call.expect("`raw_call` wasn't `None`; QED");
+            let call = raw_call.expect("`raw_call` wasn't `None`;");
 
             match ZiggyFuzzer::create_call(call.0, call.1) {
                 // Successfully encoded

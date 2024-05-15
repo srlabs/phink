@@ -25,7 +25,9 @@ fn main() {
 
     let engine = CoverageEngine::new(dir).instrument().build();
 
-    let dns_wasm_bytes: Vec<u8> = fs::read(engine.wasm_path).unwrap().to_vec();
+    let dns_wasm_bytes: Vec<u8> = fs::read(engine.wasm_path.clone()).unwrap().to_vec();
+    println!("{:?}", engine.wasm_path);
+
     let setup: ContractBridge = ContractBridge::initialize_wasm(dns_wasm_bytes, engine.specs_path);
     let fuzzer: LibAFLFuzzer = LibAFLFuzzer::new(setup);
 

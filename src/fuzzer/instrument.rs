@@ -1,4 +1,4 @@
-use crate::fuzzer::instrument::instrument::{ContractCovUpdater, ContractMapInstantiation};
+use crate::fuzzer::instrument::instrument::ContractCovUpdater;
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -77,7 +77,7 @@ impl CoverageEngine {
                 }
             }
             e => panic!(
-                "It seems that your instrumented smart contract did not compile properly.\
+                "It seems that your instrumented smart contract did not compile properly. \
                 Please go to {:?}, edit the lib.rs file, and run cargo contract build again\
                 Detailed error — {:?}",
                 &self.contract_dir, e
@@ -120,17 +120,17 @@ impl CoverageEngine {
         new_dir
     }
 
-    pub fn instrument(&self) -> &CoverageEngine {
+    pub fn instrument(&mut self) -> &CoverageEngine {
         //TODO: Shouldn't be only lib.rs
         //For now we assume one smart contract is only one file
-        let lib_rs = self.fork().join("lib.rs");
+        let new_working_dir: PathBuf = self.fork();
+        let lib_rs = new_working_dir.join("lib.rs");
         let code = fs::read_to_string(lib_rs.clone()).unwrap();
 
-        let mut modified_code = parse_and_visit(&code, ContractCovUpdater).unwrap();
-        modified_code = parse_and_visit(&modified_code, ContractMapInstantiation).unwrap();
+        let modified_code = parse_and_visit(&code, ContractCovUpdater).unwrap();
 
         save_and_format(modified_code, lib_rs.clone());
-
+        self.contract_dir = new_working_dir;
         self
     }
 }
@@ -169,33 +169,6 @@ mod instrument {
         Expr, Item, ItemMod, ItemStatic, ItemStruct, LitInt, Stmt, Token,
     };
 
-    pub struct ContractMapInstantiation;
-
-    impl VisitMut for ContractMapInstantiation {
-        fn visit_item_mod_mut(&mut self, i: &mut ItemMod) {
-            // Add the Coverage struct for mod that only contains #[ink::contract]
-            let struct_def: TokenStream = syn::parse2(quote! {
-                #[ink(event, anonymous)]
-                pub struct Coverage {
-                    cov_of: i32,
-                }
-            })
-            .unwrap();
-
-            // Parse the TokenStream into a struct item
-            let struct_item: ItemStruct = syn::parse2(struct_def).unwrap();
-            let struct_as_item = Item::Struct(struct_item);
-
-            // Insert the struct at the beginning of the module's items
-            i.content
-                .as_mut()
-                .map(|(_, items)| items.insert(0, struct_as_item));
-
-            // Continue traversing the module
-            visit_item_mod_mut(self, i);
-        }
-    }
-
     pub struct ContractCovUpdater;
 
     impl VisitMut for ContractCovUpdater {
@@ -209,11 +182,7 @@ mod instrument {
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
 
                 let insert_expr: Expr = parse_quote! {
-                    {
-                      use ink::codegen::StaticEnv;
-                   Self::env().emit_event(Coverage { cov_of: #line_lit })
-
-                    }
+                    ink::env::debug_println!("{}", #line_lit)
                 };
 
                 // Convert this expression into a statement
@@ -266,23 +235,6 @@ mod test {
         let exists = fork.exists();
         fs::remove_file(fork).unwrap(); //remove after test passed to avoid spam of /tmp
         assert!(exists);
-    }
-
-    #[test]
-    fn adding_cov_declaration_works() {
-        let signature = "emit_event";
-
-        let content = fs::read_to_string("sample/dns/lib.rs").unwrap();
-        let mut syntax_tree: syn::File = syn::parse_str(&content).unwrap();
-
-        let mut visitor = ContractMapInstantiation;
-        visitor.visit_file_mut(&mut syntax_tree);
-
-        let modified_content = quote!(#syntax_tree).to_string();
-        println!("{:?}", modified_content);
-        export(modified_content.clone());
-        // assert that we have more than one "emit_event"
-        assert!(modified_content.matches(signature).count() > 1);
     }
 
     /// This function simply saves some `modified_code` Rust code into /tmp/toz.rs

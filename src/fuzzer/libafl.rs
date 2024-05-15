@@ -50,11 +50,10 @@ pub struct LibAFLFuzzer {
 }
 
 /// Coverage map with explicit assignments due to the lack of instrumentation
-static mut SIGNALS: [u8; 255] = [0; 255];
-static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
-
+static mut SIGNALS: [u16; 65535] = [0; 65535];
+static mut SIGNALS_PTR: *mut u16 = unsafe { SIGNALS.as_mut_ptr() };
 /// Assign a signal to the signals map
-fn coverage(idx: usize) {
+fn coverage(idx: u16) {
     unsafe { write(SIGNALS_PTR.add(idx), 1) };
 }
 
@@ -62,26 +61,29 @@ impl LibAFLFuzzer {
     pub fn new(setup: ContractBridge) -> LibAFLFuzzer {
         LibAFLFuzzer { setup }
     }
-
-
 }
 
 impl FuzzerEngine for LibAFLFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
     #[no_mangle]
     fn fuzz(self) {
-        let transcoder_loader = Mutex::new(
+        let mut transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
         );
 
         let specs = &self.setup.json_specs;
-        let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-        let invariants = PayloadCrafter::extract_invariants(specs);
-        let invariant_manager: Invariants = Invariants::from(invariants, self.setup.clone());
+        let mut selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
+        let mut invariants = PayloadCrafter::extract_invariants(specs);
+        let mut invariant_manager = Invariants::from(invariants.clone(), self.setup.clone());
 
-        // The closure that we want to fuzz
         let mut harness = |input: &BytesInput| {
-            harness(self.clone(), transcoder_loader, selectors, invariant_manager, input)
+            harness(
+                self.clone(),
+                &mut transcoder_loader,
+                &mut selectors,
+                &mut invariant_manager,
+                input,
+            )
         };
 
         // Create an observation channel using the signals map
@@ -115,7 +117,7 @@ impl FuzzerEngine for LibAFLFuzzer {
         #[cfg(not(feature = "tui"))]
         let mon = SimpleMonitor::new(|s| println!("{s}"));
         #[cfg(feature = "tui")]
-        let ui = TuiUI::with_version(String::from("Baby Fuzzer"), String::from("0.0.1"), false);
+        let ui = TuiUI::with_version(String::from("Phink"), String::from("0.1"), false);
         #[cfg(feature = "tui")]
         let mon = TuiMonitor::new(ui);
 
@@ -169,9 +171,9 @@ impl FuzzerEngine for LibAFLFuzzer {
 
 fn harness(
     client: LibAFLFuzzer,
-    transcoder_loader: Mutex<ContractMessageTranscoder>,
-    selectors: Vec<Selector>,
-    invariant_manager: Invariants,
+    transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
+    selectors: &mut Vec<Selector>,
+    invariant_manager: &mut Invariants,
     input: &BytesInput,
 ) -> ExitKind {
     let target = input.target_bytes();
@@ -203,29 +205,33 @@ fn harness(
             let mut chain = BasicExternalities::new(client.setup.genesis.clone());
             chain.execute_with(|| {
                 //todo
-                client.timestamp();
+                <LibAFLFuzzer as FuzzerEngine>::timestamp();
                 let result = client.setup.clone().call(&full_call);
                 coverage(5);
 
                 let mut i = 6;
-                #[cfg(not(feature = "tui"))]
-                println!("Events -- {:?}", result.events.len());
 
-                for event in result.events.unwrap_or_default() {
+                let debug_str = String::from_utf8_lossy(&*result.debug_message);
+                println!("{:?}", debug_str);
+
+                for line in debug_str.lines() {
                     #[cfg(not(feature = "tui"))]
-
-                    println!("{:?}", event);
+                    println!("We found the coverage for the line {:?}", line);
                     i += 1;
                     coverage(i);
                 }
 
                 // We pretty-print all information that we need to debug
                 #[cfg(not(feature = "tui"))]
-                client.pretty_print(result.result, decoded_msg.unwrap().to_string(), full_call);
+                <LibAFLFuzzer as FuzzerEngine>::pretty_print(
+                    result.result.clone(),
+                    decoded_msg.unwrap().to_string(),
+                    full_call,
+                );
 
                 // For each call, we verify that invariants aren't broken
                 if !invariant_manager.are_invariants_passing() {
-                    panic!("Invariant triggered! ")
+                    panic!("Invariant triggered!")
                 }
             });
         }
