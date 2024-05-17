@@ -82,17 +82,6 @@ impl ContractBridge {
         }
     }
 
-    /// Instantiate a contract using its WAT representation, instead of WASM
-    ///
-    /// # Arguments
-    ///
-    /// * `wat`: WAT-version of the WASM blob
-    /// * `dns_specs`: JSON specs of the contract
-    pub fn initialize_wat(wat: Vec<u8>, dns_specs: PathBuf) -> ContractBridge {
-        let wasm = wat::parse_str(String::from_utf8(wat).unwrap()).unwrap();
-        ContractBridge::initialize_wasm(wasm, dns_specs)
-    }
-
     /// Execute a function (`payload`) from the instantiated contract
     ///
     /// # Arguments
@@ -143,7 +132,6 @@ impl ContractBridge {
             CollectEvents::UnsafeCollect,
         );
 
-        println!("{:?}", instantiate.events.unwrap());
         Some(instantiate.result.unwrap().account_id)
     }
 }

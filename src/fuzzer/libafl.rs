@@ -13,14 +13,17 @@ use crate::contract::runtime::{
 };
 use crate::fuzzer::engine::FuzzerEngine;
 use crate::fuzzer::invariants::Invariants;
-use crate::fuzzer::ziggy::ZiggyFuzzer;
 use frame_support::traits::Len;
+use itertools::Itertools;
 use libafl::corpus::Corpus;
+use libafl::inputs::{GeneralizedInputMetadata, HasBytesVec};
 #[cfg(feature = "tui")]
 use libafl::monitors::tui::{ui::TuiUI, TuiMonitor};
 #[cfg(not(feature = "tui"))]
 use libafl::monitors::SimpleMonitor;
-use libafl::mutators::havoc_mutations;
+use libafl::mutators::{havoc_mutations, GrimoireStringReplacementMutator, Mutator};
+use libafl::prelude::HasRand;
+use libafl::prelude::*;
 use libafl::state::HasCorpus;
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
@@ -34,16 +37,18 @@ use libafl::{
     schedulers::QueueScheduler,
     stages::mutational::StdMutationalStage,
     state::StdState,
-    Evaluator,
+    Evaluator, HasMetadata,
 };
-use libafl_bolts::rands::RandomSeed;
-use libafl_bolts::{rands::StdRand, tuples::tuple_list, AsSlice};
+use libafl_bolts::rands::{Rand, RandomSeed};
+use libafl_bolts::{rands::StdRand, tuples::tuple_list, AsSlice, Error, Named};
 use pallet_contracts::ExecReturnValue;
 use parity_scale_codec::Encode;
 use sp_runtime::DispatchError;
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::{path::Path, sync::Mutex};
+use std::fs::File;
+use std::io::Write;
+use std::{fs, path::Path, sync::Mutex};
 use std::{path::PathBuf, ptr::write};
 
 #[derive(Clone)]
@@ -54,6 +59,7 @@ pub struct LibAFLFuzzer {
 /// Coverage map with explicit assignments due to the lack of instrumentation
 static mut SIGNALS: [u16; 65535] = [0; 65535];
 static mut SIGNALS_PTR: *mut u16 = unsafe { SIGNALS.as_mut_ptr() };
+
 /// Assign a signal to the signals map
 fn coverage(idx: u16) {
     unsafe { write(SIGNALS_PTR.add(idx as usize), 1) };
@@ -62,6 +68,44 @@ fn coverage(idx: u16) {
 impl LibAFLFuzzer {
     pub fn new(setup: ContractBridge) -> LibAFLFuzzer {
         LibAFLFuzzer { setup }
+    }
+}
+
+struct ValidSelectorMutator {
+    selectors: Vec<Selector>,
+}
+
+impl ValidSelectorMutator {
+    pub fn new(selectors: Vec<Selector>) -> Self {
+        Self { selectors }
+    }
+}
+
+impl<S> Mutator<BytesInput, S> for ValidSelectorMutator
+where
+    S: HasRand,
+{
+    fn mutate(&mut self, state: &mut S, input: &mut BytesInput) -> Result<MutationResult, Error> {
+        let data = input.bytes_mut();
+
+        if data.len() < 4 {
+            // Ensure we have at least 4 bytes to mutate
+            return Ok(MutationResult::Skipped);
+        }
+
+        // Choose a random selector from the provided selectors
+        let selector = state.rand_mut().choose(&self.selectors);
+
+        // Replace the first 4 bytes of the input with the chosen selector
+        data[0..4].copy_from_slice(&selector[..4]);
+        println!("{:?}", data);
+        Ok(MutationResult::Mutated)
+    }
+}
+
+impl Named for ValidSelectorMutator {
+    fn name(&self) -> &str {
+        "ValidSelectorRandomPayloadMutator"
     }
 }
 
@@ -75,14 +119,30 @@ impl FuzzerEngine for LibAFLFuzzer {
 
         let specs = &self.setup.json_specs;
         let mut selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-        let mut invariants = PayloadCrafter::extract_invariants(specs);
-        let mut invariant_manager = Invariants::from(invariants.clone(), self.setup.clone());
+        let inv = PayloadCrafter::extract_invariants(specs)
+            .expect("No invariants found, check your contract");
+
+        let mut invariant_manager = Invariants::from(inv, self.setup.clone());
+
+        {
+            // Create the directory if it doesn't exist
+            fs::create_dir_all("./output/phink/corpus").unwrap();
+
+            // Iterate over the selectors and write each one to a separate file
+            for (i, selector) in selectors.iter().enumerate() {
+                let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
+                let mut file = File::create(&file_path).unwrap();
+
+                // Write the u8 array to the file
+                file.write_all(selector).unwrap();
+            }
+        }
 
         let mut harness = |input: &BytesInput| {
             harness(
                 self.clone(),
                 &mut transcoder_loader,
-                &mut selectors,
+                &mut selectors.clone(),
                 &mut invariant_manager,
                 input,
             )
@@ -97,6 +157,7 @@ impl FuzzerEngine for LibAFLFuzzer {
 
         // A feedback to choose if an input is a solution or not
         let mut objective = CrashFeedback::new();
+        let corpus_dirs = vec![PathBuf::from("./output/phink/corpus_old")];
 
         // create a State from scratch
         let mut state = StdState::new(
@@ -115,7 +176,6 @@ impl FuzzerEngine for LibAFLFuzzer {
         )
         .unwrap();
 
-        // The Monitor trait define how the fuzzer stats are displayed to the user
         #[cfg(not(feature = "tui"))]
         let mon = SimpleMonitor::new(|s| println!("{s}"));
         #[cfg(feature = "tui")]
@@ -143,18 +203,8 @@ impl FuzzerEngine for LibAFLFuzzer {
         )
         .expect("Failed to create the Executor");
 
-        // Generate 8 initial inputs
-        fuzzer
-            .evaluate_input(
-                &mut state,
-                &mut executor,
-                &mut mgr,
-                BytesInput::new(vec![b'a']),
-            )
-            .unwrap();
         // In case the corpus is empty (i.e. on first run), load existing test cases from on-disk
         // corpus
-        let corpus_dirs = vec![PathBuf::from("./output/phink/corpus")];
 
         if state.corpus().count() < 1 {
             state
@@ -162,9 +212,19 @@ impl FuzzerEngine for LibAFLFuzzer {
                 .unwrap();
         }
 
-        // Setup a mutational stage with a basic bytes mutator
-        let mutator = StdScheduledMutator::new(havoc_mutations());
-        let mut stages = tuple_list!(StdMutationalStage::new(mutator));
+        println!("Selectors {:?}", selectors);
+        // let mutator = StdMutationalStage::new(StdScheduledMutator::new(ValidSelectorMutator::new(
+        //     selectors.clone(),
+        // )));
+        //
+        // let mut2 = StdMutationalStage::new(StdScheduledMutator::new(havoc_mutations()));
+        //
+        // let mut stages = tuple_list!(mutator, mut2);
+
+        let mut stages = tuple_list!(StdMutationalStage::new(StdScheduledMutator::new(
+            havoc_mutations()
+        )));
+
         fuzzer
             .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
             .unwrap()
@@ -188,8 +248,13 @@ fn harness(
         return ExitKind::Ok;
     }
     coverage(3);
-    let call = raw_call.expect("`raw_call` wasn't `None`; QED");
-    match ZiggyFuzzer::create_call(call.0, call.1) {
+    let call = raw_call.expect("`raw_call` wasn't `None`");
+    let mut chain = BasicExternalities::new(client.setup.genesis.clone());
+    chain.execute_with(|| {
+        <LibAFLFuzzer as FuzzerEngine>::timestamp();
+    });
+
+    match <LibAFLFuzzer as FuzzerEngine>::create_call(call.0, call.1) {
         // Successfully encoded
         Some(full_call) => {
             coverage(3);
@@ -204,11 +269,9 @@ fn harness(
                 return ExitKind::Ok;
             }
             coverage(5);
-            let mut chain = BasicExternalities::new(client.setup.genesis.clone());
             chain.execute_with(|| {
-                //todo
-                <LibAFLFuzzer as FuzzerEngine>::timestamp();
                 let result = client.setup.clone().call(&full_call);
+
                 coverage(5);
 
                 let mut i = 6;
@@ -250,10 +313,8 @@ fn harness(
 /// This is used mainly to remove coverage returns being inserted many times in the debug vector
 /// in case of any `iter()`, `for` loop and so on
 /// # Arguments
-///
 /// * `input`: The string to deduplicate
-///
-/// returns: String
+
 fn deduplicate(input: &str) -> String {
     let mut unique_lines = HashSet::new();
     input

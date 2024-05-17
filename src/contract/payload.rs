@@ -23,16 +23,7 @@ impl PayloadCrafter {
     /// Extract all selectors for a given spec
     /// Parses a JSON and returns a list of all possibles messages
     /// # Argument
-    ///
     /// * `json_data`: The JSON metadata of the smart-contract
-    ///
-    /// returns: Vec<Selector>
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// PayloadCrafter::extract(specs)
-    /// ```
 
     pub fn extract_all(json_data: &String) -> Vec<Selector> {
         #[derive(Deserialize)]
@@ -63,40 +54,33 @@ impl PayloadCrafter {
     }
 
     /// Extract every selector associated to the invariants defined in the ink! smart-contract
-    /// See the documentation of `DEFAULT_PHINK_PREFIX` to know more about how to create a propertys
+    /// See the documentation of `DEFAULT_PHINK_PREFIX` to know more about how to create a properties
     ///
     /// # Arguments
-    ///
     /// * `json_data`: The JSON specs of the smart-contract
-    ///
-    /// returns: `Vec<Selector>`
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// PayloadCrafter::extract_invariants("dns.json");
-    /// ```
-    pub fn extract_invariants(json_data: &str) -> Vec<Selector> {
+    pub fn extract_invariants(json_data: &str) -> Option<Vec<Selector>> {
         let data: Value = serde_json::from_str(json_data).expect("JSON was not well-formatted");
 
-        data["spec"]["messages"]
-            .as_array()
-            .unwrap_or(&Vec::new())
-            .iter()
-            .filter_map(|message| {
-                message["label"]
-                    .as_str()
-                    .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
-                    .and_then(|_| message["selector"].as_str())
-                    .and_then(|selector| Some(decode_selector(selector)))
-            })
-            .collect()
+        Some(
+            data["spec"]["messages"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .filter_map(|message| {
+                    message["label"]
+                        .as_str()
+                        .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
+                        .and_then(|_| message["selector"].as_str())
+                        .and_then(|selector| Some(decode_selector(selector)))
+                })
+                .collect(),
+        )
     }
 
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there
     /// is an error in processing, this function returns `None`.
-    pub fn get_constructor(json_data: &String) -> Option<[u8; 4]> {
+    pub fn get_constructor(json_data: &String) -> Option<Selector> {
         // Parse the JSON data safely, return None if parsing fails.
         let parsed_json: Value = match serde_json::from_str(&json_data) {
             Ok(data) => data,

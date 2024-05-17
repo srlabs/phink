@@ -22,7 +22,7 @@ pub trait FuzzerEngine {
         Some((func, args.to_vec()).encode())
     }
 
-    /// Accept some raw bytes `[u8]` and return the appropriate
+    /// Takes some raw bytes `[u8]` and returns the good code
     fn parse_args<'a>(
         &'a self,
         data: &'a [u8],

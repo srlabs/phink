@@ -33,6 +33,10 @@ impl Invariants {
         for invariant in &self.invariant_selectors {
             let toz = self.contract_bridge.clone().call(&invariant.to_vec());
             if let Err(_) = toz.result {
+                println!(
+                    "Invariant Debug Message {:?}",
+                    String::from_utf8_lossy(&*toz.debug_message)
+                );
                 return false;
             }
         }

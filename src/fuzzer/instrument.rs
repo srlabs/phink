@@ -46,7 +46,7 @@ impl CoverageEngine {
         // We compile the contract with `cargo contract build`
         match Command::new("cargo")
             .current_dir(&self.contract_dir)
-            .args(["contract", "build"])
+            .args(["contract", "build", "--features=phink"])
             .status()
         {
             // We search for the .wasm blob
@@ -114,8 +114,6 @@ impl CoverageEngine {
                 copy(entry.path(), &target_path).expect("Failed to copy file");
             }
         }
-
-        println!("{:?}", new_dir);
 
         new_dir
     }
