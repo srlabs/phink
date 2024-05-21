@@ -71,7 +71,7 @@ impl PayloadCrafter {
                         .as_str()
                         .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
                         .and_then(|_| message["selector"].as_str())
-                        .and_then(|selector| Some(decode_selector(selector)))
+                        .and_then(|selector| Some(Self::decode_selector(selector)))
                 })
                 .collect(),
         )
@@ -92,34 +92,34 @@ impl PayloadCrafter {
 
         // If there is exactly one constructor, return its selector if available.
         if constructors.len() == 1 {
-            return get_selector_bytes(constructors[0]["selector"].as_str()?);
+            return Self::get_selector_bytes(constructors[0]["selector"].as_str()?);
         }
 
         // Otherwise, look for a constructor without arguments.
         for constructor in constructors {
             if constructor["args"].as_array().map_or(false, Vec::is_empty) {
-                return get_selector_bytes(constructor["selector"].as_str()?);
+                return Self::get_selector_bytes(constructor["selector"].as_str()?);
             }
         }
 
         // Return None if no suitable constructor is found.
         None
     }
-}
 
-/// Decode `encoded` to a proper `Selector`
-fn decode_selector(encoded: &str) -> Selector {
-    let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
-    <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
-}
+    /// Decode `encoded` to a proper `Selector`
+    fn decode_selector(encoded: &str) -> Selector {
+        let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
+        <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
+    }
 
-/// Helper function to decode a hexadecimal string selector into a byte array of length 4.
-/// Returns `None` if the decoding or conversion fails.
-fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
-    hex::decode(selector_str.trim_start_matches("0x"))
-        .ok()?
-        .try_into()
-        .ok()
+    /// Helper function to decode a hexadecimal string selector into a byte array of length 4.
+    /// Returns `None` if the decoding or conversion fails.
+    fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
+        hex::decode(selector_str.trim_start_matches("0x"))
+            .ok()?
+            .try_into()
+            .ok()
+    }
 }
 
 /// A simple helper used to directly encode a message i.e. `flip` to a proper selector `[u8; 4]`

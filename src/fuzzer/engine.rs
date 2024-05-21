@@ -15,7 +15,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 pub trait FuzzerEngine {
-    fn fuzz(self);
+    fn setup(self);
 
     /// Return the scale_encoded version of a call
     fn create_call(func: Selector, args: &[u8]) -> Option<Vec<u8>> {

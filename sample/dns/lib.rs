@@ -242,7 +242,7 @@ mod dns {
 
         #[ink::test]
         fn register_works() {
-            let default_accounts: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> =
+            let default_accountxs: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> =
                 default_accounts();
             let hex_str = "7c00000101000e00a3e7e7e7e7e7e7e7e7e79f959596800000957d9580010101";
 

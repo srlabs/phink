@@ -17,6 +17,7 @@ use std::{fs, path::PathBuf};
 
 mod contract;
 mod fuzzer;
+mod utils;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
@@ -55,7 +56,7 @@ fn main() {
                     let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, engine.specs_path);
                     let fuzzer = LibAFLFuzzer::new(setup);
                     println!("Now fuzzing `{:?}` !", engine.wasm_path);
-                    fuzzer.fuzz();
+                    fuzzer.setup();
                 }
                 Err(e) => {
                     eprintln!("Error reading WASM file: {:?}", e);

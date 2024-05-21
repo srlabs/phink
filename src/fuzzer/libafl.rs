@@ -1,5 +1,3 @@
-use prettytable::{row, Table};
-
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::{
     __private::BasicExternalities,
@@ -8,22 +6,21 @@ use frame_support::{
 
 use crate::contract::payload::{PayloadCrafter, Selector};
 use crate::contract::remote::ContractBridge;
-use crate::contract::runtime::{
-    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
-};
 use crate::fuzzer::engine::FuzzerEngine;
 use crate::fuzzer::invariants::Invariants;
+use crate::utils;
 use frame_support::traits::Len;
 use itertools::Itertools;
 use libafl::corpus::Corpus;
-use libafl::inputs::{GeneralizedInputMetadata, HasBytesVec};
+use libafl::inputs::HasBytesVec;
 #[cfg(feature = "tui")]
 use libafl::monitors::tui::{ui::TuiUI, TuiMonitor};
 #[cfg(not(feature = "tui"))]
 use libafl::monitors::SimpleMonitor;
-use libafl::mutators::{havoc_mutations, GrimoireStringReplacementMutator, Mutator};
+use libafl::mutators::{havoc_mutations, Mutator};
 use libafl::prelude::HasRand;
 use libafl::prelude::*;
+use libafl::schedulers::powersched::PowerSchedule;
 use libafl::state::HasCorpus;
 use libafl::{
     corpus::{InMemoryCorpus, OnDiskCorpus},
@@ -40,12 +37,11 @@ use libafl::{
     Evaluator, HasMetadata,
 };
 use libafl_bolts::rands::{Rand, RandomSeed};
+use libafl_bolts::tuples::Merge;
 use libafl_bolts::{rands::StdRand, tuples::tuple_list, AsSlice, Error, Named};
-use pallet_contracts::ExecReturnValue;
+use pallet_contracts::runtime_decl_for_contracts_api::ID;
 use parity_scale_codec::Encode;
-use sp_runtime::DispatchError;
 use std::borrow::Cow;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
 use std::{fs, path::Path, sync::Mutex};
@@ -57,17 +53,40 @@ pub struct LibAFLFuzzer {
 }
 
 /// Coverage map with explicit assignments due to the lack of instrumentation
-static mut SIGNALS: [u16; 65535] = [0; 65535];
-static mut SIGNALS_PTR: *mut u16 = unsafe { SIGNALS.as_mut_ptr() };
-
+static mut SIGNALS: [u8; 65535] = [0; 65535];
+static mut SIGNALS_PTR: *mut u8 = unsafe { SIGNALS.as_mut_ptr() };
+pub static mut IDX: u8 = 0;
 /// Assign a signal to the signals map
-fn coverage(idx: u16) {
-    unsafe { write(SIGNALS_PTR.add(idx as usize), 1) };
+/// We basically signal to LibAFL that coverage has been increased
+pub fn inc_cov() {
+    unsafe {
+        IDX += 1;
+        write(SIGNALS_PTR.add(IDX as usize), 1)
+    };
+}
+
+pub fn reset_cov() {
+    unsafe {
+        IDX = 0;
+    }
 }
 
 impl LibAFLFuzzer {
     pub fn new(setup: ContractBridge) -> LibAFLFuzzer {
         LibAFLFuzzer { setup }
+    }
+
+    fn make_initial_corpus(selectors: &mut Vec<Selector>) {
+        fs::create_dir_all("./output/phink/corpus").unwrap();
+
+        // Iterate over the selectors and write each one to a separate file
+        for (i, selector) in selectors.iter().enumerate() {
+            let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
+            let mut file = File::create(&file_path).unwrap();
+
+            // Write the u8 array to the file
+            file.write_all(selector).unwrap();
+        }
     }
 }
 
@@ -111,8 +130,8 @@ impl Named for ValidSelectorMutator {
 
 impl FuzzerEngine for LibAFLFuzzer {
     /// This is the main fuzzing function. Here, we fuzz ink!, and the planet
-    #[no_mangle]
-    fn fuzz(self) {
+    // #[no_mangle]
+    fn setup(self) {
         let mut transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
         );
@@ -124,54 +143,33 @@ impl FuzzerEngine for LibAFLFuzzer {
 
         let mut invariant_manager = Invariants::from(inv, self.setup.clone());
 
-        {
-            // Create the directory if it doesn't exist
-            fs::create_dir_all("./output/phink/corpus").unwrap();
-
-            // Iterate over the selectors and write each one to a separate file
-            for (i, selector) in selectors.iter().enumerate() {
-                let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
-                let mut file = File::create(&file_path).unwrap();
-
-                // Write the u8 array to the file
-                file.write_all(selector).unwrap();
-            }
-        }
+        Self::make_initial_corpus(&mut selectors);
 
         let mut harness = |input: &BytesInput| {
-            harness(
+            let exec: ExitKind = harness(
                 self.clone(),
                 &mut transcoder_loader,
                 &mut selectors.clone(),
                 &mut invariant_manager,
                 input,
-            )
+            );
+            reset_cov();
+            return exec;
         };
 
-        // Create an observation channel using the signals map
         let observer =
             unsafe { StdMapObserver::from_mut_ptr("signals", SIGNALS_PTR, SIGNALS.len()) };
 
-        // Feedback to rate the interestingness of an input
         let mut feedback = MaxMapFeedback::new(&observer);
 
-        // A feedback to choose if an input is a solution or not
         let mut objective = CrashFeedback::new();
-        let corpus_dirs = vec![PathBuf::from("./output/phink/corpus_old")];
+        let corpus_dirs = vec![PathBuf::from("./output/phink/corpus")];
 
-        // create a State from scratch
         let mut state = StdState::new(
-            // RNG
             StdRand::new(),
-            // Corpus that will be evolved, we keep it in memory for performance
             InMemoryCorpus::new(),
-            // Corpus in which we store solutions (crashes in this example),
-            // on disk so the user can get them after stopping the fuzzer
             OnDiskCorpus::new(PathBuf::from("./crashes")).unwrap(),
-            // States of the feedbacks.
-            // The feedbacks can report the data that should persist in the State.
             &mut feedback,
-            // Same for objective feedbacks
             &mut objective,
         )
         .unwrap();
@@ -183,17 +181,22 @@ impl FuzzerEngine for LibAFLFuzzer {
         #[cfg(feature = "tui")]
         let mon = TuiMonitor::new(ui);
 
-        // The event manager handle the various events generated during the fuzzing loop
-        // such as the notification of the addition of a new item to the corpus
         let mut mgr = SimpleEventManager::new(mon);
 
-        // A queue policy to get testcasess from the corpus
+        let mutator = StdMOptMutator::new(
+            &mut state,
+            havoc_mutations().merge(tokens_mutations()),
+            7,
+            5,
+        )
+        .unwrap();
+
+        let power = StdMutationalStage::new(mutator);
+
         let scheduler = QueueScheduler::new();
 
-        // A fuzzer with feedbacks and a corpus scheduler
         let mut fuzzer = StdFuzzer::new(scheduler, feedback, objective);
 
-        // Create the executor for an in-process function with just one observer
         let mut executor = InProcessExecutor::new(
             &mut harness,
             tuple_list!(observer),
@@ -203,27 +206,15 @@ impl FuzzerEngine for LibAFLFuzzer {
         )
         .expect("Failed to create the Executor");
 
-        // In case the corpus is empty (i.e. on first run), load existing test cases from on-disk
-        // corpus
-
         if state.corpus().count() < 1 {
             state
-                .load_initial_inputs(&mut fuzzer, &mut executor, &mut mgr, &corpus_dirs)
+                .load_initial_inputs_forced(&mut fuzzer, &mut executor, &mut mgr, &corpus_dirs)
                 .unwrap();
         }
 
         println!("Selectors {:?}", selectors);
-        // let mutator = StdMutationalStage::new(StdScheduledMutator::new(ValidSelectorMutator::new(
-        //     selectors.clone(),
-        // )));
-        //
-        // let mut2 = StdMutationalStage::new(StdScheduledMutator::new(havoc_mutations()));
-        //
-        // let mut stages = tuple_list!(mutator, mut2);
 
-        let mut stages = tuple_list!(StdMutationalStage::new(StdScheduledMutator::new(
-            havoc_mutations()
-        )));
+        let mut stages = tuple_list!(power);
 
         fuzzer
             .fuzz_loop(&mut stages, &mut executor, &mut state, &mut mgr)
@@ -240,124 +231,73 @@ fn harness(
 ) -> ExitKind {
     let target = input.target_bytes();
     let payload = target.as_slice();
-    coverage(1);
+    inc_cov();
     let binding = client.clone();
     let raw_call = binding.parse_args(payload, selectors.clone());
-    coverage(2);
+    inc_cov();
     if raw_call.is_none() {
         return ExitKind::Ok;
     }
-    coverage(3);
+    inc_cov();
     let call = raw_call.expect("`raw_call` wasn't `None`");
-    let mut chain = BasicExternalities::new(client.setup.genesis.clone());
+    let mut chain = BasicExternalities::new(client.setup.genesis.clone()).execute_with(<LibAFLFuzzer as FuzzerEngine>::timestamp());
+
+
+    let mut calls: Vec<Vec<u8>> = Vec::new();
+
+    for i in 0..3 {
+        let one_call = <LibAFLFuzzer as FuzzerEngine>::create_call(call.0, call.1);
+        if one_call.is_none() {
+            return ExitKind::Ok;
+        }
+        calls.push(one_call.unwrap());
+    }
+
+    inc_cov();
+
     chain.execute_with(|| {
-        <LibAFLFuzzer as FuzzerEngine>::timestamp();
-    });
-
-    match <LibAFLFuzzer as FuzzerEngine>::create_call(call.0, call.1) {
-        // Successfully encoded
-        Some(full_call) => {
-            coverage(3);
-
+        let mut results: Vec<Vec<u8>> = Vec::new();
+        for call in calls {
             let decoded_msg = transcoder_loader
                 .lock()
                 .unwrap()
-                .decode_contract_message(&mut &*full_call);
-            coverage(4);
+                .decode_contract_message(&mut &*call.clone());
+            inc_cov();
 
             if let Err(_) = decoded_msg {
                 return ExitKind::Ok;
             }
-            coverage(5);
-            chain.execute_with(|| {
-                let result = client.setup.clone().call(&full_call);
+            inc_cov();
 
-                coverage(5);
+            let result = client.setup.clone().call(&call.clone());
+            results.push(result.debug_message);
 
-                let mut i = 6;
+            inc_cov();
 
-                let mut coverage_str =
-                    deduplicate(&*String::from_utf8_lossy(&*result.debug_message));
-
-                for line in coverage_str.lines() {
-                    if line.starts_with("COV=") {
-                        #[cfg(not(feature = "tui"))]
-                        println!("We found the coverage for the line: {:?}", line);
-                        i += 1;
-                        coverage(i);
-                    }
-                }
-
-                // We pretty-print all information that we need to debug
-                #[cfg(not(feature = "tui"))]
-                <LibAFLFuzzer as FuzzerEngine>::pretty_print(
-                    result.result.clone(),
-                    decoded_msg.unwrap().to_string(),
-                    full_call,
-                );
-
-                // For each call, we verify that invariants aren't broken
-                if !invariant_manager.are_invariants_passing() {
-                    panic!("Invariant triggered!")
-                }
-            });
+            // We pretty-print all information that we need to debug
+            #[cfg(not(feature = "tui"))]
+            <LibAFLFuzzer as FuzzerEngine>::pretty_print(
+                result.result.clone(),
+                decoded_msg.unwrap().to_string(),
+                call,
+            );
         }
 
-        None => return ExitKind::Ok,
-    }
-
-    ExitKind::Ok
-}
-
-/// A simple helper to remove some duplicated lines from a `&str`
-/// This is used mainly to remove coverage returns being inserted many times in the debug vector
-/// in case of any `iter()`, `for` loop and so on
-/// # Arguments
-/// * `input`: The string to deduplicate
-
-fn deduplicate(input: &str) -> String {
-    let mut unique_lines = HashSet::new();
-    input
-        .lines()
-        .filter(|&line| unique_lines.insert(line))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    pub fn test_deduplicate() {
-        // Test case: input with duplicate lines
-        let input = "line1\nline2\nline1\nline3\nline2";
-        let expected = "line1\nline2\nline3";
-        let cow_input = Cow::Borrowed(input);
-        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-
-        // Test case: input without duplicate lines
-        let input = "line1\nline2\nline3";
-        let expected = "line1\nline2\nline3";
-        let cow_input = Cow::Borrowed(input);
-        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-
-        // Test case: empty input
-        let input = "";
-        let expected = "";
-        let cow_input = Cow::Borrowed(input);
-        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-
-        // Test case: input with consecutive duplicate lines
-        let input = "line1\nline1\nline2\nline2\nline3\nline3";
-        let expected = "line1\nline2\nline3";
-        let cow_input = Cow::Borrowed(input);
-        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-
-        // Test case: input with non-consecutive duplicate lines
-        let input = "line1\nline2\nline3\nline1\nline2";
-        let expected = "line1\nline2\nline3";
-        let cow_input = Cow::Borrowed(input);
-        assert_eq!(deduplicate(&cow_input), Cow::Owned(expected.to_string()));
-    }
+        let mut coverage_str = utils::deduplicate(&*String::from_utf8_lossy(
+            &*results.into_iter().flatten().collect::<Vec<_>>(),
+        ));
+        for line in coverage_str.lines() {
+            if line.starts_with("COV=") {
+                #[cfg(not(feature = "tui"))]
+                println!("We found the coverage for the line: {:?}", line);
+                inc_cov();
+            }
+        }
+        // For each call, we verify that invariants aren't broken
+        if !invariant_manager.are_invariants_passing() {
+            panic!("Invariant triggered!");
+        } else {
+            return ExitKind::Ok;
+        }
+    })
 }
