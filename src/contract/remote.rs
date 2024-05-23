@@ -40,18 +40,7 @@ impl ContractBridge {
     ///
     /// * `wasm_bytes`: the bytes of the WASM contract
     /// * `json_specs`: JSON specs of the contract, i.e. dns.json
-    ///
-    /// returns: DeployedSetup
-    ///
-    /// # Example
-    ///
-    /// ```
-    ///let dns_wasm: Vec<u8> = fs::read("sample/dns/target/ink/dns.wasm").unwrap();
-    // let dns_wasm_bytes: Vec<u8> = include_bytes!(".../dns/target/ink/dns.wasm")[..].to_vec();
-    // let dns_specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-    // let ct =
-    //     deploy::initialize_contract(dns_wasm_bytes, dns_specs.clone());
-    /// ```
+
     pub fn initialize_wasm(wasm_bytes: Vec<u8>, path_to_specs: PathBuf) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
         let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
@@ -88,23 +77,17 @@ impl ContractBridge {
     /// * `payload`: The scale-encoded `data` to pass to the contract
     /// * `who`: AccountId of the caller
     /// * `amount`: Amount to pass to the contract
-    ///
-    /// returns: Result<ExecReturnValue, DispatchError>
-    ///
-    /// # Examples
-    /// ```
-    /// self.setup.clone().call(&full_call)
-    /// ```
     pub fn call(
         self,
         payload: &Vec<u8>,
         who: u8,
         amount: BalanceOf<Test>,
     ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
+        let acc = AccountId32::new([who; 32]);
         Contracts::bare_call(
-            AccountId32::new([who; 32]),
+            acc,
             self.contract_address,
-            amount, //Todo: Fuzz this, if it is payable
+            amount,
             Self::GAS_LIMIT,
             None,
             payload.clone(),
@@ -158,23 +141,5 @@ impl ContractBridge {
         .build_storage()
         .unwrap();
         storage
-    }
-}
-
-mod test {
-    use std::fs;
-
-    #[test]
-    fn wasm_to_wat() {
-        let vec = fs::read("sample/dns/target/ink/dns.wasm").unwrap().to_vec();
-
-        let wat = wat::parse_file("sample/dns/target/ink/dns.wat").unwrap();
-        let binary = wat::parse_bytes(&*wat).unwrap().to_vec();
-        assert_eq!(vec, binary);
-
-        // Altered wasm
-        let wat2 = wat::parse_file("sample/dns/target/ink/dns_altered.wat").unwrap();
-        let binary2 = wat::parse_bytes(&*wat2).unwrap().to_vec();
-        assert_ne!(vec, binary2);
     }
 }

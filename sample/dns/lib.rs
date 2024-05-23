@@ -55,7 +55,7 @@ mod dns {
         /// Simple storage vec that contains every registered domain
         domains: StorageVec<Hash>,
         /// Another invariant testing
-        dangerous_number: i32,
+        dangerous_number: u32,
     }
 
     impl Default for DomainNameService {
@@ -71,7 +71,7 @@ mod dns {
                 name_to_owner,
                 default_address: zero_address(),
                 domains,
-                dangerous_number: 42_i32,
+                dangerous_number: 0,
             }
         }
     }
@@ -147,7 +147,7 @@ mod dns {
         }
 
         #[ink(message)]
-        pub fn crash(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
+        pub fn crash(&mut self, data: Vec<u8>) -> Result<()> {
             if data.len() < 5 {
                 if data[0] == b'a' {
                     if data[1] == b'b' {
@@ -166,14 +166,14 @@ mod dns {
         /// Don't tell anyone, but this contract is vulnerable!
         /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`
         #[ink(message)]
-        pub fn transfer(&mut self, name: Hash, to: AccountId, number: i32) -> Result<()> {
+        pub fn transfer(&mut self, name: Hash, to: AccountId, number: u32) -> Result<()> {
             let caller = self.env().caller();
             // Let's assume we still transfer if the caller isn't the owner
 
-            // let owner = self.get_owner_or_default(name);
-            // if caller != owner {
-            //     return Err(Error::CallerIsNotOwner);
-            // }2
+            let owner = self.get_owner_or_default(name);
+            if caller != owner {
+                return Err(Error::CallerIsNotOwner);
+            }
 
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
@@ -223,25 +223,23 @@ mod dns {
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl DomainNameService {
-        // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter
-
+        // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should register
         #[cfg(feature = "phink")]
         #[ink(message)]
         pub fn phink_assert_hash42_cant_be_registered(&self) {
             for i in 0..self.domains.len() {
                 if let Some(domain) = self.domains.get(i) {
-                    // Invariant triggered! We caught an invalid domain in the storage...
                     assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
                 }
             }
         }
 
-        // This invariant ensures that nobody registed the forbidden number
+        // This invariant ensures that nobody register the forbidden number
         #[cfg(feature = "phink")]
         #[ink(message)]
         pub fn phink_assert_dangerous_number(&self) {
-            let FORBIDDEN_NUMBER = 69;
-            assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
+            let forbidden_number = 69;
+            assert_ne!(self.dangerous_number, forbidden_number);
         }
     }
 
