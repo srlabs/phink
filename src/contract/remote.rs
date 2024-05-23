@@ -1,30 +1,25 @@
-use contract_metadata::ContractMetadata;
-use frame_support::__private::BasicExternalities;
-use frame_support::pallet_prelude::Weight;
-use frame_support::traits::fungible::Inspect;
-use ink_metadata::InkProject;
-use pallet_contracts::{
-    Code, CollectEvents, Config, ContractExecResult, DebugInfo, Determinism, ExecReturnValue,
-};
-use sp_core::{crypto::AccountId32, storage::Storage, H256};
-use sp_runtime::{BuildStorage, DispatchError};
 use std::fs;
 use std::path::PathBuf;
 
+use frame_support::__private::BasicExternalities;
+use frame_support::pallet_prelude::Weight;
+use frame_support::traits::fungible::Inspect;
+use pallet_contracts::ContractResult;
+use pallet_contracts::{Code, CollectEvents, Config, DebugInfo, Determinism, ExecReturnValue};
+use sp_core::{crypto::AccountId32, storage::Storage, H256};
+use sp_runtime::{BuildStorage, DispatchError};
+
 use crate::contract::payload;
 use crate::contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig};
-use pallet_contracts::ContractResult;
+
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 pub type Test = Runtime;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-type EventRecord = frame_system::EventRecord<
+pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::RuntimeEvent,
     <Runtime as frame_system::Config>::Hash,
 >;
-pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
-
-pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
 #[derive(Clone)]
 pub struct ContractBridge {
@@ -35,6 +30,10 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
+    pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
+
+    pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
     ///
     /// # Arguments
@@ -57,7 +56,7 @@ impl ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
         let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
         let genesis_storage: Storage = {
-            let storage = storage();
+            let storage = Self::storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let code_hash = Self::upload(&wasm_bytes);
@@ -87,6 +86,8 @@ impl ContractBridge {
     /// # Arguments
     ///
     /// * `payload`: The scale-encoded `data` to pass to the contract
+    /// * `who`: AccountId of the caller
+    /// * `amount`: Amount to pass to the contract
     ///
     /// returns: Result<ExecReturnValue, DispatchError>
     ///
@@ -97,12 +98,14 @@ impl ContractBridge {
     pub fn call(
         self,
         payload: &Vec<u8>,
+        who: u8,
+        amount: BalanceOf<Test>,
     ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
         Contracts::bare_call(
-            ALICE, // Todo: fuzz this
+            AccountId32::new([who; 32]),
             self.contract_address,
-            0, //Todo: Fuzz this, if it is payable
-            GAS_LIMIT,
+            amount, //Todo: Fuzz this, if it is payable
+            Self::GAS_LIMIT,
             None,
             payload.clone(),
             DebugInfo::UnsafeDebug,
@@ -112,18 +115,22 @@ impl ContractBridge {
     }
 
     pub fn upload(wasm_bytes: &Vec<u8>) -> H256 {
-        let code_hash =
-            Contracts::bare_upload_code(ALICE, wasm_bytes.clone(), None, Determinism::Enforced)
-                .unwrap()
-                .code_hash;
+        let code_hash = Contracts::bare_upload_code(
+            Self::ALICE,
+            wasm_bytes.clone(),
+            None,
+            Determinism::Enforced,
+        )
+        .unwrap()
+        .code_hash;
         code_hash
     }
 
     pub fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
         let instantiate = Contracts::bare_instantiate(
-            ALICE,
+            Self::ALICE,
             0,
-            GAS_LIMIT,
+            Self::GAS_LIMIT,
             None,
             Code::Existing(code_hash),
             Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
@@ -134,24 +141,24 @@ impl ContractBridge {
 
         Some(instantiate.result.unwrap().account_id)
     }
-}
 
-fn storage() -> Storage {
-    let storage = RuntimeGenesisConfig {
-        balances: BalancesConfig {
-            balances: (0..5) // Lot of money for Alice, Bob ... Ferdie
-                .map(|i| [i; 32].into())
-                .collect::<Vec<_>>()
-                .iter()
-                .cloned()
-                .map(|k| (k, 10000000000000000000 * 2))
-                .collect(),
-        },
-        ..Default::default()
+    fn storage() -> Storage {
+        let storage = RuntimeGenesisConfig {
+            balances: BalancesConfig {
+                balances: (0..5) // Lot of money for Alice, Bob ... Ferdie
+                    .map(|i| [i; 32].into())
+                    .collect::<Vec<_>>()
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, 10000000000000000000 * 2))
+                    .collect(),
+            },
+            ..Default::default()
+        }
+        .build_storage()
+        .unwrap();
+        storage
     }
-    .build_storage()
-    .unwrap();
-    storage
 }
 
 mod test {

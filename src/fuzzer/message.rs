@@ -1,130 +1,100 @@
-use std::fs::File;
-use std::io::Write;
-use std::{fs, path::Path, sync::Mutex};
+use crate::contract::remote::{BalanceOf, Test};
+use crate::contract::runtime::RuntimeCall;
+use contract_transcode::{ContractMessageTranscoder, Transcoder};
+use parity_scale_codec::DecodeLimit;
+use std::sync::Mutex;
 
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::__private::BasicExternalities;
-use itertools::Itertools;
+// Call delimiter: `********`
+pub const DELIMITER: [u8; 8] = [42; 8];
+pub const MIN_SEED_LEN: usize = 12; //Origin + Value + Selector
+pub const MAX_MESSAGES_PER_EXEC: usize = 4;
 
-use seq_macro::seq;
-
-use crate::contract::payload::{PayloadCrafter, Selector};
-use crate::contract::remote::ContractBridge;
-use crate::fuzzer::engine::FuzzerEngine;
-use crate::fuzzer::invariants::Invariants;
-use crate::utils;
-
-#[derive(Clone)]
-pub struct Fuzzer {
-    setup: ContractBridge,
+pub struct Data<'a> {
+    pub data: &'a [u8],
+    pub pointer: usize,
+    pub size: usize,
 }
 
-impl Fuzzer {
-    pub fn new(setup: ContractBridge) -> Fuzzer {
-        Fuzzer { setup }
-    }
+#[derive(Debug)]
+pub struct Message {
+    pub origin: usize,
+    pub call: Vec<u8>,
+    pub value_token: BalanceOf<Test>,
+    pub description: String,
+}
 
+#[derive(Debug)]
+pub struct OneInput {
+    pub messages: Vec<Message>,
+}
 
-    fn make_initial_corpus(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
-        fs::create_dir_all("./output/phink/corpus")?;
-
-        for (i, selector) in selectors.iter().enumerate() {
-            let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
-            let mut file = File::create(&file_path)?;
-            file.write_all(selector)?;
-        }
-
-        Ok(())
+impl<'a> Data<'a> {
+    fn size_limit_reached(&self) -> bool {
+        !(MAX_MESSAGES_PER_EXEC == 0) && self.size >= MAX_MESSAGES_PER_EXEC
     }
 }
 
-impl FuzzerEngine for Fuzzer {
-    fn setup(self) {
-        let mut transcoder_loader = Mutex::new(
-            ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
-        );
+impl<'a> Iterator for Data<'a> {
+    type Item = &'a [u8];
 
-        let specs = &self.setup.json_specs;
-        let mut selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-        let inv = PayloadCrafter::extract_invariants(specs)
-            .expect("No invariants found, check your contract");
-
-        let mut invariant_manager = Invariants::from(inv, self.setup.clone());
-
-        Self::make_initial_corpus(&mut selectors).expect("Failed to create initial corpus");
-
-        ziggy::fuzz!(|data: &[u8]| {
-            harness(
-                self.clone(),
-                &mut transcoder_loader,
-                &mut selectors.clone(),
-                &mut invariant_manager,
-                data,
-            );
-        });
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.data.len() <= self.pointer || self.size_limit_reached() {
+                return None;
+            }
+            let next_delimiter = self.data[self.pointer..]
+                .windows(DELIMITER.len())
+                .position(|window| window == DELIMITER);
+            let next_pointer = match next_delimiter {
+                Some(delimiter) => self.pointer + delimiter,
+                None => self.data.len(),
+            };
+            let res = Some(&self.data[self.pointer..next_pointer]);
+            self.pointer = next_pointer + DELIMITER.len();
+            if res.unwrap().len() >= MIN_SEED_LEN {
+                self.size += 1;
+                return res;
+            }
+        }
     }
 }
 
-fn harness(
-    client: Fuzzer,
-    transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
-    selectors: &mut Vec<Selector>,
-    invariant_manager: &mut Invariants,
-    input: &[u8],
-) {
-    let binding = client.clone();
-    let mut raw_call = binding.parse_args(input, selectors.clone());
+pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder>) -> OneInput {
+    let iterable = Data {
+        data,
+        pointer: 0,
+        size: 0,
+    };
+    let mut input = OneInput { messages: vec![] };
+    for extrinsic in iterable {
+        let value_token: u32 =
+            u32::from_ne_bytes(extrinsic[0..4].try_into().expect("missing lapse bytes"));
+        let origin: usize =
+            u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
+        let mut encoded_extrinsic: &[u8] = &extrinsic[6..];
 
-    if raw_call.is_none() {
-        return;
-    }
+        let decoded_msg = transcoder
+            .lock()
+            .unwrap()
+            .decode_contract_message(&mut &*encoded_extrinsic);
 
-    raw_call = Some(raw_call.unwrap());
+        // println!("{:?}", decoded_msg.clone().unwrap().to_string());
 
-
-    // let decoded_msg = raw_call.decode();
-
-     let decoded_msg = transcoder_loader
-         .lock()
-         .unwrap()
-         .decode_contract_message(&mut &*raw_call.clone().unwrap());
-
-    if let Err(_) = decoded_msg {
-        return;
-    }
-
-    let mut chain = BasicExternalities::new(client.setup.genesis.clone());
-    chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp());
-
-    chain.execute_with(|| {
-        let mut results: Vec<Vec<u8>> = Vec::new();
-        // for call in calls {
-
-        let result = client.setup.clone().call(&raw_call.clone().unwrap(), 1, 0);
-        results.push(result.debug_message);
-
-        #[cfg(not(fuzzing))]
-        <Fuzzer as FuzzerEngine>::pretty_print(
-            result.result.clone(),
-            decoded_msg.unwrap().to_string(),
-            raw_call.unwrap(),
-        );
-
-        let flatten_cov: &[u8] = &*results.into_iter().flatten().collect::<Vec<_>>();
-        let mut coverage_str = utils::deduplicate(&*String::from_utf8_lossy(flatten_cov));
-
-        seq!(x in 0..=500 {
-           if coverage_str.contains(&format!("COV={}", x)) {
-            let _ = 1 + 1;
-            println!("We've passed {:?}", x);
-                            let _ = 1 + 1;
-
+        match &decoded_msg {
+            Ok(_) => {
+                if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
+                    input.messages.push(Message {
+                        origin,
+                        call: encoded_extrinsic.into(),
+                        value_token: value_token.into(),
+                        description: decoded_msg.unwrap().to_string(),
+                    });
+                }
+            }
+            Err(_) => {
+                continue;
+            }
         }
-        });
-
-        // For each call, we verify that invariants aren't broken
-        if !invariant_manager.are_invariants_passing() {
-            panic!("Invariant triggered!");
-        }
-    })
+    }
+    input
 }

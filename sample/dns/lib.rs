@@ -2,7 +2,9 @@
 
 #[ink::contract]
 mod dns {
+    use ink::prelude::{vec, vec::Vec};
     use ink::storage::Mapping;
+
     use ink::storage::StorageVec;
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
@@ -121,12 +123,11 @@ mod dns {
         #[ink(message)]
         pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
             let caller = self.env().caller();
-            
+
             //Random code for coverage purposes below
             let a = 1;
             let b = 3;
-            assert_eq!(a, b-2);
-            let c = true && false;
+            assert_eq!(a, b - 2);
 
             let owner = self.get_owner_or_default(name);
             if caller != owner {
@@ -145,6 +146,22 @@ mod dns {
             Ok(())
         }
 
+        #[ink(message)]
+        pub fn crash(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
+            if data.len() < 5 {
+                if data[0] == b'a' {
+                    if data[1] == b'b' {
+                        if data[2] == b'c' {
+                            if data[3] == b'd' {
+                                self.dangerous_number = 69; //panic!
+                            }
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        }
         /// Transfer owner to another address.
         /// Don't tell anyone, but this contract is vulnerable!
         /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`

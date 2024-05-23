@@ -1,16 +1,18 @@
-use crate::fuzzer::instrument::instrument::ContractCovUpdater;
-use quote::quote;
-use rand::distributions::Alphanumeric;
-use rand::Rng;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::{copy, File};
-use std::io::{Take, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
+
+use quote::quote;
+use rand::distributions::Alphanumeric;
+use rand::Rng;
 use syn::parse_file;
 use syn::visit_mut::VisitMut;
 use walkdir::WalkDir;
+
+use crate::fuzzer::instrument::instrument::ContractCovUpdater;
 
 /// The objective of this `struct` is to assist Phink in instrumenting ink! smart contracts.
 /// In a fuzzing context, instrumenting a smart contract involves modifying the target (i.e., the WASM blob),
@@ -32,140 +34,135 @@ pub struct InkFilesPath {
     pub specs_path: PathBuf,
 }
 
+pub trait ContractBuilder {
+    fn build(&self) -> Result<InkFilesPath, String>;
+}
+
+pub trait ContractForker {
+    fn fork(&self) -> Result<PathBuf, String>;
+}
+
+pub trait ContractInstrumenter {
+    fn instrument(&mut self) -> Result<&mut Self, String>
+    where
+        Self: Sized;
+    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), std::io::Error>;
+}
+
 impl CoverageEngine {
-    /// # Argument
-    /// * `dir`: Directory containing the smart contract code base
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
     }
+}
 
-    /// Compile the instrumented smart-contract.
-    /// By default, `cargo contract build`
-    /// Returns a `InkFilesPath` containing `contract.wasm` and `specs.json` path
-    pub(crate) fn build(&self) -> InkFilesPath {
-        // We compile the contract with `cargo contract build`
-        match Command::new("cargo")
+impl ContractBuilder for CoverageEngine {
+    fn build(&self) -> Result<InkFilesPath, String> {
+        let status = Command::new("cargo")
             .current_dir(&self.contract_dir)
             .args(["contract", "build", "--features=phink"])
             .status()
-        {
-            // We search for the .wasm blob
-            Ok(status) if status.success() => {
-                let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
-                    .unwrap()
-                    .filter_map(|entry| {
-                        let path = entry.ok().unwrap().path();
-                        if path.is_file()
-                            && path.extension().and_then(OsStr::to_str) == Some("wasm")
-                        {
-                            Some(path)
-                        } else {
-                            None
-                        }
-                    })
-                    .next()
-                    .unwrap();
+            .map_err(|e| format!("Failed to execute cargo command: {:?}", e))?;
 
-                // We assert that if the file is `mycontract.wasm`, then metadata will be
-                // `mycontract.json`
-                let specs_path =
-                    PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+        if status.success() {
+            let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
+                .map_err(|e| format!("Failed to read target directory: {:?}", e))?
+                .filter_map(|entry| {
+                    let path = entry.ok()?.path();
+                    if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
+                        Some(path)
+                    } else {
+                        None
+                    }
+                })
+                .next()
+                .ok_or("No .wasm file found in target directory")?;
 
-                InkFilesPath {
-                    wasm_path,
-                    specs_path,
-                }
-            }
-            e => panic!(
+            let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+
+            Ok(InkFilesPath {
+                wasm_path,
+                specs_path,
+            })
+        } else {
+            Err(format!(
                 "It seems that your instrumented smart contract did not compile properly. \
-                Please go to {:?}, edit the lib.rs file, and run cargo contract build again\
+                Please go to {:?}, edit the lib.rs file, and run cargo contract build again.\
                 Detailed error — {:?}",
-                &self.contract_dir, e
-            ),
+                &self.contract_dir, status
+            ))
         }
     }
+}
 
-    /// This function _forks_ the code base in order to instrument it safely
-    /// The fork is performed by default in `/tmp/`, with the format `/tmp/ink_fuzzed_random/`
-    /// Returns the new path of the directory
-    fn fork(&self) -> PathBuf {
+impl ContractForker for CoverageEngine {
+    fn fork(&self) -> Result<PathBuf, String> {
         let random_string: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
-            .take(5) // Generates a random string of length 5
+            .take(5)
             .map(char::from)
             .collect();
 
         let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
-        fs::create_dir_all(&new_dir).expect("Failed to create directory");
+        fs::create_dir_all(&new_dir).map_err(|e| format!("Failed to create directory: {:?}", e))?;
 
-        // Copy files and subdirectories from the source path to the new directory
         for entry in WalkDir::new(&self.contract_dir) {
-            let entry = entry.expect("Failed to read entry");
+            let entry = entry.map_err(|e| format!("Failed to read entry: {:?}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
                     .strip_prefix(&self.contract_dir)
-                    .expect("Failed to strip prefix"),
+                    .map_err(|e| format!("Failed to strip prefix: {:?}", e))?,
             );
 
             if entry.path().is_dir() {
-                fs::create_dir_all(&target_path).expect("Failed to create subdirectory");
+                fs::create_dir_all(&target_path)
+                    .map_err(|e| format!("Failed to create subdirectory: {:?}", e))?;
             } else {
-                copy(entry.path(), &target_path).expect("Failed to copy file");
+                copy(entry.path(), &target_path)
+                    .map_err(|e| format!("Failed to copy file: {:?}", e))?;
             }
         }
 
-        new_dir
+        Ok(new_dir)
     }
+}
 
-    pub fn instrument(&mut self) -> &CoverageEngine {
-        //TODO: Shouldn't be only lib.rs
-        //For now we assume one smart contract is only one file
-        let new_working_dir: PathBuf = self.fork();
+impl ContractInstrumenter for CoverageEngine {
+    fn instrument(&mut self) -> Result<&mut CoverageEngine, String> {
+        let new_working_dir = self.fork()?;
         let lib_rs = new_working_dir.join("lib.rs");
-        let code = fs::read_to_string(lib_rs.clone()).unwrap();
+        let code =
+            fs::read_to_string(&lib_rs).map_err(|e| format!("Failed to read lib.rs: {:?}", e))?;
 
-        let modified_code = parse_and_visit(&code, ContractCovUpdater).unwrap();
+        let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
+            .map_err(|_| "Failed to parse and visit code".to_string())?;
 
-        save_and_format(modified_code, lib_rs.clone());
+        Self::save_and_format(modified_code, lib_rs.clone())
+            .map_err(|e| format!("Failed to save and format code: {:?}", e))?;
+
         self.contract_dir = new_working_dir;
-        self
+        Ok(self)
     }
-}
 
-/// This function parses a source code, and runs a VisitMut to visit the code and apply
-/// the required transformation
-/// # Arguments
-///
-/// * `code`: Source code of the Rust file to modify
-/// * `visitor`: Type of mutation to apply. Must `impl VisitMut`
-///
-fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
-    let mut ast = syn::parse_file(code).unwrap();
-    visitor.visit_file_mut(&mut ast);
-    Ok(quote!(#ast).to_string())
-}
+    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
+        let mut ast = parse_file(code).unwrap();
+        visitor.visit_file_mut(&mut ast);
+        Ok(quote!(#ast).to_string())
+    }
 
-/// This function export `source_code` to `lib_rs`, and format it
-/// Works only for one file.
-fn save_and_format(source_code: String, lib_rs: PathBuf) {
-    let mut file = File::create(lib_rs.clone()).unwrap();
-    file.write_all(source_code.as_bytes()).unwrap();
-    file.flush().unwrap();
-
-    Command::new("rustfmt").arg(lib_rs).status().unwrap();
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), std::io::Error> {
+        let mut file = File::create(lib_rs.clone())?;
+        file.write_all(source_code.as_bytes())?;
+        file.flush()?;
+        Command::new("rustfmt").arg(lib_rs).status()?;
+        Ok(())
+    }
 }
 
 mod instrument {
-    use proc_macro2::{Span, TokenStream};
-    use quote::quote;
-    use syn::token::Semi;
-    use syn::{
-        parse_quote,
-        spanned::Spanned,
-        visit_mut::{self, visit_item_mod_mut, VisitMut},
-        Expr, Item, ItemMod, ItemStatic, ItemStruct, LitInt, Stmt, Token,
-    };
+    use proc_macro2::Span;
+    use syn::{parse_quote, spanned::Spanned, visit_mut::VisitMut, Expr, LitInt, Stmt, Token};
 
     pub struct ContractCovUpdater;
 
@@ -174,41 +171,206 @@ mod instrument {
             let mut new_stmts = Vec::new();
             // Temporarily replace block.stmts with an empty Vec to avoid borrowing issues
             let mut stmts = std::mem::replace(&mut block.stmts, Vec::new());
-
             for mut stmt in stmts.drain(..) {
                 let line_lit =
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
-
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)
                 };
-
                 // Convert this expression into a statement
                 let pre_stmt: Stmt = Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
                 new_stmts.push(pre_stmt);
-
                 // Use recursive visitation to handle nested blocks and other statement types
                 self.visit_stmt_mut(&mut stmt);
                 new_stmts.push(stmt.clone());
             }
-
             block.stmts = new_stmts;
         }
     }
 }
 
+// #[derive(Debug)]
+// pub struct InkFilesPath {
+//     pub wasm_path: PathBuf,
+//     pub specs_path: PathBuf,
+// }
+//
+// impl CoverageEngine {
+//     /// # Argument
+//     /// * `dir`: Directory containing the smart contract code base
+//     pub fn new(dir: PathBuf) -> Self {
+//         Self { contract_dir: dir }
+//     }
+//
+//     /// Compile the instrumented smart-contract.
+//     /// By default, `cargo contract build`
+//     /// Returns a `InkFilesPath` containing `contract.wasm` and `specs.json` path
+//     pub(crate) fn build(&self) -> InkFilesPath {
+//         // We compile the contract with `cargo contract build`
+//         match Command::new("cargo")
+//             .current_dir(&self.contract_dir)
+//             .args(["contract", "build", "--features=phink"])
+//             .status()
+//         {
+//             // We search for the .wasm blob
+//             Ok(status) if status.success() => {
+//                 let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
+//                     .unwrap()
+//                     .filter_map(|entry| {
+//                         let path = entry.ok().unwrap().path();
+//                         if path.is_file()
+//                             && path.extension().and_then(OsStr::to_str) == Some("wasm")
+//                         {
+//                             Some(path)
+//                         } else {
+//                             None
+//                         }
+//                     })
+//                     .next()
+//                     .unwrap();
+//
+//                 // We assert that if the file is `mycontract.wasm`, then metadata will be
+//                 // `mycontract.json`
+//                 let specs_path =
+//                     PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+//
+//                 InkFilesPath {
+//                     wasm_path,
+//                     specs_path,
+//                 }
+//             }
+//             e => panic!(
+//                 "It seems that your instrumented smart contract did not compile properly. \
+//                 Please go to {:?}, edit the lib.rs file, and run cargo contract build again\
+//                 Detailed error — {:?}",
+//                 &self.contract_dir, e
+//             ),
+//         }
+//     }
+//
+//     /// This function _forks_ the code base in order to instrument it safely
+//     /// The fork is performed by default in `/tmp/`, with the format `/tmp/ink_fuzzed_random/`
+//     /// Returns the new path of the directory
+//     fn fork(&self) -> PathBuf {
+//         let random_string: String = rand::thread_rng()
+//             .sample_iter(&Alphanumeric)
+//             .take(5) // Generates a random string of length 5
+//             .map(char::from)
+//             .collect();
+//
+//         let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
+//         fs::create_dir_all(&new_dir).expect("Failed to create directory");
+//
+//         // Copy files and subdirectories from the source path to the new directory
+//         for entry in WalkDir::new(&self.contract_dir) {
+//             let entry = entry.expect("Failed to read entry");
+//             let target_path = new_dir.join(
+//                 entry
+//                     .path()
+//                     .strip_prefix(&self.contract_dir)
+//                     .expect("Failed to strip prefix"),
+//             );
+//
+//             if entry.path().is_dir() {
+//                 fs::create_dir_all(&target_path).expect("Failed to create subdirectory");
+//             } else {
+//                 copy(entry.path(), &target_path).expect("Failed to copy file");
+//             }
+//         }
+//
+//         new_dir
+//     }
+//
+//     pub fn instrument(&mut self) -> &CoverageEngine {
+//         //TODO: Shouldn't be only lib.rs
+//         //For now we assume one smart contract is only one file
+//         let new_working_dir: PathBuf = self.fork();
+//         let lib_rs = new_working_dir.join("lib.rs");
+//         let code = fs::read_to_string(lib_rs.clone()).unwrap();
+//
+//         let modified_code = parse_and_visit(&code, ContractCovUpdater).unwrap();
+//
+//         save_and_format(modified_code, lib_rs.clone());
+//         self.contract_dir = new_working_dir;
+//         self
+//     }
+// }
+//
+// /// This function parses a source code, and runs a VisitMut to visit the code and apply
+// /// the required transformation
+// /// # Arguments
+// ///
+// /// * `code`: Source code of the Rust file to modify
+// /// * `visitor`: Type of mutation to apply. Must `impl VisitMut`
+// ///
+// fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
+//     let mut ast = syn::parse_file(code).unwrap();
+//     visitor.visit_file_mut(&mut ast);
+//     Ok(quote!(#ast).to_string())
+// }
+//
+// /// This function export `source_code` to `lib_rs`, and format it
+// /// Works only for one file.
+// fn save_and_format(source_code: String, lib_rs: PathBuf) {
+//     let mut file = File::create(lib_rs.clone()).unwrap();
+//     file.write_all(source_code.as_bytes()).unwrap();
+//     file.flush().unwrap();
+//
+//     Command::new("rustfmt").arg(lib_rs).status().unwrap();
+// }
+//
+// mod instrument {
+//     use proc_macro2::{Span, TokenStream};
+//     use quote::quote;
+//     use syn::token::Semi;
+//     use syn::{
+//         parse_quote,
+//         spanned::Spanned,
+//         visit_mut::{self, visit_item_mod_mut, VisitMut},
+//         Expr, Item, ItemMod, ItemStatic, ItemStruct, LitInt, Stmt, Token,
+//     };
+//
+//     pub struct ContractCovUpdater;
+//
+//     impl VisitMut for ContractCovUpdater {
+//         fn visit_block_mut(&mut self, block: &mut syn::Block) {
+//             let mut new_stmts = Vec::new();
+//             // Temporarily replace block.stmts with an empty Vec to avoid borrowing issues
+//             let mut stmts = std::mem::replace(&mut block.stmts, Vec::new());
+//
+//             for mut stmt in stmts.drain(..) {
+//                 let line_lit =
+//                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
+//
+//                 let insert_expr: Expr = parse_quote! {
+//                     ink::env::debug_println!("COV={}", #line_lit)
+//                 };
+//
+//                 // Convert this expression into a statement
+//                 let pre_stmt: Stmt = Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
+//                 new_stmts.push(pre_stmt);
+//
+//                 // Use recursive visitation to handle nested blocks and other statement types
+//                 self.visit_stmt_mut(&mut stmt);
+//                 new_stmts.push(stmt.clone());
+//             }
+//
+//             block.stmts = new_stmts;
+//         }
+//     }
+// }
+
 mod test {
-    use frame_support::assert_ok;
+    use parity_scale_codec::{Decode, DecodeLimit};
     use std::path::PathBuf;
     use std::{fs, fs::File, io::Write, process::Command};
 
-    use crate::fuzzer::instrument::CoverageEngine;
     use quote::quote;
     use syn::__private::ToTokens;
     use syn::parse_file;
     use syn::visit_mut::VisitMut;
 
-    use crate::fuzzer::instrument::instrument::*;
+    use crate::fuzzer::instrument::{ContractForker, CoverageEngine};
 
     #[test]
     fn adding_cov_insertion_works() {
@@ -217,7 +379,7 @@ mod test {
         let code = fs::read_to_string("sample/dns/lib.rs").unwrap();
         let mut ast = parse_file(&code).expect("Unable to parse file");
 
-        let mut visitor = ContractCovUpdater;
+        let mut visitor = crate::fuzzer::instrument::instrument::ContractCovUpdater;
         visitor.visit_file_mut(&mut ast);
 
         let modified_code = quote!(#ast).to_string();
@@ -228,7 +390,7 @@ mod test {
     #[test]
     fn do_fork() {
         let engine: CoverageEngine = CoverageEngine::new(PathBuf::from("sample/dns"));
-        let fork = engine.fork();
+        let fork = engine.fork().unwrap();
         println!("{:?}", fork);
         let exists = fork.exists();
         fs::remove_file(fork).unwrap(); //remove after test passed to avoid spam of /tmp

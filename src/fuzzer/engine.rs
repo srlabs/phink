@@ -1,58 +1,49 @@
-use crate::contract::payload::{PayloadCrafter, Selector};
-use crate::contract::remote::ContractBridge;
-use crate::contract::runtime::{
-    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
-};
-use crate::fuzzer::invariants::Invariants;
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::__private::BasicExternalities;
 use frame_support::traits::{OnFinalize, OnInitialize};
 use pallet_contracts::ExecReturnValue;
 use parity_scale_codec::Encode;
 use prettytable::{row, Table};
 use sp_runtime::DispatchError;
-use std::path::Path;
-use std::sync::Mutex;
+
+// use std::intrinsics::fadd_fast;
+use crate::contract::payload::Selector;
+use crate::contract::runtime::{
+    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
+};
 
 pub trait FuzzerEngine {
-    fn setup(self);
-
-    /// Return the scale_encoded version of a call
-    fn create_call(func: Selector, args: &[u8]) -> Option<Vec<u8>> {
-        Some((func, args.to_vec()).encode())
-    }
+    fn fuzz(self);
 
     /// Takes some raw bytes `[u8]` and returns the good code
-    fn parse_args<'a>(
-        &'a self,
-        data: &'a [u8],
-        selectors: Vec<Selector>,
-    ) -> Option<Box<(Selector, &[u8])>> {
+    fn parse_args<'a>(&'a self, data: &'a [u8], selectors: Vec<Selector>) -> Option<Vec<u8>> {
         // TODO! 1500 shouldn't be static
         // Our payload must be at least `1_500` sized, and min `4`
         let selector_size = 4; //where 4 is *at least* the selector size
-        if data.len() > 1_500 || data.len() <= selector_size {
+        if data.len() > 500 || data.len() <= 6 {
             return None;
-        }
-        let selector_slice: usize =
-            u32::from_ne_bytes(data[0..selector_size].try_into().unwrap()) as usize;
+        } //This is passed to Ziggy
+
+        let selector_slice: usize = u32::from_ne_bytes(data[0..4].try_into().unwrap()) as usize;
         if selector_slice < selectors.len() {
             let fuzzed_func = selectors[selector_slice];
-            let arguments = &data[selector_size..];
-            return Some(Box::new((fuzzed_func, arguments)));
+
+            let arguments = &data[4..];
+            let mut result = Vec::with_capacity(fuzzed_func.len() + arguments.len());
+            result.extend_from_slice(&fuzzed_func);
+            result.extend_from_slice(arguments);
+            return Some(result);
         }
         None
     }
 
     /// Pretty print the result of a call
-    /// Used for debug purposed... (yes, we still make it fancy :/)
+    /// Used for debug purposed...
     fn pretty_print(
         result: Result<ExecReturnValue, DispatchError>,
         decoded_msg: String,
         full_call: Vec<u8>,
     ) {
         let mut table = Table::new();
-        let result: String = format!("{:?}", result.unwrap());
+        let result: String = format!("{:?}", result);
         table.add_row(row!["Decoded call", "Encoded call", "Result"]);
         table.add_row(row![decoded_msg, hex::encode(full_call), result]);
         table.printstd();

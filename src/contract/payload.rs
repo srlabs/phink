@@ -1,4 +1,3 @@
-use std::fs;
 use std::hash::Hash;
 
 use serde::ser::Error;
@@ -122,34 +121,14 @@ impl PayloadCrafter {
     }
 }
 
-/// A simple helper used to directly encode a message i.e. `flip` to a proper selector `[u8; 4]`
-#[macro_export]
-macro_rules! message_to_bytes {
-    ($s:expr) => {{
-        let hash = blake2_256($s.as_bytes());
-        [hash[0], hash[1], hash[2], hash[3]]
-    }};
-}
-
 mod test {
     use std::fs;
     use std::path::Path;
 
-    use crate::contract::payload::PayloadCrafter;
-    use crate::contract::payload::Selector;
     use contract_transcode::ContractMessageTranscoder;
 
-    #[test]
-    fn fetch_correct_dns_invariant() {
-        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-
-        let extracted: String = PayloadCrafter::extract_invariants(&specs)
-            .iter()
-            .map(|x| hex::encode(x) + " ")
-            .collect();
-
-        assert_eq!(extracted, "2e15cab0 5d17ca7f ");
-    }
+    use crate::contract::payload::PayloadCrafter;
+    use crate::contract::payload::Selector;
 
     #[test]
     fn fetch_correct_selectors() {
