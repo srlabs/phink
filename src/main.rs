@@ -5,9 +5,6 @@ extern crate core;
 use std::{fs, path::PathBuf};
 
 use clap::Parser;
-use frame_support::traits::fungible::Inspect;
-use pallet_contracts::Config;
-use sp_runtime::traits::StaticLookup;
 
 use crate::fuzzer::fuzz::Fuzzer;
 use crate::fuzzer::instrument::{ContractBuilder, ContractInstrumenter, CoverageEngine};

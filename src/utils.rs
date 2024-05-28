@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::collections::HashSet;
 
 /// A simple helper to remove some duplicated lines from a `&str`

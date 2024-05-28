@@ -2,10 +2,12 @@
 
 #[ink::contract]
 mod dns {
-    use ink::prelude::{vec, vec::Vec};
-    use ink::storage::Mapping;
+    use ink::{
+        prelude::{vec::Vec},
+        storage::Mapping,
+        storage::StorageVec
+    };
 
-    use ink::storage::StorageVec;
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
     pub struct Register {

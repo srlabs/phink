@@ -1,4 +1,3 @@
-use std::hash::Hash;
 
 use serde::ser::Error;
 use serde::Deserialize;
@@ -122,7 +121,6 @@ impl PayloadCrafter {
 }
 
 mod test {
-    use std::fs;
     use std::path::Path;
 
     use contract_transcode::ContractMessageTranscoder;

@@ -1,14 +1,13 @@
 use frame_support::traits::{OnFinalize, OnInitialize};
 use pallet_contracts::ExecReturnValue;
-use parity_scale_codec::Encode;
 use prettytable::{row, Table};
 use sp_runtime::DispatchError;
 
-// use std::intrinsics::fadd_fast;
 use crate::contract::payload::Selector;
 use crate::contract::runtime::{
     AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
 };
+use crate::fuzzer::parser::OneInput;
 
 pub trait FuzzerEngine {
     fn fuzz(self);
@@ -35,17 +34,20 @@ pub trait FuzzerEngine {
         None
     }
 
-    /// Pretty print the result of a call
-    /// Used for debug purposed...
+    /// Pretty print the result of OneInput
     fn pretty_print(
-        result: Result<ExecReturnValue, DispatchError>,
-        decoded_msg: String,
-        full_call: Vec<u8>,
+        results: Vec<Result<ExecReturnValue, DispatchError>>,
+        decoded_msg: OneInput,
     ) {
+        assert_eq!(results.len(), decoded_msg.messages.len());
         let mut table = Table::new();
-        let result: String = format!("{:?}", result);
-        table.add_row(row!["Decoded call", "Encoded call", "Result"]);
-        table.add_row(row![decoded_msg, hex::encode(full_call), result]);
+        table.add_row(row!["Description", "SCALE", "Result"]);
+
+        for i in 0..results.len() {
+            let result: String = format!("{:?}", results.get(i).unwrap());
+            let message = decoded_msg.messages.get(i).clone().unwrap();
+            table.add_row(row![message.description, hex::encode(&message.call), result]);
+        }
         table.printstd();
     }
 

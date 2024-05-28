@@ -15,7 +15,7 @@ pub struct Data<'a> {
     pub size: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Message {
     pub origin: usize,
     pub call: Vec<u8>,
@@ -23,7 +23,7 @@ pub struct Message {
     pub description: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
 }
