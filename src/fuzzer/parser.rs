@@ -26,7 +26,7 @@ pub struct Message {
 #[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
-    pub origin: usize
+    pub origin: usize,
 }
 
 impl<'a> Data<'a> {
@@ -66,17 +66,20 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         pointer: 0,
         size: 0,
     };
-    let mut input = OneInput { messages: vec![], origin: 1 };
+    let mut input = OneInput {
+        messages: vec![],
+        origin: 1,
+    };
     for extrinsic in iterable {
         let value_token: u32 = u32::from_ne_bytes(
             extrinsic[0..4]
                 .try_into()
                 .expect("missing transfer value bytes"),
         );
-             ;
         let mut encoded_extrinsic: &[u8] = &extrinsic[6..];
 
-        input.origin = u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
+        input.origin =
+            u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
 
         let decoded_msg = transcoder
             .lock()

@@ -17,10 +17,11 @@ impl Invariants {
     /// This function aims to call every invariant function via `invariant_selectors`.
     pub fn are_invariants_passing(&self, origin: usize) -> bool {
         for invariant in &self.invariant_selectors {
-            let invariant_call = self
-                .contract_bridge
-                .clone()
-                .call(&invariant.to_vec(), origin as u8, 0);
+            let invariant_call =
+                self.contract_bridge
+                    .clone()
+                    .call(&invariant.to_vec(), origin as u8, 0);
+            println!("Tested {:?}", invariant);
             if let Err(_) = invariant_call.result {
                 println!(
                     "Invariant Debug Message {:?}",

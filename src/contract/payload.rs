@@ -120,9 +120,9 @@ impl PayloadCrafter {
 }
 
 mod test {
-    use std::{fs, path::Path};
-    use contract_transcode::ContractMessageTranscoder;
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
+    use contract_transcode::ContractMessageTranscoder;
+    use std::{fs, path::Path};
 
     #[test]
     fn fetch_good_invariants() {

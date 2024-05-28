@@ -82,7 +82,6 @@ fn harness(
         return;
     }
 
-
     let mut chain = BasicExternalities::new(client.setup.genesis.clone());
     chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp());
 
