@@ -20,7 +20,7 @@ impl Invariants {
             let invariant_call = self
                 .contract_bridge
                 .clone()
-                .call(&invariant.to_vec(), origin, 0);
+                .call(&invariant.to_vec(), origin as u8, 0);
             if let Err(_) = invariant_call.result {
                 println!(
                     "Invariant Debug Message {:?}",
