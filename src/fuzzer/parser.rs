@@ -18,6 +18,7 @@ pub struct Data<'a> {
 #[derive(Debug, Clone)]
 pub struct Message {
     pub origin: usize,
+    pub is_payable: bool,
     pub call: Vec<u8>,
     pub value_token: BalanceOf<Test>,
     pub description: String,
@@ -67,8 +68,11 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
     };
     let mut input = OneInput { messages: vec![] };
     for extrinsic in iterable {
-        let value_token: u32 =
-            u32::from_ne_bytes(extrinsic[0..4].try_into().expect("missing lapse bytes"));
+        let value_token: u32 = u32::from_ne_bytes(
+            extrinsic[0..4]
+                .try_into()
+                .expect("missing transfer value bytes"),
+        );
         let origin: usize =
             u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
         let mut encoded_extrinsic: &[u8] = &extrinsic[6..];
@@ -78,13 +82,14 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
             .unwrap()
             .decode_contract_message(&mut &*encoded_extrinsic);
 
-        // println!("{:?}", decoded_msg.clone().unwrap().to_string());
-
         match &decoded_msg {
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
+
+
                     input.messages.push(Message {
                         origin,
+                        is_payable: false ,//todo
                         call: encoded_extrinsic.into(),
                         value_token: value_token.into(),
                         description: decoded_msg.unwrap().to_string(),

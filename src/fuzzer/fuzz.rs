@@ -90,11 +90,20 @@ fn harness(
 
     chain.execute_with(|| {
         for decoded_msg in &decoded_msgs.messages {
+
+            let transfer_value = if decoded_msg.is_payable {
+                decoded_msg.value_token
+            } else {
+                0
+            };
+
             let result = client.setup.clone().call(
                 &decoded_msg.call,
                 decoded_msg.origin as u8,
-                decoded_msg.value_token,
+                transfer_value,
             );
+
+            println!("DEBUG:{:?}", String::from_utf8_lossy(&result.debug_message));
             coverages_vec.push(result.debug_message);
             results.push(result.result);
         }

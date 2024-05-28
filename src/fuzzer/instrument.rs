@@ -54,6 +54,28 @@ impl CoverageEngine {
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
     }
+
+    pub fn find(&self) -> Result<InkFilesPath, String> {
+        let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
+            .map_err(|e| format!("Failed to read target directory: {:?}", e))?
+            .filter_map(|entry| {
+                let path = entry.ok()?.path();
+                if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .next()
+            .ok_or("No .wasm file found in target directory")?;
+
+        let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+
+        Ok(InkFilesPath {
+            wasm_path,
+            specs_path,
+        })
+    }
 }
 
 impl ContractBuilder for CoverageEngine {
@@ -65,25 +87,7 @@ impl ContractBuilder for CoverageEngine {
             .map_err(|e| format!("Failed to execute cargo command: {:?}", e))?;
 
         if status.success() {
-            let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
-                .map_err(|e| format!("Failed to read target directory: {:?}", e))?
-                .filter_map(|entry| {
-                    let path = entry.ok()?.path();
-                    if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
-                        Some(path)
-                    } else {
-                        None
-                    }
-                })
-                .next()
-                .ok_or("No .wasm file found in target directory")?;
-
-            let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
-
-            Ok(InkFilesPath {
-                wasm_path,
-                specs_path,
-            })
+            self.find()
         } else {
             Err(format!(
                 "It seems that your instrumented smart contract did not compile properly. \

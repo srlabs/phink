@@ -81,13 +81,13 @@ impl ContractBridge {
         self,
         payload: &Vec<u8>,
         who: u8,
-        amount: BalanceOf<Test>,
+        transfer_value: BalanceOf<Test>,
     ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
         let acc = AccountId32::new([who; 32]);
         Contracts::bare_call(
             acc,
             self.contract_address,
-            amount,
+            transfer_value,
             Self::GAS_LIMIT,
             None,
             payload.clone(),

@@ -2,13 +2,17 @@
 
 extern crate core;
 
-use std::{fs, path::PathBuf};
+use std::process::Command;
+use std::{env, fs, path::PathBuf};
 
 use clap::Parser;
 
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::instrument::{ContractBuilder, ContractInstrumenter, CoverageEngine};
-use crate::{contract::remote::ContractBridge, fuzzer::engine::FuzzerEngine};
+use crate::{
+    contract::remote::ContractBridge,
+    fuzzer::engine::FuzzerEngine,
+    fuzzer::fuzz::Fuzzer,
+    fuzzer::instrument::{ContractBuilder, ContractInstrumenter, CoverageEngine},
+};
 
 mod contract;
 mod fuzzer;
@@ -46,12 +50,20 @@ fn main() {
 }
 
 fn old_main() {
-    let folder = PathBuf::from("sample/dns");
-    let mut engine = CoverageEngine::new(folder)
-        .instrument()
-        .unwrap()
-        .build()
-        .unwrap();
+    let mut engine = match env::var("PHINK_CONTRACT_DIR") {
+        Ok(folder) => CoverageEngine::new(PathBuf::from(folder)).find().unwrap(),
+        Err(_) => CoverageEngine::new(PathBuf::from("sample/dns"))
+            .instrument()
+            .unwrap()
+            .build()
+            .unwrap(),
+    };
+
+    // let output = Command::new("cargo")
+    //     .arg("ziggy")
+    //     .arg("run")
+    //     .output()
+    //     .expect("Failed to execute command");
 
     match fs::read(&engine.wasm_path) {
         Ok(dns_wasm_bytes) => {
