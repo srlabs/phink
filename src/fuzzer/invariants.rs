@@ -15,7 +15,7 @@ impl Invariants {
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.
-    pub fn are_invariants_passing(&self, origin: u8) -> bool {
+    pub fn are_invariants_passing(&self, origin: usize) -> bool {
         for invariant in &self.invariant_selectors {
             let invariant_call = self
                 .contract_bridge

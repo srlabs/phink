@@ -99,7 +99,7 @@ fn harness(
 
             let result = client.setup.clone().call(
                 &decoded_msg.call,
-                decoded_msgs.origin as u8,
+                decoded_msgs.origin,
                 transfer_value,
             );
 

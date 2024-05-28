@@ -80,10 +80,10 @@ impl ContractBridge {
     pub fn call(
         self,
         payload: &Vec<u8>,
-        who: u8,
+        who: usize,
         transfer_value: BalanceOf<Test>,
     ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
-        let acc = AccountId32::new([who; 32]);
+        let acc = AccountId32::new([who.try_into().unwrap(); 32]);
         Contracts::bare_call(
             acc,
             self.contract_address,
