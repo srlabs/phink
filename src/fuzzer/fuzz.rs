@@ -82,6 +82,7 @@ fn harness(
         return;
     }
 
+
     let mut chain = BasicExternalities::new(client.setup.genesis.clone());
     chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp());
 
@@ -90,7 +91,6 @@ fn harness(
 
     chain.execute_with(|| {
         for decoded_msg in &decoded_msgs.messages {
-
             let transfer_value = if decoded_msg.is_payable {
                 decoded_msg.value_token
             } else {
@@ -99,7 +99,7 @@ fn harness(
 
             let result = client.setup.clone().call(
                 &decoded_msg.call,
-                decoded_msg.origin as u8,
+                decoded_msgs.origin as u8,
                 transfer_value,
             );
 
@@ -108,7 +108,7 @@ fn harness(
             results.push(result.result);
         }
         // For each call, we verify that invariants aren't broken
-        if !invariant_manager.are_invariants_passing(1) {
+        if !invariant_manager.are_invariants_passing(decoded_msgs.origin) {
             panic!("{}", format!("Invariant triggered ({:?})", input));
         }
     });
@@ -1654,9 +1654,10 @@ mod tests {
         let hex = transcoder
             .lock()
             .unwrap()
-            .decode_contract_message(&mut &encoded_bytes[..]);
+            .decode_contract_message(&mut &encoded_bytes[..])
+            .unwrap();
         assert_eq!(
-            hex.unwrap().to_string(),
+            hex.to_string(),
             "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
         );
 

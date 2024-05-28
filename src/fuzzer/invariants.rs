@@ -2,8 +2,8 @@ use crate::contract::payload::Selector;
 use crate::contract::remote::ContractBridge;
 
 pub struct Invariants {
-    contract_bridge: ContractBridge,
-    invariant_selectors: Vec<Selector>,
+    pub contract_bridge: ContractBridge,
+    pub invariant_selectors: Vec<Selector>,
 }
 
 impl Invariants {

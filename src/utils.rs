@@ -18,6 +18,7 @@ pub fn deduplicate(input: &str) -> String {
 mod tests {
     use super::*;
     use crate::utils::deduplicate;
+    use std::borrow::Cow;
 
     #[test]
     pub fn test_deduplicate() {

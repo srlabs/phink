@@ -121,11 +121,21 @@ impl PayloadCrafter {
 
 mod test {
     use std::{fs, path::Path};
-
     use contract_transcode::ContractMessageTranscoder;
-
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
 
+    #[test]
+    fn fetch_good_invariants() {
+        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let extracted: String = PayloadCrafter::extract_invariants(&specs)
+            .unwrap()
+            .iter()
+            .map(|x| hex::encode(x) + " ")
+            .collect();
+
+        // DNS invariants
+        assert_eq!(extracted, "b587edaf 27d8f137 ");
+    }
     #[test]
     fn fetch_correct_selectors() {
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();

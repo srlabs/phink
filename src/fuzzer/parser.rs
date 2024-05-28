@@ -6,7 +6,7 @@ use std::sync::Mutex;
 
 // Call delimiter: `********`
 pub const DELIMITER: [u8; 8] = [42; 8];
-pub const MIN_SEED_LEN: usize = 12; //Origin + Value + Selector
+pub const MIN_SEED_LEN: usize = 6; //Origin + Value + Selector
 pub const MAX_MESSAGES_PER_EXEC: usize = 4;
 
 pub struct Data<'a> {
@@ -17,7 +17,6 @@ pub struct Data<'a> {
 
 #[derive(Debug, Clone)]
 pub struct Message {
-    pub origin: usize,
     pub is_payable: bool,
     pub call: Vec<u8>,
     pub value_token: BalanceOf<Test>,
@@ -27,6 +26,7 @@ pub struct Message {
 #[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
+    pub origin: usize
 }
 
 impl<'a> Data<'a> {
@@ -66,16 +66,17 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         pointer: 0,
         size: 0,
     };
-    let mut input = OneInput { messages: vec![] };
+    let mut input = OneInput { messages: vec![], origin: 1 };
     for extrinsic in iterable {
         let value_token: u32 = u32::from_ne_bytes(
             extrinsic[0..4]
                 .try_into()
                 .expect("missing transfer value bytes"),
         );
-        let origin: usize =
-            u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
+             ;
         let mut encoded_extrinsic: &[u8] = &extrinsic[6..];
+
+        input.origin = u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
 
         let decoded_msg = transcoder
             .lock()
@@ -85,11 +86,8 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         match &decoded_msg {
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
-
-
                     input.messages.push(Message {
-                        origin,
-                        is_payable: false ,//todo
+                        is_payable: false, //todo
                         call: encoded_extrinsic.into(),
                         value_token: value_token.into(),
                         description: decoded_msg.unwrap().to_string(),
