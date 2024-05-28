@@ -105,10 +105,7 @@ fn harness(
     });
 
     #[cfg(not(fuzzing))]
-    <Fuzzer as FuzzerEngine>::pretty_print(
-        results,
-        decoded_msgs,
-    );
+    <Fuzzer as FuzzerEngine>::pretty_print(results, decoded_msgs);
 
     ///////////// Coverage
 

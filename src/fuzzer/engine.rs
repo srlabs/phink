@@ -13,6 +13,7 @@ pub trait FuzzerEngine {
     fn fuzz(self);
 
     /// Takes some raw bytes `[u8]` and returns the good code
+    #[deprecated]
     fn parse_args<'a>(&'a self, data: &'a [u8], selectors: Vec<Selector>) -> Option<Vec<u8>> {
         // TODO! 1500 shouldn't be static
         // Our payload must be at least `1_500` sized, and min `4`
@@ -35,10 +36,7 @@ pub trait FuzzerEngine {
     }
 
     /// Pretty print the result of OneInput
-    fn pretty_print(
-        results: Vec<Result<ExecReturnValue, DispatchError>>,
-        decoded_msg: OneInput,
-    ) {
+    fn pretty_print(results: Vec<Result<ExecReturnValue, DispatchError>>, decoded_msg: OneInput) {
         assert_eq!(results.len(), decoded_msg.messages.len());
         let mut table = Table::new();
         table.add_row(row!["Description", "SCALE", "Result"]);
@@ -46,7 +44,11 @@ pub trait FuzzerEngine {
         for i in 0..results.len() {
             let result: String = format!("{:?}", results.get(i).unwrap());
             let message = decoded_msg.messages.get(i).clone().unwrap();
-            table.add_row(row![message.description, hex::encode(&message.call), result]);
+            table.add_row(row![
+                message.description,
+                hex::encode(&message.call),
+                result
+            ]);
         }
         table.printstd();
     }

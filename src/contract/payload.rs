@@ -1,4 +1,3 @@
-
 use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
@@ -121,12 +120,11 @@ impl PayloadCrafter {
 }
 
 mod test {
-    use std::path::Path;
+    use std::{fs, path::Path};
 
     use contract_transcode::ContractMessageTranscoder;
 
-    use crate::contract::payload::PayloadCrafter;
-    use crate::contract::payload::Selector;
+    use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
 
     #[test]
     fn fetch_correct_selectors() {
