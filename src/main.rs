@@ -7,6 +7,7 @@ use std::{env, fs, path::PathBuf};
 
 use clap::Parser;
 
+use crate::fuzzer::instrument::InkFilesPath;
 use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
@@ -45,31 +46,26 @@ enum Commands {
 }
 
 fn main() {
-    old_main();
+    handle_with_env();
     // new_main();
 }
 
-fn old_main() {
-    let mut engine = match env::var("PHINK_CONTRACT_DIR") {
-        Ok(folder) => CoverageEngine::new(PathBuf::from(folder)).find().unwrap(),
-        Err(_) => CoverageEngine::new(PathBuf::from("sample/dns"))
-            .instrument()
-            .unwrap()
-            .build()
-            .unwrap(),
-    };
+fn handle_with_env() {
+    // If PHINK_CONTRACT_DIR is passed, this will be our contract location, sample/dns otherwise
+    let contract_path =
+        env::var("PHINK_CONTRACT_DIR").unwrap_or_else(|_| String::from("sample/dns"));
 
-    // let output = Command::new("cargo")
-    //     .arg("ziggy")
-    //     .arg("run")
-    //     .output()
-    //     .expect("Failed to execute command");
+    let engine = instrument_and_compile(contract_path);
+    let finder = &engine.find().unwrap();
 
-    match fs::read(&engine.wasm_path) {
+    deploy_and_fuzz(finder);
+}
+
+fn deploy_and_fuzz(finder: &InkFilesPath) {
+    match fs::read(&finder.wasm_path) {
         Ok(dns_wasm_bytes) => {
-            let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, engine.specs_path);
+            let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &finder.specs_path);
             let fuzzer = Fuzzer::new(setup);
-            println!("Now fuzzing `{:?}` !", engine.wasm_path);
             fuzzer.fuzz();
         }
         Err(e) => {
@@ -77,7 +73,23 @@ fn old_main() {
         }
     }
 }
+
+fn instrument_and_compile(contract_path: String) -> CoverageEngine {
+    let mut engine = CoverageEngine::new(PathBuf::from(contract_path));
+
+    if env::var("PHINK_INSTRUMENT_AND_BUILD").is_ok() {
+        engine.instrument().unwrap().build().unwrap();
+    }
+    engine
+}
+
 fn new_main() {
+    // let output = Command::new("cargo")
+    //     .arg("ziggy")
+    //     .arg("run")
+    //     .output()
+    //     .expect("Failed to execute command"); //todo! set min input size to 10, via cli :)
+
     let cli = Cli::parse();
     match &cli.command {
         Commands::Fuzz => {
@@ -89,7 +101,7 @@ fn new_main() {
                 .unwrap();
             match fs::read(&engine.wasm_path) {
                 Ok(dns_wasm_bytes) => {
-                    let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, engine.specs_path);
+                    let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &engine.specs_path);
                     let fuzzer = Fuzzer::new(setup);
                     println!("Now fuzzing `{:?}` !", engine.wasm_path);
                     fuzzer.fuzz();

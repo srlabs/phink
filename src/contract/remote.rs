@@ -41,7 +41,7 @@ impl ContractBridge {
     /// * `wasm_bytes`: the bytes of the WASM contract
     /// * `json_specs`: JSON specs of the contract, i.e. dns.json
 
-    pub fn initialize_wasm(wasm_bytes: Vec<u8>, path_to_specs: PathBuf) -> ContractBridge {
+    pub fn initialize_wasm(wasm_bytes: Vec<u8>, path_to_specs: &PathBuf) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
         let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
         let genesis_storage: Storage = {
@@ -66,7 +66,7 @@ impl ContractBridge {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
-            path_to_specs,
+            path_to_specs: path_to_specs.clone(),
         }
     }
 

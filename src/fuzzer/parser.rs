@@ -1,13 +1,19 @@
-use crate::contract::remote::{BalanceOf, Test};
-use crate::contract::runtime::RuntimeCall;
-use contract_transcode::{ContractMessageTranscoder, Transcoder};
-use parity_scale_codec::DecodeLimit;
+use anyhow::ensure;
 use std::sync::Mutex;
 
-// Call delimiter: `********`
-pub const DELIMITER: [u8; 8] = [42; 8];
-pub const MIN_SEED_LEN: usize = 6; //Origin + Value + Selector
-pub const MAX_MESSAGES_PER_EXEC: usize = 4;
+use contract_transcode::ContractMessageTranscoder;
+
+use crate::contract::remote::{BalanceOf, Test};
+
+pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter: `********`
+
+// Minimum size for the seed
+// (lapse[0..4]: disabled from now : 0 ) + value[0..4] + origin[4..6] + selector[6..10] + value selector[10..] (can be zero)
+pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
+pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
+                                            // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
+                                            // panicking on finalize.
+const MAX_BLOCK_LAPSE: u32 = 100800;
 
 pub struct Data<'a> {
     pub data: &'a [u8],
@@ -18,7 +24,7 @@ pub struct Data<'a> {
 #[derive(Debug, Clone)]
 pub struct Message {
     pub is_payable: bool,
-    pub call: Vec<u8>,
+    pub payload: Vec<u8>,
     pub value_token: BalanceOf<Test>,
     pub description: String,
 }
@@ -27,6 +33,7 @@ pub struct Message {
 pub struct OneInput {
     pub messages: Vec<Message>,
     pub origin: usize,
+    // pub lapse: u32,
 }
 
 impl<'a> Data<'a> {
@@ -69,29 +76,33 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
     let mut input = OneInput {
         messages: vec![],
         origin: 1,
+        // lapse: 0,
     };
     for extrinsic in iterable {
+        // input.lapse =  u32::from_ne_bytes(extrinsic[0..4].try_into().expect("missing lapse bytes"));
+
         let value_token: u32 = u32::from_ne_bytes(
             extrinsic[0..4]
                 .try_into()
                 .expect("missing transfer value bytes"),
         );
-        let mut encoded_extrinsic: &[u8] = &extrinsic[6..];
 
         input.origin =
             u16::from_ne_bytes(extrinsic[4..6].try_into().expect("missing origin bytes")) as usize;
 
+        let mut encoded_message: &[u8] = &extrinsic[6..];
+
         let decoded_msg = transcoder
             .lock()
             .unwrap()
-            .decode_contract_message(&mut &*encoded_extrinsic);
+            .decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
                     input.messages.push(Message {
                         is_payable: false, //todo
-                        call: encoded_extrinsic.into(),
+                        payload: encoded_message.into(),
                         value_token: value_token.into(),
                         description: decoded_msg.unwrap().to_string(),
                     });
