@@ -1,8 +1,10 @@
 use contract_transcode::ContractMessageTranscoder;
 use prettytable::{row, Table};
 use sp_runtime::{DispatchError, ModuleError};
+use std::panic;
 use std::sync::Mutex;
 
+use crate::fuzzer::coverage::Coverage;
 use crate::{
     contract::{
         payload::Selector,
@@ -12,6 +14,7 @@ use crate::{
 };
 
 pub type FailedInvariantTrace = (Selector, FullContractResponse);
+
 pub struct BugManager {
     pub contract_bridge: ContractBridge,
     pub invariant_selectors: Vec<Selector>,
@@ -27,9 +30,15 @@ impl BugManager {
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
         println!("🤯 A *trap contract* got caught! Let's dive down.");
+
+        //Todo: show who caused this
+
         println!(
-            "🐛 IMPORTANT STACKTRACE : {:?}",
-            String::from_utf8_lossy(response.debug_message.as_ref())
+            "\n🐛 IMPORTANT STACKTRACE : {}\n",
+            String::from_utf8_lossy(&*Coverage::remove_cov_from_trace(
+                response.clone().debug_message
+            ))
+            .replace("\n", " ")
         );
 
         println!("🎉 Find below the trace that caused that *trapped contract*");
@@ -42,7 +51,7 @@ impl BugManager {
             },
         );
 
-        panic!("Good luck ser! 🫡"); //Artificially trigger a bug for AFL
+        panic!("\n\nGood luck ser! 🫡\n\n\n\n\n\nv"); //Artificially trigger a bug for AFL
     }
 
     pub fn display_invariant(
@@ -75,7 +84,7 @@ impl BugManager {
 
         println!("🎉 Find below the trace that caused that *invariant*");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("Good luck ser! 🫡"); //Artificially trigger a bug for AFL
+        panic!("\n\nGood luck ser! 🫡\n\n\n\n\n\nv"); //Artificially trigger a bug for AFL
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.

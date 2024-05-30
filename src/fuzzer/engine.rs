@@ -32,7 +32,7 @@ pub trait FuzzerEngine {
 
         println!("\n\n🌱  Executing new seed");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Debug"]);
+        table.add_row(row!["Message", "Debug trace"]);
 
         for i in 0..responses.len() {
             let curr_result = responses.get(i).unwrap();
