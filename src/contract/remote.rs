@@ -1,17 +1,18 @@
-use std::fmt::{Display, Formatter};
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
-use frame_support::__private::BasicExternalities;
-use frame_support::pallet_prelude::Weight;
-use frame_support::traits::fungible::Inspect;
-use pallet_contracts::ContractResult;
-use pallet_contracts::{Code, CollectEvents, Config, DebugInfo, Determinism, ExecReturnValue};
+use frame_support::{
+    __private::BasicExternalities, pallet_prelude::Weight, traits::fungible::Inspect,
+};
+use pallet_contracts::{
+    Code, CollectEvents, Config, ContractResult, DebugInfo, Determinism, ExecReturnValue,
+};
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 
-use crate::contract::payload;
-use crate::contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig};
+use crate::{
+    contract::payload,
+    contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},
+};
 
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;

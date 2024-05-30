@@ -1,21 +1,15 @@
-use std::sync::Mutex;
 use contract_transcode::ContractMessageTranscoder;
 use prettytable::{row, Table};
 use sp_runtime::{DispatchError, ModuleError};
+use std::sync::Mutex;
 
 use crate::{
-    fuzzer::{
-        engine::FuzzerEngine,
-        fuzz::Fuzzer,
-        parser::OneInput,
-        parser::Message
-    },
     contract::{
         payload::Selector,
-        remote::{ContractBridge, FullContractResponse}
-    }
+        remote::{ContractBridge, FullContractResponse},
+    },
+    fuzzer::{engine::FuzzerEngine, fuzz::Fuzzer, parser::Message, parser::OneInput},
 };
-
 
 pub type FailedInvariantTrace = (Selector, FullContractResponse);
 pub struct BugManager {

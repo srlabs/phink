@@ -32,12 +32,11 @@ pub trait FuzzerEngine {
 
         println!("\n\n🌱  Executing new seed");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Result", "Debug"]);
+        table.add_row(row!["Message", "Debug"]);
 
         for i in 0..responses.len() {
             let curr_result = responses.get(i).unwrap();
 
-            let result: String = format!("{:?}", curr_result.result.clone().unwrap());
             let description = one_input
                 .messages
                 .get(i)
@@ -49,7 +48,6 @@ pub trait FuzzerEngine {
 
             table.add_row(row![
                 description,
-                result,
                 format!("{}", String::from_utf8_lossy(&*debug).replace('\n', " "))
             ]);
         }
