@@ -57,6 +57,29 @@ impl Fuzzer {
 
         Ok(())
     }
+
+    // This function handles edge cases where the fuzzer should understand that some conditions are
+    // required in order to continue
+    fn should_stop_now(bug_manager: &mut BugManager, decoded_msgs: &OneInput) -> bool {
+        // Condition 1: we break if we cannot decode any message
+        if decoded_msgs.messages.len() == 0 {
+            return true;
+        }
+
+        // Condition 2: we break if the fuzzed message is an invariant invariants message
+        if decoded_msgs.messages.iter().any(|payload| {
+            payload
+                .payload
+                .get(0..4)
+                .and_then(|slice| slice.try_into().ok())
+                .map_or(false, |slice: &[u8; 4]| {
+                    bug_manager.contains_selector(slice)
+                })
+        }) {
+            return true;
+        }
+        false
+    }
 }
 
 impl FuzzerEngine for Fuzzer {
@@ -99,19 +122,7 @@ impl FuzzerEngine for Fuzzer {
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
 
-        if decoded_msgs.messages.len() == 0 {
-            return;
-        }
-
-        // Return early if the payload slice matches any selector to avoid fuzzing invariants messages
-        if decoded_msgs.messages.iter().any(|payload| {
-            payload.payload
-                .get(0..4)
-                .and_then(|slice| slice.try_into().ok())
-                .map_or(false, |slice: &[u8; 4]| {
-                    bug_manager.contains_selector(slice)
-                })
-        }) {
+        if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
         }
 
