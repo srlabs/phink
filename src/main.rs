@@ -54,7 +54,7 @@ fn handle_with_env() {
     let who: AccountId32 = AccountId32::new([1u8; 32]);
 
     let mut engine = InstrumenterEngine::new(contract_path);
-    if env::var("PHINK_INSTRUMENT_AND_BUILD").unwrap() == "true" {
+    if env::var("PHINK_INSTRUMENT_AND_BUILD").is_ok() {
         engine.instrument().unwrap().build().unwrap();
     }
 
