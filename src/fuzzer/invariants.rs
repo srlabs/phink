@@ -38,21 +38,32 @@ impl BugManager {
             },
         );
 
-        panic!("😲");
+        panic!("😲"); //Artificially trigger a bug for AFL
     }
 
     pub fn display_invariant(
         &self,
         responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
-        trace: FailedInvariantTrace,
+        invariant_tested: FailedInvariantTrace,
     ) {
-        println!(
-            "Broken invariant message : {:?}",
-            String::from_utf8_lossy(trace.0.as_ref())
-        );
+        println!("🤯 Invariant got caught! Let's dive down.");
+
+
+        let mut table = Table::new();
+        table.add_row(row!["Invariant", "Debug trace"]);
+
+        table.add_row(row![
+                invariant_tested.1.to_string(),
+                String::from_utf8_lossy(invariant_tested.0.as_ref())
+            ]);
+
+        table.printstd();
+
+
+        println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("😲");
+        panic!("Good luck ser! 🫡"); //Artificially trigger a bug for AFL
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.

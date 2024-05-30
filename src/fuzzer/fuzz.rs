@@ -132,11 +132,11 @@ impl FuzzerEngine for Fuzzer {
             }
 
             // For each group of call, we verify that invariants aren't broken
-            if let Err(trace) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
+            if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
                 bug_manager.display_invariant(
                     all_msg_responses.clone(),
                     decoded_msgs.clone(),
-                    trace,
+                    invariant_tested,
                 );
             }
         });
