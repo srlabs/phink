@@ -1,16 +1,23 @@
+use std::sync::Mutex;
+use contract_transcode::ContractMessageTranscoder;
 use prettytable::{row, Table};
 use sp_runtime::{DispatchError, ModuleError};
 
-use crate::fuzzer::engine::FuzzerEngine;
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::parser::OneInput;
 use crate::{
-    contract::payload::Selector,
-    contract::remote::{ContractBridge, FullContractResponse},
-    fuzzer::parser::Message,
+    fuzzer::{
+        engine::FuzzerEngine,
+        fuzz::Fuzzer,
+        parser::OneInput,
+        parser::Message
+    },
+    contract::{
+        payload::Selector,
+        remote::{ContractBridge, FullContractResponse}
+    }
 };
 
-pub type FailedInvariantTrace = (Vec<u8>, FullContractResponse);
+
+pub type FailedInvariantTrace = (Selector, FullContractResponse);
 pub struct BugManager {
     pub contract_bridge: ContractBridge,
     pub invariant_selectors: Vec<Selector>,
@@ -49,14 +56,24 @@ impl BugManager {
         responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
         invariant_tested: FailedInvariantTrace,
+        transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
         println!("🤯 An *invariant* got caught! Let's dive down.");
+
+        // Convert the array to a slice and then take a mutable reference to the slice
+        let mut invariant_slice: &[u8] = &invariant_tested.0;
+
+        let hex = transcoder_loader
+            .lock()
+            .unwrap()
+            .decode_contract_message(&mut invariant_slice)
+            .unwrap();
 
         let mut table = Table::new();
         table.add_row(row!["Invariant", "Debug trace"]);
 
         table.add_row(row![
-            invariant_tested.1.to_string(),
+            hex,
             String::from_utf8_lossy(invariant_tested.0.as_ref())
         ]);
 
@@ -75,7 +92,7 @@ impl BugManager {
                     .clone()
                     .call(&invariant.to_vec(), origin as u8, 0);
             if let Err(_) = invariant_call.result {
-                return Err((invariant.to_vec(), invariant_call));
+                return Err((*invariant, invariant_call));
             }
         }
         Ok(())

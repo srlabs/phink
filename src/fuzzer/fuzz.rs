@@ -137,6 +137,7 @@ impl FuzzerEngine for Fuzzer {
                     all_msg_responses.clone(),
                     decoded_msgs.clone(),
                     invariant_tested,
+                    transcoder_loader
                 );
             }
         });
