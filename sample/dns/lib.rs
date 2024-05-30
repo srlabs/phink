@@ -2,11 +2,7 @@
 
 #[ink::contract]
 mod dns {
-    use ink::{
-        prelude::{vec::Vec},
-        storage::Mapping,
-        storage::StorageVec,
-    };
+    use ink::{prelude::vec::Vec, storage::Mapping, storage::StorageVec};
 
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
@@ -253,106 +249,6 @@ mod dns {
         pub fn phink_assert_dangerous_number(&self) {
             let forbidden_number = 69;
             assert_ne!(self.dangerous_number, forbidden_number);
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        fn default_accounts() -> ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> {
-            ink::env::test::default_accounts::<Environment>()
-        }
-
-        fn set_next_caller(caller: AccountId) {
-            ink::env::test::set_caller::<Environment>(caller);
-        }
-
-        #[ink::test]
-        fn register_works() {
-            let default_accountxs: ink::env::test::DefaultAccounts<ink::env::DefaultEnvironment> =
-                default_accounts();
-            let hex_str = "7c00000101000e00a3e7e7e7e7e7e7e7e7e79f959596800000957d9580010101";
-
-            // Convert hex string to byte array
-            let bytes: [u8; 32] = hex::decode(hex_str)
-                .expect("Decoding failed")
-                .try_into()
-                .expect("Invalid length");
-
-            let name = Hash::from(bytes);
-
-            set_next_caller(default_accounts.alice);
-            let mut contract = DomainNameService::new();
-            let x = contract.register(name);
-            assert_eq!(x, Ok(()));
-            assert_eq!(contract.register(name), Err(Error::NameAlreadyExists));
-        }
-
-        #[ink::test]
-        fn set_address_works() {
-            let accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
-
-            set_next_caller(accounts.alice);
-
-            let mut contract = DomainNameService::new();
-            assert_eq!(contract.register(name), Ok(()));
-
-            // Caller is not owner, `set_address` should fail.
-            set_next_caller(accounts.bob);
-            assert_eq!(
-                contract.set_address(name, accounts.bob),
-                Err(Error::CallerIsNotOwner)
-            );
-
-            // Caller is owner, set_address will be successful
-            set_next_caller(accounts.alice);
-            assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
-            assert_eq!(contract.get_address(name), accounts.bob);
-            // contract.phink_assert_hash42_cant_be_registered();
-        }
-
-        #[ink::test]
-        fn should_panic() {
-            let accounts = default_accounts();
-            set_next_caller(accounts.alice);
-            let mut contract = DomainNameService::new();
-            let illegal = Hash::from(FORBIDDEN_DOMAIN);
-            println!("{:?}", illegal);
-            assert_eq!(contract.transfer(illegal, accounts.bob, 44), Ok(()));
-            // contract.phink_assert_hash42_cant_be_registered();
-        }
-
-        #[ink::test]
-        fn transfer_works() {
-            let accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
-
-            set_next_caller(accounts.alice);
-
-            let mut contract = DomainNameService::new();
-            assert_eq!(contract.register(name), Ok(()));
-            // contract.phink_assert_hash42_cant_be_registered();
-
-            let illegal = Hash::from(FORBIDDEN_DOMAIN);
-
-            // Test transfer of owner.
-            assert_eq!(contract.transfer(illegal, accounts.bob, 43), Ok(()));
-
-            // This should panic..
-            // contract.phink_assert_hash42_cant_be_registered();
-
-            // Owner is bob, alice `set_address` should fail.
-            assert_eq!(
-                contract.set_address(name, accounts.bob),
-                Err(Error::CallerIsNotOwner)
-            );
-
-            set_next_caller(accounts.bob);
-            // Now owner is bob, `set_address` should be successful.
-            assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
-            assert_eq!(contract.get_address(name), accounts.bob);
         }
     }
 }

@@ -7,6 +7,7 @@ pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter: `********`
                                         // Minimum size for the seed
                                         // (lapse[0..4]: disabled from now : 0 ) + value[0..4] + origin[4..6] + selector[6..10] + value selector[10..] (can be zero)
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
+pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
                                             // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
                                             // panicking on finalize.

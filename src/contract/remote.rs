@@ -43,7 +43,7 @@ impl ContractBridge {
     /// # Arguments
     ///
     /// * `wasm_bytes`: the bytes of the WASM contract
-    /// * `json_specs`: JSON specs of the contract, i.e. dns.json
+    /// * `json_specs`: JSON specs of the contract, i.e. contract.json
 
     pub fn initialize_wasm(
         wasm_bytes: Vec<u8>,

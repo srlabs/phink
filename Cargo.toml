@@ -1,6 +1,6 @@
 [package]
 name = "phink"
-description = "ink! smart-contract invariant-based coverage-guided fuzzer"
+description = "🐙 Phink, a ink! smart-contract property-based and coverage-guided fuzzer"
 repository = "https://github.com/kevin-valerio/phink"
 keywords = ["ink", "fuzz", "substrate"]
 readme = "README.md"
@@ -16,7 +16,6 @@ panic = "abort"
 
 [features]
 default = ["std"]
-tui = []
 std = [
     "pallet-balances/std",
     "pallet-timestamp/std",
@@ -34,6 +33,7 @@ parity-scale-codec = { version = "3.6.9", default-features = false }
 scale-info = { version = "2.6.0", default-features = false }
 prettytable-rs = { version = "0.10.0" }
 contract-metadata = { version = "4.1.1" }
+
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 

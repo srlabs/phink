@@ -2,7 +2,6 @@ use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
-use itertools::Itertools;
 
 use crate::{
     contract::payload::{PayloadCrafter, Selector},
@@ -167,7 +166,7 @@ impl FuzzerEngine for Fuzzer {
         });
 
         // Pretty print all the calls of the current input
-        #[cfg(not(fuzzing))]
+        // #[cfg(not(fuzzing))] //TODO: investigate why this doesn't work
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
         // We now fake the coverage

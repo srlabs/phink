@@ -1,4 +1,3 @@
-use std::format;
 use std::sync::Mutex;
 
 use contract_transcode::ContractMessageTranscoder;

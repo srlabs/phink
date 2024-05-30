@@ -58,6 +58,7 @@ impl InstrumenterEngine {
     }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
+        //TODO: Handle this, sometimes the contract is not compiled in `target/ink`
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
             .map_err(|e| format!("🙅 Failed to read target directory: {:?}", e))?
             .filter_map(|entry| {
@@ -69,8 +70,9 @@ impl InstrumenterEngine {
                 }
             })
             .next()
-            .ok_or("No .wasm file found in target directory")?;
+            .ok_or("🙅 No .wasm file found in target directory")?;
 
+        //TODO: Handle this, we assume that the specs name has the same filename as the wasm. Laziness...
         let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
         Ok(InkFilesPath {
@@ -86,7 +88,13 @@ impl ContractBuilder for InstrumenterEngine {
             .current_dir(&self.contract_dir)
             .args(["contract", "build", "--features=phink"])
             .status()
-            .map_err(|e| format!("🙅 Failed to execute cargo command: {:?}", e))?;
+            .map_err(|e| {
+                format!(
+                    "🙅 Failed to execute cargo command: {:?}.\
+            The command was simply 'cargo contract build --features=phink",
+                    e
+                )
+            })?;
 
         if status.success() {
             self.find()
