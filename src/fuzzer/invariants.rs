@@ -24,17 +24,26 @@ impl BugManager {
         }
     }
 
-    pub fn display_trap(&self, message: &Message, response: &FullContractResponse) {
+    pub fn display_trap(&self, message: Message, response: FullContractResponse) {
         let mut table = Table::new();
         table.add_row(row!["Description", "SCALE", "Result"]);
 
         table.printstd();
+
+        <Fuzzer as FuzzerEngine>::pretty_print(
+            vec![response],
+            OneInput {
+                messages: vec![message.clone()],
+                origin: message.origin,
+            },
+        );
+
         panic!("😲");
     }
 
     pub fn display_invariant(
         &self,
-        results: Vec<FullContractResponse>,
+        responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
         trace: FailedInvariantTrace,
     ) {
@@ -42,7 +51,7 @@ impl BugManager {
             "Broken invariant message : {:?}",
             String::from_utf8_lossy(trace.0.as_ref())
         );
-        <Fuzzer as FuzzerEngine>::pretty_print(results, decoded_msg);
+        <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
         panic!("😲");
     }
 

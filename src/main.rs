@@ -92,24 +92,7 @@ fn new_main() {
 
     let cli = Cli::parse();
     match &cli.command {
-        Commands::Fuzz => {
-            let dir = cli.dir.clone();
-            let engine = CoverageEngine::new(dir)
-                .instrument()
-                .unwrap()
-                .build()
-                .unwrap();
-            match fs::read(&engine.wasm_path) {
-                Ok(dns_wasm_bytes) => {
-                    let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &engine.specs_path);
-                    let fuzzer = Fuzzer::new(setup);
-                    fuzzer.fuzz();
-                }
-                Err(e) => {
-                    eprintln!("Error reading WASM file: {:?}", e);
-                }
-            }
-        }
+        Commands::Fuzz => {}
         Commands::Execute => {}
     }
 }

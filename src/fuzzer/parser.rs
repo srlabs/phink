@@ -24,6 +24,7 @@ pub struct Message {
     pub payload: Vec<u8>,
     pub value_token: BalanceOf<Test>,
     pub message_metadata: Value,
+    pub origin: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -105,6 +106,7 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
                         message_metadata: decoded_msg.unwrap(),
+                        origin: input.origin,
                     });
                 }
             }

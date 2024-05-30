@@ -27,18 +27,18 @@ pub trait FuzzerEngine {
     );
 
     /// Pretty print the result of `OneInput`
-    fn pretty_print(results: Vec<FullContractResponse>, decoded_msg: OneInput) {
-        assert_eq!(results.len(), decoded_msg.messages.len());
+    fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
+        assert_eq!(responses.len(), one_input.messages.len());
 
         println!("\n\n🌱  Executing new seed");
         let mut table = Table::new();
         table.add_row(row!["Message", "Result", "Debug"]);
 
-        for i in 0..results.len() {
-            let curr_result = results.get(i).unwrap();
+        for i in 0..responses.len() {
+            let curr_result = responses.get(i).unwrap();
 
             let result: String = format!("{:?}", curr_result.result.clone().unwrap());
-            let description = decoded_msg
+            let description = one_input
                 .messages
                 .get(i)
                 .clone()

@@ -13,7 +13,7 @@ impl Coverage {
         }
     }
 
-    pub fn add_cov(&mut self, coverage: &Vec<u8>) {
+    pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         self.branches.push(coverage.clone());
     }
 

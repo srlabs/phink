@@ -23,13 +23,35 @@ impl Fuzzer {
         Fuzzer { setup }
     }
 
-    fn make_initial_corpus(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
+    fn build_corpus_and_dict(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
+        // Create the output directory for the corpus
         fs::create_dir_all("./output/phink/corpus")?;
 
+        // Create or truncate the dictionary file
+        let mut dict_file = File::create("./output/phink/selectors.dict")?;
+
+        // Write the dictionary header comments
+        writeln!(dict_file, "# Dictionary file for selectors")?;
+        writeln!(
+            dict_file,
+            "# Lines starting with '#' and empty lines are ignored."
+        )?;
+        writeln!(dict_file)?;
+
         for (i, selector) in selectors.iter().enumerate() {
+            // Create the corpus file path
             let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
             let mut file = File::create(&file_path)?;
+
+            // Write the selector to the corpus file
             file.write_all(selector)?;
+
+            // Write the selector to the dictionary file in the required format
+            let selector_string = selector
+                .iter()
+                .map(|b| format!("\\x{:02X}", b))
+                .collect::<String>();
+            writeln!(dict_file, "\"{}\"", selector_string)?;
         }
 
         Ok(())
@@ -49,7 +71,7 @@ impl FuzzerEngine for Fuzzer {
 
         let mut invariant_manager = BugManager::from(inv, self.setup.clone());
 
-        Self::make_initial_corpus(&mut selectors).expect("Failed to create initial corpus");
+        Self::build_corpus_and_dict(&mut selectors).expect("Failed to create initial corpus");
         println!(
             "\n\n🚀  Now fuzzing `{}` ({})!\n\n",
             self.setup.path_to_specs.as_os_str().to_str().unwrap(),
@@ -102,7 +124,7 @@ impl FuzzerEngine for Fuzzer {
 
                 // For each call, we verify that it isn't trapped
                 if bug_manager.is_contract_trapped(&result) {
-                    bug_manager.display_trap(message, &result);
+                    bug_manager.display_trap(message.clone(), result.clone());
                 }
 
                 coverage.add_cov(&result.debug_message);
