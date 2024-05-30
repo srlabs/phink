@@ -30,9 +30,9 @@ pub trait FuzzerEngine {
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
         assert_eq!(responses.len(), one_input.messages.len());
 
-        println!("\n\n🌱  Executing new seed");
+        println!("\n🌱  Executing new seed\n");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Debug trace"]);
+        table.add_row(row!["Message", "Debug trace (and coverage)"]);
 
         for i in 0..responses.len() {
             let curr_result = responses.get(i).unwrap();
