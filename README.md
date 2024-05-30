@@ -50,15 +50,13 @@ impl DomainNameService {
  - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
  - [x] Handling of ink! specific encoding and constructors
  - [x] Automatic contract instantiation
+ - [x] Crafting multiple `messages` in the same transaction
  - [ ] LLM-based invariant creation using [rust-llama](https://github.com/mdrokz/rust-llama.cpp)
  - [ ] Proper binary usage
- - [ ] Fuzzing guidance through WASM coverage
  - [ ] Custom fuzzing dashboard
  - [ ] Seeds and constants extraction out of code-base
  - [ ] Provision of a specified on-chain state
  - [ ] Handling of multiple blocks within the same state
- - [ ] Crafting multiple `messages` in the same transaction
- - [ ] Integration [LibAFL](https://github.com/AFLplusplus/LibAFL/) for enhanced synergy 
  
 ## Licence
 
