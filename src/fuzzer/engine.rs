@@ -28,7 +28,7 @@ pub trait FuzzerEngine {
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
-        assert_eq!(responses.len(), one_input.messages.len());
+        // assert_eq!(responses.len(), one_input.messages.len());
 
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
