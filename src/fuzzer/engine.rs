@@ -35,22 +35,22 @@ pub trait FuzzerEngine {
         table.add_row(row!["Message", "Debug trace (and coverage)"]);
 
         for i in 0..responses.len() {
-            let curr_result = responses.get(i).unwrap();
+            let curr_result = responses.get(i);
 
             let description = one_input
                 .messages
                 .get(i)
-                .clone()
-                .unwrap()
-                .message_metadata
-                .to_string();
-            let debug = &curr_result.debug_message;
+                .map(|msg| msg.message_metadata.to_string())
+                .unwrap_or_else(|| "FAIL".to_string());
 
-            table.add_row(row![
-                description,
-                format!("{}", String::from_utf8_lossy(&*debug).replace('\n', " "))
-            ]);
+            let debug = match curr_result {
+                Some(result) => String::from_utf8_lossy(&result.debug_message).replace('\n', " "),
+                None => "FAIL".to_string(),
+            };
+
+            table.add_row(row![description, debug]);
         }
+
         table.printstd();
     }
 

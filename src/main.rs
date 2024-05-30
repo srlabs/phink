@@ -6,7 +6,9 @@ use std::process::Command;
 use std::{env, fs, path::PathBuf};
 
 use clap::Parser;
+use sp_core::crypto::AccountId32;
 
+use crate::contract::runtime::AccountId;
 use crate::fuzzer::instrument::InkFilesPath;
 use crate::{
     contract::remote::ContractBridge,
@@ -47,48 +49,38 @@ fn main() {
 }
 
 fn handle_with_env() {
-    // If PHINK_CONTRACT_DIR is passed, this will be our contract location, sample/dns otherwise
-    let contract_path =
-        env::var("PHINK_CONTRACT_DIR").unwrap_or_else(|_| String::from("sample/dns/"));
+    // This will be our contract location
+    let contract_path = PathBuf::from(env::var("PHINK_CONTRACT_DIR").unwrap());
+    let who: AccountId32 = AccountId32::new([1u8; 32]);
 
-    let engine = instrument_and_compile(contract_path);
-    let finder = &engine.find().unwrap();
-
-    deploy_and_fuzz(finder);
-}
-
-fn instrument_and_compile(contract_path: String) -> InstrumenterEngine {
-    let mut engine = InstrumenterEngine::new(PathBuf::from(contract_path));
-
-    if env::var("PHINK_INSTRUMENT_AND_BUILD").is_ok() {
+    let mut engine = InstrumenterEngine::new(contract_path);
+    if env::var("PHINK_INSTRUMENT_AND_BUILD").unwrap() == "true" {
         engine.instrument().unwrap().build().unwrap();
     }
-    engine
-}
 
-fn deploy_and_fuzz(finder: &InkFilesPath) {
+    let finder = &engine.find().unwrap();
     match fs::read(&finder.wasm_path) {
         Ok(dns_wasm_bytes) => {
-            let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &finder.specs_path);
+            let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &finder.specs_path, who);
             let fuzzer = Fuzzer::new(setup);
             fuzzer.fuzz();
         }
         Err(e) => {
-            eprintln!("Error reading WASM file: {:?}", e);
+            eprintln!("🙅 Error reading WASM file: {:?}", e);
         }
     }
 }
 
-fn new_main() {
-    // let output = Command::new("cargo")
-    //     .arg("ziggy")
-    //     .arg("run")
-    //     .output()
-    //     .expect("Failed to execute command"); //todo! set min input size to 10, via cli :)
-
-    let cli = Cli::parse();
-    match &cli.command {
-        Commands::Fuzz => {}
-        Commands::Execute => {}
-    }
-}
+// fn new_main() {
+//     let output = Command::new("cargo")
+//         .arg("ziggy")
+//         .arg("run")
+//         .output()
+//         .expect("Failed to execute command"); //todo! set min input size to 10, via cli :)
+//
+//     let cli = Cli::parse();
+//     match &cli.command {
+//         Commands::Fuzz => {}
+//         Commands::Execute => {}
+//     }
+// }

@@ -9,6 +9,7 @@ use pallet_contracts::{
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 
+use crate::contract::runtime::AccountId;
 use crate::{
     contract::payload,
     contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},
@@ -35,8 +36,6 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
-    pub const ALICE: AccountId32 = AccountId32::new([1u8; 32]);
-
     pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
@@ -46,16 +45,20 @@ impl ContractBridge {
     /// * `wasm_bytes`: the bytes of the WASM contract
     /// * `json_specs`: JSON specs of the contract, i.e. dns.json
 
-    pub fn initialize_wasm(wasm_bytes: Vec<u8>, path_to_specs: &PathBuf) -> ContractBridge {
-        let mut contract_addr: AccountIdOf<Test> = AccountId32::new([42u8; 32]); // dummy account
+    pub fn initialize_wasm(
+        wasm_bytes: Vec<u8>,
+        path_to_specs: &PathBuf,
+        origin: AccountId,
+    ) -> ContractBridge {
+        let mut contract_addr: AccountIdOf<Test> = origin;
         let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
         let genesis_storage: Storage = {
             let storage = Self::storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
-                let code_hash = Self::upload(&wasm_bytes);
-                contract_addr = Self::instantiate(&json_specs, code_hash).expect(
-                    "Can't fetch the contract address because because of incorrect instantiation",
+                let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
+                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone()).expect(
+                    "🙅 Can't fetch the contract address because because of incorrect instantiation",
                 );
                 // We verify if the contract is correctly instantiated
                 assert!(
@@ -102,21 +105,21 @@ impl ContractBridge {
         )
     }
 
-    pub fn upload(wasm_bytes: &Vec<u8>) -> H256 {
-        let code_hash = Contracts::bare_upload_code(
-            Self::ALICE,
-            wasm_bytes.clone(),
-            None,
-            Determinism::Enforced,
-        )
-        .unwrap()
-        .code_hash;
+    pub fn upload(wasm_bytes: &Vec<u8>, who: AccountId) -> H256 {
+        let code_hash =
+            Contracts::bare_upload_code(who, wasm_bytes.clone(), None, Determinism::Enforced)
+                .unwrap()
+                .code_hash;
         code_hash
     }
 
-    pub fn instantiate(json_specs: &String, code_hash: H256) -> Option<AccountIdOf<Test>> {
+    pub fn instantiate(
+        json_specs: &String,
+        code_hash: H256,
+        who: AccountId,
+    ) -> Option<AccountIdOf<Test>> {
         let instantiate = Contracts::bare_instantiate(
-            Self::ALICE,
+            who,
             0,
             Self::GAS_LIMIT,
             None,

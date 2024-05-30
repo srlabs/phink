@@ -1,15 +1,17 @@
-use std::ffi::OsStr;
-use std::fs;
-use std::fs::{copy, File};
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::{
+    ffi::OsStr,
+    fs,
+    fs::{copy, File},
+    io,
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use syn::parse_file;
-use syn::visit_mut::VisitMut;
+use syn::{parse_file, visit_mut::VisitMut};
 use walkdir::WalkDir;
 
 use crate::fuzzer::instrument::instrument::ContractCovUpdater;
@@ -47,7 +49,7 @@ pub trait ContractInstrumenter {
     where
         Self: Sized;
     fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), std::io::Error>;
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
 }
 
 impl InstrumenterEngine {
@@ -57,7 +59,7 @@ impl InstrumenterEngine {
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
-            .map_err(|e| format!("Failed to read target directory: {:?}", e))?
+            .map_err(|e| format!("🙅 Failed to read target directory: {:?}", e))?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
                 if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
@@ -84,13 +86,13 @@ impl ContractBuilder for InstrumenterEngine {
             .current_dir(&self.contract_dir)
             .args(["contract", "build", "--features=phink"])
             .status()
-            .map_err(|e| format!("Failed to execute cargo command: {:?}", e))?;
+            .map_err(|e| format!("🙅 Failed to execute cargo command: {:?}", e))?;
 
         if status.success() {
             self.find()
         } else {
             Err(format!(
-                "It seems that your instrumented smart contract did not compile properly. \
+                "🙅 It seems that your instrumented smart contract did not compile properly. \
                 Please go to {:?}, edit the lib.rs file, and run cargo contract build again.\
                 Detailed error — {:?}",
                 &self.contract_dir, status
@@ -108,23 +110,24 @@ impl ContractForker for InstrumenterEngine {
             .collect();
 
         let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
-        fs::create_dir_all(&new_dir).map_err(|e| format!("Failed to create directory: {:?}", e))?;
+        fs::create_dir_all(&new_dir)
+            .map_err(|e| format!("🙅 Failed to create directory: {:?}", e))?;
 
         for entry in WalkDir::new(&self.contract_dir) {
-            let entry = entry.map_err(|e| format!("Failed to read entry: {:?}", e))?;
+            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {:?}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
                     .strip_prefix(&self.contract_dir)
-                    .map_err(|e| format!("Failed to strip prefix: {:?}", e))?,
+                    .map_err(|e| format!("🙅 Failed to strip prefix: {:?}", e))?,
             );
 
             if entry.path().is_dir() {
                 fs::create_dir_all(&target_path)
-                    .map_err(|e| format!("Failed to create subdirectory: {:?}", e))?;
+                    .map_err(|e| format!("🙅 Failed to create subdirectory: {:?}", e))?;
             } else {
                 copy(entry.path(), &target_path)
-                    .map_err(|e| format!("Failed to copy file: {:?}", e))?;
+                    .map_err(|e| format!("🙅 Failed to copy file: {:?}", e))?;
             }
         }
 
@@ -136,14 +139,14 @@ impl ContractInstrumenter for InstrumenterEngine {
     fn instrument(&mut self) -> Result<&mut InstrumenterEngine, String> {
         let new_working_dir = self.fork()?;
         let lib_rs = new_working_dir.join("lib.rs");
-        let code =
-            fs::read_to_string(&lib_rs).map_err(|e| format!("Failed to read lib.rs: {:?}", e))?;
+        let code = fs::read_to_string(&lib_rs)
+            .map_err(|e| format!("🙅 Failed to read lib.rs: {:?}", e))?;
 
         let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
-            .map_err(|_| "Failed to parse and visit code".to_string())?;
+            .map_err(|_| "🙅 Failed to parse and visit code".to_string())?;
 
         Self::save_and_format(modified_code, lib_rs.clone())
-            .map_err(|e| format!("Failed to save and format code: {:?}", e))?;
+            .map_err(|e| format!("🙅 Failed to save and format code: {:?}", e))?;
 
         self.contract_dir = new_working_dir;
         Ok(self)
@@ -155,7 +158,7 @@ impl ContractInstrumenter for InstrumenterEngine {
         Ok(quote!(#ast).to_string())
     }
 
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), std::io::Error> {
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error> {
         let mut file = File::create(lib_rs.clone())?;
         file.write_all(source_code.as_bytes())?;
         file.flush()?;
