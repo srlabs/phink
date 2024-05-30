@@ -5,7 +5,7 @@ mod dns {
     use ink::{
         prelude::{vec::Vec},
         storage::Mapping,
-        storage::StorageVec
+        storage::StorageVec,
     };
 
     /// Emitted whenever a new name is being registered.
@@ -149,8 +149,8 @@ mod dns {
         }
 
         #[ink(message)]
-        pub fn crash(&mut self, data: Vec<u8>) -> Result<()> {
-            if data.len() < 5 {
+        pub fn crash_with_invariant(&mut self, data: Vec<u8>) -> Result<()> {
+            if data.len() == 5 {
                 if data[0] == b'a' {
                     if data[1] == b'b' {
                         if data[2] == b'c' {
@@ -162,6 +162,17 @@ mod dns {
                 }
             }
 
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn crash_with_contract_trapped(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
+            if data.len() < 5 {
+                if data[0] == b'a' {
+                    // But what if data is empty
+                    // --> Contract trapped! 
+                }
+            }
             Ok(())
         }
         /// Transfer owner to another address.

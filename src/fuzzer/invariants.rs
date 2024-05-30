@@ -29,7 +29,7 @@ impl BugManager {
     }
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
-        println!("\n🤯 A trapped contract got caught! Let's dive down.");
+        println!("\n🤯 A trapped contract got caught! Let's dive into it");
 
         println!(
             "\n🐛 IMPORTANT STACKTRACE : {}\n",
@@ -49,7 +49,7 @@ impl BugManager {
             },
         );
 
-        panic!("\nGood luck ser! 🫡\n\n\n\n\n\n"); //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n"); //Artificially trigger a bug for AFL
     }
 
     pub fn display_invariant(
@@ -59,7 +59,7 @@ impl BugManager {
         invariant_tested: FailedInvariantTrace,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
-        println!("\n🤯 An invariant got caught! Let's dive down.");
+        println!("\n🤯 An invariant got caught! Let's dive into it");
 
         // Convert the array to a slice and then take a mutable reference to the slice
         let mut invariant_slice: &[u8] = &invariant_tested.0;
@@ -74,7 +74,7 @@ impl BugManager {
 
         println!("🎉 Find below the trace that caused that *invariant*");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("\n\nGood luck ser! 🫡\n\n\n\n\n\n"); //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n"); //Artificially trigger a bug for AFL
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.

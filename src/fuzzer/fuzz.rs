@@ -73,7 +73,7 @@ impl FuzzerEngine for Fuzzer {
 
         Self::build_corpus_and_dict(&mut selectors).expect("Failed to create initial corpus");
         println!(
-            "\n\n🚀  Now fuzzing `{}` ({})!\n\n",
+            "\n\n🚀  Now fuzzing `{}` ({})!\n",
             self.setup.path_to_specs.as_os_str().to_str().unwrap(),
             self.setup.contract_address
         );
