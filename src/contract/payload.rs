@@ -119,6 +119,7 @@ impl PayloadCrafter {
     }
 }
 
+#[cfg(test)]
 mod test {
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
     use contract_transcode::ContractMessageTranscoder;

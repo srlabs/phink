@@ -193,8 +193,8 @@ mod instrument {
     }
 }
 
+#[cfg(test)]
 mod test {
-    use parity_scale_codec::{Decode, DecodeLimit};
     use std::path::PathBuf;
     use std::{fs, fs::File, io::Write, process::Command};
 

@@ -2,18 +2,15 @@ use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
-use pallet_contracts::ExecReturnValue;
 
-use sp_runtime::DispatchError;
-
-use crate::fuzzer::invariants;
 use crate::{
     contract::payload::{PayloadCrafter, Selector},
     contract::remote::ContractBridge,
+    contract::remote::FullContractResponse,
+    fuzzer::coverage::Coverage,
     fuzzer::engine::FuzzerEngine,
-    fuzzer::invariants::Invariants,
+    fuzzer::invariants::BugManager,
     fuzzer::parser::{parse_input, OneInput},
-    utils,
 };
 
 #[derive(Clone)]
@@ -50,11 +47,11 @@ impl FuzzerEngine for Fuzzer {
         let inv = PayloadCrafter::extract_invariants(specs)
             .expect("No invariants found, check your contract");
 
-        let mut invariant_manager = Invariants::from(inv, self.setup.clone());
+        let mut invariant_manager = BugManager::from(inv, self.setup.clone());
 
         Self::make_initial_corpus(&mut selectors).expect("Failed to create initial corpus");
         println!(
-            "🚀 Now fuzzing `{}` ({})!",
+            "\n\n🚀  Now fuzzing `{}` ({})!\n\n",
             self.setup.path_to_specs.as_os_str().to_str().unwrap(),
             self.setup.contract_address
         );
@@ -74,7 +71,7 @@ impl FuzzerEngine for Fuzzer {
         client: Fuzzer,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         _selectors: &mut Vec<Selector>,
-        bug_manager: &mut Invariants,
+        bug_manager: &mut BugManager,
         input: &[u8],
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
@@ -86,62 +83,56 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverages_vec: Vec<Vec<u8>> = Vec::new();
-        let mut results: Vec<Result<ExecReturnValue, DispatchError>> = Vec::new();
+        let mut coverage: Coverage = Coverage::new();
+        let mut all_msg_responses: Vec<FullContractResponse> = Vec::new();
 
         chain.execute_with(|| {
-            for decoded_msg in &decoded_msgs.messages {
-                let transfer_value = if decoded_msg.is_payable {
-                    decoded_msg.value_token
+            for message in &decoded_msgs.messages {
+                let transfer_value = if message.is_payable {
+                    message.value_token
                 } else {
                     0
                 };
 
-                let result = client.setup.clone().call(
-                    &decoded_msg.payload,
+                let result: FullContractResponse = client.setup.clone().call(
+                    &message.payload,
                     decoded_msgs.origin as u8,
                     transfer_value,
                 );
 
-                if bug_manager.is_contract_trapped(result.result.clone()) {
-                    panic!("{}", format!("😲 Contract is trapped ({:?})", input));
-                 }
+                // For each call, we verify that it isn't trapped
+                if bug_manager.is_contract_trapped(&result) {
+                    bug_manager.display_trap(message, &result);
+                }
 
-                coverages_vec.push(result.debug_message);
-                results.push(result.result);
+                coverage.add_cov(&result.debug_message);
+                all_msg_responses.push(result);
             }
 
-            // For each call, we verify that invariants aren't broken
-            if !bug_manager.are_invariant_passing(decoded_msgs.origin) {
-                panic!("{}", format!("😲 Invariant triggered ({:?})", input));
+            // For each group of call, we verify that invariants aren't broken
+            if let Err(trace) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
+                bug_manager.display_invariant(
+                    all_msg_responses.clone(),
+                    decoded_msgs.clone(),
+                    trace,
+                );
             }
         });
 
         #[cfg(not(fuzzing))]
-        <Fuzzer as FuzzerEngine>::pretty_print(results, decoded_msgs);
-        Self::redirect_coverage(coverages_vec);
-    }
+        <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
-    /// This function create an artificial coverage to convince ziggy that a message is interesting
-    /// or not.
-    fn redirect_coverage(coverages_vec: Vec<Vec<u8>>) {
-        let flatten_cov: Vec<u8> = coverages_vec.into_iter().flatten().collect::<Vec<_>>();
-        // We deduplicate the coverage in case of loop in the contract that wouldn't necessarily
-        // Improve the coverage better, and also to avoid duplicate call inside a call
-        let mut coverage_str = utils::deduplicate(&*String::from_utf8_lossy(&*flatten_cov));
-
-        seq_macro::seq!(x in 0..=300 {
-           if coverage_str.contains(&format!("COV={}", x)) {
-                let _ = 1 + 1;
-            }
-        });
+        // We now fake the coverage
+        coverage.redirect_coverage();
     }
 }
+
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::Path;
     use std::sync::Mutex;
+
+    use super::*;
 
     #[test]
     fn test_parse_input() {

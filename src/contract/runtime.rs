@@ -52,9 +52,9 @@ pub const MILLISECS_PER_BLOCK: Moment = 3000;
 
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 pub const MILLICENTS: Balance = 1_000_000_000;
-pub const CENTS: Balance = 1_000 * MILLICENTS;
+// pub const CENTS: Balance = 1_000 * MILLICENTS;
 // assume this is worth about a cent.
-pub const DOLLARS: Balance = 100 * CENTS;
+// pub const DOLLARS: Balance = 100 * CENTS;
 
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 parameter_types! {

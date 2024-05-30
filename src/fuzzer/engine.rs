@@ -1,47 +1,56 @@
-use contract_transcode::ContractMessageTranscoder;
-use core::panic;
-use frame_support::__private::BasicExternalities;
-use frame_support::traits::{OnFinalize, OnInitialize};
-use pallet_contracts::ExecReturnValue;
-use prettytable::{row, Table};
-use sp_runtime::DispatchError;
 use std::format;
 use std::sync::Mutex;
 
-use crate::contract::payload::Selector;
-use crate::contract::runtime::{
-    AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use prettytable::{row, Table};
+
+use crate::{
+    contract::payload::Selector,
+    contract::remote::FullContractResponse,
+    contract::runtime::{
+        AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
+    },
+    fuzzer::fuzz::Fuzzer,
+    fuzzer::invariants::BugManager,
+    fuzzer::parser::OneInput,
 };
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::invariants::Invariants;
-use crate::fuzzer::parser::{parse_input, OneInput};
-use crate::utils;
 
 pub trait FuzzerEngine {
     fn fuzz(self);
-    fn redirect_coverage(coverages_vec: Vec<Vec<u8>>);
     fn harness(
         client: Fuzzer,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         _selectors: &mut Vec<Selector>,
-        bug_manager: &mut Invariants,
+        bug_manager: &mut BugManager,
         input: &[u8],
     );
 
-    /// Pretty print the result of OneInput
-    fn pretty_print(results: Vec<Result<ExecReturnValue, DispatchError>>, decoded_msg: OneInput) {
+    /// Pretty print the result of `OneInput`
+    fn pretty_print(results: Vec<FullContractResponse>, decoded_msg: OneInput) {
         assert_eq!(results.len(), decoded_msg.messages.len());
 
+        println!("\n\n🌱  Executing new seed");
         let mut table = Table::new();
-        table.add_row(row!["Description", "SCALE", "Result"]);
+        table.add_row(row!["Message", "Result", "Debug"]);
 
         for i in 0..results.len() {
-            let result: String = format!("{:?}", results.get(i).unwrap());
-            let message = decoded_msg.messages.get(i).clone().unwrap();
+            let curr_result = results.get(i).unwrap();
+
+            let result: String = format!("{:?}", curr_result.result.clone().unwrap());
+            let description = decoded_msg
+                .messages
+                .get(i)
+                .clone()
+                .unwrap()
+                .message_metadata
+                .to_string();
+            let debug = &curr_result.debug_message;
+
             table.add_row(row![
-                message.description,
-                hex::encode(&message.payload),
-                result
+                description,
+                result,
+                format!("{}", String::from_utf8_lossy(&*debug).replace('\n', " "))
             ]);
         }
         table.printstd();

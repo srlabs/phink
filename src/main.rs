@@ -94,7 +94,7 @@ fn new_main() {
     match &cli.command {
         Commands::Fuzz => {
             let dir = cli.dir.clone();
-            let mut engine = CoverageEngine::new(dir)
+            let engine = CoverageEngine::new(dir)
                 .instrument()
                 .unwrap()
                 .build()
@@ -103,7 +103,6 @@ fn new_main() {
                 Ok(dns_wasm_bytes) => {
                     let setup = ContractBridge::initialize_wasm(dns_wasm_bytes, &engine.specs_path);
                     let fuzzer = Fuzzer::new(setup);
-                    println!("Now fuzzing `{:?}` !", engine.wasm_path);
                     fuzzer.fuzz();
                 }
                 Err(e) => {

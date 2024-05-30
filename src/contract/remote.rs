@@ -21,6 +21,9 @@ pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::Hash,
 >;
 
+pub type FullContractResponse =
+    ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
+
 #[derive(Clone)]
 pub struct ContractBridge {
     pub genesis: Storage,
@@ -82,7 +85,7 @@ impl ContractBridge {
         payload: &Vec<u8>,
         who: u8,
         transfer_value: BalanceOf<Test>,
-    ) -> ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord> {
+    ) -> FullContractResponse {
         let acc = AccountId32::new([who.try_into().unwrap(); 32]);
         Contracts::bare_call(
             acc,

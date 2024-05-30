@@ -49,16 +49,11 @@ pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", bra
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
 
-env_logger = { version = "0.11.3" }
 ziggy = { version = "1.0.2", default-features = false }
-wat = { version = "1.202.0" }
 hex = { version = "0.4.3" }
-hex-literal = { version = "0.4.1" }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.115" }
 ink_env = { version = "5.0.0" }
-ink = { version = "5.0.0" }
-contract-build = { version = "4.1.0" }
 paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
 contract-transcode = { version = "4.1.0" }
@@ -72,5 +67,4 @@ quote = { version = "1.0.36" }
 proc-macro2 = { version = "1.0.81", features = ["span-locations"]}
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
-config = "0.14.0"
 
