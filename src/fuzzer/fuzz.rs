@@ -2,6 +2,7 @@ use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
+use itertools::Itertools;
 
 use crate::{
     contract::payload::{PayloadCrafter, Selector},
@@ -102,6 +103,18 @@ impl FuzzerEngine for Fuzzer {
             return;
         }
 
+        // Return early if the payload slice matches any selector to avoid fuzzing invariants messages
+        if decoded_msgs.messages.iter().any(|payload| {
+            payload.payload
+                .get(0..4)
+                .and_then(|slice| slice.try_into().ok())
+                .map_or(false, |slice: &[u8; 4]| {
+                    bug_manager.contains_selector(slice)
+                })
+        }) {
+            return;
+        }
+
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
@@ -115,13 +128,6 @@ impl FuzzerEngine for Fuzzer {
                 } else {
                     0
                 };
-
-                // Return early if the payload slice matches any selector to avoid fuzzing invariants messages
-                if let Ok(payload_slice) = message.payload[0..4].try_into() {
-                    if bug_manager.contains_selector(&payload_slice) {
-                        return;
-                    }
-                }
 
                 let result: FullContractResponse = client.setup.clone().call(
                     &message.payload,
