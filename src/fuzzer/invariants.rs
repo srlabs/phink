@@ -25,10 +25,13 @@ impl BugManager {
     }
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
-        let mut table = Table::new();
-        table.add_row(row!["Description", "SCALE", "Result"]);
+        println!("🤯 A *trap contract* got caught! Let's dive down.");
+        println!(
+            "🐛 IMPORTANT STACKTRACE : {:?}",
+            String::from_utf8_lossy(response.debug_message.as_ref())
+        );
 
-        table.printstd();
+        println!("🎉 Find below the trace that caused that *trapped contract*");
 
         <Fuzzer as FuzzerEngine>::pretty_print(
             vec![response],
@@ -38,7 +41,7 @@ impl BugManager {
             },
         );
 
-        panic!("😲"); //Artificially trigger a bug for AFL
+        panic!("Good luck ser! 🫡"); //Artificially trigger a bug for AFL
     }
 
     pub fn display_invariant(
@@ -47,21 +50,19 @@ impl BugManager {
         decoded_msg: OneInput,
         invariant_tested: FailedInvariantTrace,
     ) {
-        println!("🤯 Invariant got caught! Let's dive down.");
-
+        println!("🤯 An *invariant* got caught! Let's dive down.");
 
         let mut table = Table::new();
         table.add_row(row!["Invariant", "Debug trace"]);
 
         table.add_row(row![
-                invariant_tested.1.to_string(),
-                String::from_utf8_lossy(invariant_tested.0.as_ref())
-            ]);
+            invariant_tested.1.to_string(),
+            String::from_utf8_lossy(invariant_tested.0.as_ref())
+        ]);
 
         table.printstd();
 
-
-        println!("🎉 Find below the trace that caused that invariant");
+        println!("🎉 Find below the trace that caused that *invariant*");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
         panic!("Good luck ser! 🫡"); //Artificially trigger a bug for AFL
     }
