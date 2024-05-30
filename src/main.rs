@@ -12,7 +12,7 @@ use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
     fuzzer::fuzz::Fuzzer,
-    fuzzer::instrument::{ContractBuilder, ContractInstrumenter, CoverageEngine},
+    fuzzer::instrument::{ContractBuilder, ContractInstrumenter, InstrumenterEngine},
 };
 
 mod contract;
@@ -30,10 +30,6 @@ struct Cli {
     /// Additional command to specify operation mode
     #[clap(subcommand)]
     command: Commands,
-
-    /// Activate TUI mode for LibAFL
-    #[clap(long)]
-    ui: bool,
 }
 
 /// Commands supported by Phink
@@ -53,12 +49,21 @@ fn main() {
 fn handle_with_env() {
     // If PHINK_CONTRACT_DIR is passed, this will be our contract location, sample/dns otherwise
     let contract_path =
-        env::var("PHINK_CONTRACT_DIR").unwrap_or_else(|_| String::from("sample/dns"));
+        env::var("PHINK_CONTRACT_DIR").unwrap_or_else(|_| String::from("sample/dns/"));
 
     let engine = instrument_and_compile(contract_path);
     let finder = &engine.find().unwrap();
 
     deploy_and_fuzz(finder);
+}
+
+fn instrument_and_compile(contract_path: String) -> InstrumenterEngine {
+    let mut engine = InstrumenterEngine::new(PathBuf::from(contract_path));
+
+    if env::var("PHINK_INSTRUMENT_AND_BUILD").is_ok() {
+        engine.instrument().unwrap().build().unwrap();
+    }
+    engine
 }
 
 fn deploy_and_fuzz(finder: &InkFilesPath) {
@@ -72,15 +77,6 @@ fn deploy_and_fuzz(finder: &InkFilesPath) {
             eprintln!("Error reading WASM file: {:?}", e);
         }
     }
-}
-
-fn instrument_and_compile(contract_path: String) -> CoverageEngine {
-    let mut engine = CoverageEngine::new(PathBuf::from(contract_path));
-
-    if env::var("PHINK_INSTRUMENT_AND_BUILD").is_ok() {
-        engine.instrument().unwrap().build().unwrap();
-    }
-    engine
 }
 
 fn new_main() {

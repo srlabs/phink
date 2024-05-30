@@ -11,8 +11,8 @@ use crate::{
     contract::runtime::{
         AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,
     },
+    fuzzer::bug::BugManager,
     fuzzer::fuzz::Fuzzer,
-    fuzzer::invariants::BugManager,
     fuzzer::parser::OneInput,
 };
 

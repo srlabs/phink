@@ -7,9 +7,9 @@ use crate::{
     contract::payload::{PayloadCrafter, Selector},
     contract::remote::ContractBridge,
     contract::remote::FullContractResponse,
+    fuzzer::bug::BugManager,
     fuzzer::coverage::Coverage,
     fuzzer::engine::FuzzerEngine,
-    fuzzer::invariants::BugManager,
     fuzzer::parser::{parse_input, OneInput},
 };
 
@@ -116,6 +116,13 @@ impl FuzzerEngine for Fuzzer {
                     0
                 };
 
+                // Return early if the payload slice matches any selector to avoid fuzzing invariants messages
+                if let Ok(payload_slice) = message.payload[0..4].try_into() {
+                    if bug_manager.contains_selector(&payload_slice) {
+                        return;
+                    }
+                }
+
                 let result: FullContractResponse = client.setup.clone().call(
                     &message.payload,
                     decoded_msgs.origin as u8,
@@ -142,6 +149,7 @@ impl FuzzerEngine for Fuzzer {
             }
         });
 
+        // Pretty print all the calls of the current input
         #[cfg(not(fuzzing))]
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 

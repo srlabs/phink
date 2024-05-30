@@ -170,7 +170,7 @@ mod dns {
             if data.len() < 5 {
                 if data[0] == b'a' {
                     // But what if data is empty
-                    // --> Contract trapped! 
+                    // --> Contract trapped!
                 }
             }
             Ok(())

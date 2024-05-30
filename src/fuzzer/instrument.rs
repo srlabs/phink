@@ -24,7 +24,7 @@ use crate::fuzzer::instrument::instrument::ContractCovUpdater;
 /// automatically add a tracing code, which will then be fetched at the end of the input execution
 /// in order to get coverage.
 #[derive(Default)]
-pub struct CoverageEngine {
+pub struct InstrumenterEngine {
     pub contract_dir: PathBuf,
 }
 
@@ -50,7 +50,7 @@ pub trait ContractInstrumenter {
     fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), std::io::Error>;
 }
 
-impl CoverageEngine {
+impl InstrumenterEngine {
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
     }
@@ -78,7 +78,7 @@ impl CoverageEngine {
     }
 }
 
-impl ContractBuilder for CoverageEngine {
+impl ContractBuilder for InstrumenterEngine {
     fn build(&self) -> Result<InkFilesPath, String> {
         let status = Command::new("cargo")
             .current_dir(&self.contract_dir)
@@ -99,7 +99,7 @@ impl ContractBuilder for CoverageEngine {
     }
 }
 
-impl ContractForker for CoverageEngine {
+impl ContractForker for InstrumenterEngine {
     fn fork(&self) -> Result<PathBuf, String> {
         let random_string: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
@@ -132,8 +132,8 @@ impl ContractForker for CoverageEngine {
     }
 }
 
-impl ContractInstrumenter for CoverageEngine {
-    fn instrument(&mut self) -> Result<&mut CoverageEngine, String> {
+impl ContractInstrumenter for InstrumenterEngine {
+    fn instrument(&mut self) -> Result<&mut InstrumenterEngine, String> {
         let new_working_dir = self.fork()?;
         let lib_rs = new_working_dir.join("lib.rs");
         let code =
@@ -203,12 +203,11 @@ mod test {
     use syn::parse_file;
     use syn::visit_mut::VisitMut;
 
-    use crate::fuzzer::instrument::{ContractForker, CoverageEngine};
+    use crate::fuzzer::instrument::{ContractForker, InstrumenterEngine};
 
     #[test]
     fn adding_cov_insertion_works() {
-        let signature = "COV_MAP . insert (";
-
+        let signature = "ink::env::debug_println!(\"COV =";
         let code = fs::read_to_string("sample/dns/lib.rs").unwrap();
         let mut ast = parse_file(&code).expect("Unable to parse file");
 
@@ -222,7 +221,7 @@ mod test {
 
     #[test]
     fn do_fork() {
-        let engine: CoverageEngine = CoverageEngine::new(PathBuf::from("sample/dns"));
+        let engine: InstrumenterEngine = InstrumenterEngine::new(PathBuf::from("sample/dns"));
         let fork = engine.fork().unwrap();
         println!("{:?}", fork);
         let exists = fork.exists();

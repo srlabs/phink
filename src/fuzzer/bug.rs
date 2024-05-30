@@ -1,5 +1,4 @@
 use contract_transcode::ContractMessageTranscoder;
-use prettytable::{row, Table};
 use sp_runtime::{DispatchError, ModuleError};
 use std::panic;
 use std::sync::Mutex;
@@ -28,6 +27,10 @@ impl BugManager {
         }
     }
 
+    pub fn contains_selector(&self, selector: &Selector) -> bool {
+        self.invariant_selectors.contains(selector)
+    }
+
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
         println!("\n🤯 A trapped contract got caught! Let's dive into it");
 
@@ -49,7 +52,8 @@ impl BugManager {
             },
         );
 
-        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n"); //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n");
+        //Artificially trigger a bug for AFL
     }
 
     pub fn display_invariant(
@@ -74,7 +78,8 @@ impl BugManager {
 
         println!("🎉 Find below the trace that caused that *invariant*");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n"); //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n");
+        //Artificially trigger a bug for AFL
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.
