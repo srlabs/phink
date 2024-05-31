@@ -44,7 +44,7 @@ impl Coverage {
            if coverage_str.contains(&format!("COV={}", x)) {
                 let a = 1 + 1;
                 let _b = a + 1;
-                println!("TOZ={}", x);
+                println!("TOZ={:?}", coverage_str);
             }
         });
     }
