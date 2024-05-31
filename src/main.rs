@@ -60,12 +60,11 @@ enum Commands {
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument,
     /// Run all the seeds
-    Cover,
+    Run,
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
     Clean,
-
-    /// Generate a coverage, currently in TODO!
-    Run,
+    /// Generate a coverage, only of the harness
+    Cover,
     /// Execute one seed, currently in TODO!
     Execute,
 }
@@ -114,7 +113,7 @@ fn main() {
                     cli.path.expect("📂 Contract path is expected"),
                 );
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                start_cargo_ziggy_run_process(contract_dir);
+                start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Run);
             }
 
             Commands::Execute => {
@@ -122,13 +121,24 @@ fn main() {
             }
 
             Commands::Cover => {
-                todo!();
+                set_var(
+                    "PHINK_CONTRACT_DIR",
+                    cli.path.expect("📂 Contract path is expected"),
+                );
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Cover);
             }
             Commands::Clean => {
                 InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");
             }
         };
     }
+}
+
+
+pub enum ZiggyCommand {
+    Run,
+    Cover
 }
 
 fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {
@@ -163,16 +173,21 @@ fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {
     }
 }
 
-fn start_cargo_ziggy_run_process(contract_dir: PathBuf) {
+fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyCommand) {
+    let command_arg = match command {
+        ZiggyCommand::Run => "run",
+        ZiggyCommand::Cover => "cover",
+    };
+
     let mut child = Command::new("cargo")
         .arg("ziggy")
-        .arg("run")
+        .arg(command_arg)
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .stdout(Stdio::piped())
         .spawn()
-        .expect("🙅 Failed to execute cargo ziggy fuzz...");
+        .expect("🙅 Failed to execute cargo ziggy command...");
 
     if let Some(stdout) = child.stdout.take() {
         let reader = std::io::BufReader::new(stdout);
