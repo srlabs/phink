@@ -135,10 +135,9 @@ fn main() {
     }
 }
 
-
 pub enum ZiggyCommand {
     Run,
-    Cover
+    Cover,
 }
 
 fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {

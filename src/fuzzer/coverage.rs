@@ -1,4 +1,5 @@
 use crate::utils;
+use std::hint::black_box;
 
 pub type CoverageTrace = Vec<u8>;
 #[derive(Clone)]
@@ -33,18 +34,16 @@ impl Coverage {
     /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
     /// TODO! Refactor the 300, it should change depending the contract
     pub fn redirect_coverage(self) {
-        // Flatten the branches and collect into a Vec<u8>
-        let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
-        // We deduplicate the coverage in case of loop in the contract that wouldn't necessarily
-        // Improve the coverage better, and also to avoid duplicate call inside a call
+        let flatten_cov: Vec<u8> = self.branches.into_iter().flatten().collect();
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
-        println!("TOZ={:?}", self.branches.into_iter());
+        let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
-        // Fake code, for coverage purposes
         seq_macro::seq!(x in 0..=500 {
-           if coverage_str.contains(&format!("COV={}", x)) {
+            let target = format!("COV={}", x);
+            if coverage_lines.contains(&target.as_str()) {
                 let a = 1 + 1;
-                let _b = a + 1;
+                let _b =black_box(a + 1);
+                // println!("COV={}", x);
             }
         });
     }
