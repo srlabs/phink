@@ -83,7 +83,6 @@ impl Fuzzer {
 
 impl FuzzerEngine for Fuzzer {
     fn fuzz(self) {
-
         let mut transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
         );
@@ -94,7 +93,8 @@ impl FuzzerEngine for Fuzzer {
         let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
             .expect("No invariants found, check your contract");
 
-        let mut selectors_without_invariants: Vec<Selector> = selectors.clone()
+        let mut selectors_without_invariants: Vec<Selector> = selectors
+            .clone()
             .into_iter()
             .filter(|s| !invariants.clone().contains(s))
             .collect();
@@ -103,7 +103,6 @@ impl FuzzerEngine for Fuzzer {
 
         Self::build_corpus_and_dict(&mut selectors_without_invariants)
             .expect("🙅 Failed to create initial corpus");
-
 
         println!(
             "\n\n🚀  Now fuzzing `{}` ({})!\n",

@@ -5,7 +5,6 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use prettytable::{row, Table};
 
 use crate::{
-    contract::payload::Selector,
     contract::remote::FullContractResponse,
     contract::runtime::{
         AllPalletsWithSystem, BlockNumber, RuntimeOrigin, Timestamp, SLOT_DURATION,

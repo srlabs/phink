@@ -25,7 +25,7 @@ use crate::fuzzer::instrument::instrument::ContractCovUpdater;
 /// Phink opted for a Rust AST approach. For each code instruction on the smart-contract, Phink will
 /// automatically add a tracing code, which will then be fetched at the end of the input execution
 /// in order to get coverage.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct InstrumenterEngine {
     pub contract_dir: PathBuf,
 }
@@ -55,6 +55,60 @@ pub trait ContractInstrumenter {
 impl InstrumenterEngine {
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
+    }
+
+    fn get_dirs_to_remove(tmp_dir: &Path, pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
+        Ok(fs::read_dir(tmp_dir)?
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let path = entry.path();
+                if path.is_dir() && path.file_name()?.to_string_lossy().starts_with(pattern) {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>())
+    }
+
+    fn prompt_user_confirmation() -> Result<bool, io::Error> {
+        print!("🗑️ Do you really want to remove these directories? (yes/no): ");
+        io::stdout().flush()?;
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+        Ok(input.trim().eq_ignore_ascii_case("yes"))
+    }
+
+    fn remove_directories(dirs_to_remove: Vec<PathBuf>) -> Result<(), io::Error> {
+        for dir in dirs_to_remove {
+            fs::remove_dir_all(&dir)?;
+            println!("✅ Removed directory: {}", dir.display());
+        }
+        Ok(())
+    }
+
+    pub fn clean() -> Result<(), io::Error> {
+        let tmp_dir = Path::new("/tmp");
+        let pattern = "ink_fuzzed_";
+        let dirs_to_remove = Self::get_dirs_to_remove(tmp_dir, pattern)?;
+
+        if dirs_to_remove.is_empty() {
+            println!("❌ No directories found matching the pattern '{}'", pattern);
+            return Ok(());
+        }
+
+        println!("🔍 Found the following instrumented ink! contracts:");
+        for dir in &dirs_to_remove {
+            println!("{}", dir.display());
+        }
+
+        if Self::prompt_user_confirmation()? {
+            Self::remove_directories(dirs_to_remove)?;
+        } else {
+            println!("❌ Operation cancelled.");
+        }
+
+        Ok(())
     }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {

@@ -2,6 +2,7 @@
 
 extern crate core;
 
+use env::{set_var, var};
 use std::io::BufRead;
 use std::process::{Command, Stdio};
 use std::{env, fs, path::PathBuf};
@@ -23,11 +24,22 @@ mod utils;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
-#[clap(author, version, about)]
+#[clap(
+    author,
+    version,
+    about = "Phink is a command line tool for fuzzing ink! smart contracts.",
+    long_about = "🐙 Phink, a ink! smart-contract property-based and coverage-guided fuzzer\n\n\
+    Phink depends on various environment variables:
+
+    \tPHINK_FROM_ZIGGY : Informs the tooling that the binary is being ran with Ziggy, and not directly from the CLI
+    \tPHINK_CONTRACT_DIR : Location of the contract code-base. Can be automatically detected.
+    \tPHINK_START_FUZZING : Tells the harness to start fuzzing. \n"
+)]
+
 struct Cli {
     /// Path where the `lib.rs` is located
-    #[clap(long, short, value_parser, required = false)]
-    path: PathBuf,
+    #[clap(long, short, value_parser)]
+    path: Option<PathBuf>,
 
     /// Additional command to specify operation mode
     #[clap(subcommand)]
@@ -39,7 +51,7 @@ struct Cli {
 enum Commands {
     /// Starts the fuzzing process
     Fuzz,
-    /// Execute one seed
+    /// Execute one seed, currently in TODO!
     Execute,
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument,
@@ -47,17 +59,25 @@ enum Commands {
     InstrumentAndFuzz,
     /// Run all seeds
     Run,
-    /// Generate a coverage
+    /// Generate a coverage, currently in TODO!
     Cover,
+    /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
+    Clean,
 }
 
 fn main() {
-    env::set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
 
-    if env::var("PHINK_FROM_ZIGGY").is_ok() {
-        println!("🫢 Let's use Ziggy");
-        let path =
-            PathBuf::from(env::var("PHINK_CONTRACT_DIR").unwrap_or("sample/dns/".parse().unwrap()));
+    if var("PHINK_FROM_ZIGGY").is_ok() {
+        println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
+        set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+
+        let path = var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
+            "\n🈲️ PHINK_CONTRACT_DIR is not set. \
+                You can set it manually, it should contain the source code of your contract, \
+                with or without the instrumented binary,\
+                depending your options. \n\n",
+        );
+
         let mut engine = instrument(path);
 
         start_fuzzer(&mut engine);
@@ -65,66 +85,63 @@ fn main() {
         let cli = Cli::parse();
 
         match &cli.command {
-            //TODO: Handle when CLI is just incorrect command, not just user doing ziggy run
             Commands::Instrument => {
-                instrument(cli.path);
+                set_var("PHINK_CONTRACT_DIR", cli.path.unwrap());
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                instrument(contract_dir);
             }
 
             Commands::Fuzz => {
-                let mut engine = InstrumenterEngine::new(cli.path.clone());
+                set_var("PHINK_CONTRACT_DIR", cli.path.unwrap());
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                let mut engine = InstrumenterEngine::new(contract_dir);
 
-                start_cargo_ziggy_fuzz_process();
+                start_cargo_ziggy_fuzz_process(engine.clone().contract_dir);
 
-                if env::var("PHINK_START_FUZZING").is_ok() {
+                if var("PHINK_START_FUZZING").is_ok() {
                     start_fuzzer(&mut engine);
                 }
             }
 
             Commands::InstrumentAndFuzz => {
-                let mut engine = instrument(cli.path);
+                set_var("PHINK_CONTRACT_DIR", cli.path.unwrap());
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                let mut engine = instrument(contract_dir);
 
-                start_cargo_ziggy_fuzz_process();
+                start_cargo_ziggy_fuzz_process(engine.clone().contract_dir);
 
-                if env::var("PHINK_START_FUZZING").is_ok() {
+                if var("PHINK_START_FUZZING").is_ok() {
                     start_fuzzer(&mut engine);
                 }
             }
+
+            Commands::Run => {
+                set_var("PHINK_CONTRACT_DIR", cli.path.unwrap());
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                let engine = instrument(contract_dir);
+                start_cargo_ziggy_run_process(engine.contract_dir);
+            }
+
             Commands::Execute => {
                 todo!();
             }
 
-            Commands::Run => {
-                let mut engine = instrument(cli.path);
-
-                start_cargo_ziggy_run_process();
-
-                if env::var("PHINK_START_FUZZING").is_ok() {
-                    start_fuzzer(&mut engine);
-                }
-            }
             Commands::Cover => {
                 todo!();
             }
+            Commands::Clean => {
+                InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");
+            }
         };
     }
-    // // Can't use the CLI, it might be a direct Ziggy run
-    // Err(error) => {
-    //     // return;
-    //     println!("🫢 You probably used Ziggy directly in CLI, right ?");
-    //     println!("{:?}", error);
-    //     let mut engine = InstrumenterEngine::new(PathBuf::from(
-    //         env::var("PHINK_CONTRACT_DIR").unwrap_or("sample/dns/".parse().unwrap()),
-    //     ));
-    //
-    //     start_fuzzer(&mut engine);
-    // }
-    // };
 }
 
-fn start_cargo_ziggy_fuzz_process() {
+fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf) {
     let mut child = Command::new("cargo")
         .arg("ziggy")
         .arg("fuzz")
+        .env("PHINK_CONTRACT_DIR", contract_dir)
+        .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .arg(format!("-g={}", MIN_SEED_LEN))
         .arg(format!("-G={}", MAX_SEED_LEN))
@@ -149,10 +166,12 @@ fn start_cargo_ziggy_fuzz_process() {
     }
 }
 
-fn start_cargo_ziggy_run_process() {
+fn start_cargo_ziggy_run_process(contract_dir: PathBuf) {
     let mut child = Command::new("cargo")
         .arg("ziggy")
         .arg("run")
+        .env("PHINK_CONTRACT_DIR", contract_dir)
+        .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .stdout(Stdio::piped())
         .spawn()
