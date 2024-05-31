@@ -65,7 +65,7 @@ impl Fuzzer {
             return true;
         }
 
-        // Condition 2: we break if the fuzzed message is an invariant invariants message
+        // Condition 2: we break if the fuzzed message is an invariant message
         if decoded_msgs.messages.iter().any(|payload| {
             payload
                 .payload
@@ -83,18 +83,28 @@ impl Fuzzer {
 
 impl FuzzerEngine for Fuzzer {
     fn fuzz(self) {
+
         let mut transcoder_loader = Mutex::new(
             ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
         );
 
         let specs = &self.setup.json_specs;
-        let mut selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-        let inv = PayloadCrafter::extract_invariants(specs)
+
+        let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
+        let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
             .expect("No invariants found, check your contract");
 
-        let mut invariant_manager = BugManager::from(inv, self.setup.clone());
+        let mut selectors_without_invariants: Vec<Selector> = selectors.clone()
+            .into_iter()
+            .filter(|s| !invariants.clone().contains(s))
+            .collect();
 
-        Self::build_corpus_and_dict(&mut selectors).expect("Failed to create initial corpus");
+        let mut invariant_manager = BugManager::from(invariants, self.setup.clone());
+
+        Self::build_corpus_and_dict(&mut selectors_without_invariants)
+            .expect("🙅 Failed to create initial corpus");
+
+
         println!(
             "\n\n🚀  Now fuzzing `{}` ({})!\n",
             self.setup.path_to_specs.as_os_str().to_str().unwrap(),
@@ -105,7 +115,6 @@ impl FuzzerEngine for Fuzzer {
             Self::harness(
                 self.clone(),
                 &mut transcoder_loader,
-                &mut selectors.clone(),
                 &mut invariant_manager,
                 data,
             );
@@ -115,7 +124,6 @@ impl FuzzerEngine for Fuzzer {
     fn harness(
         client: Fuzzer,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
-        _selectors: &mut Vec<Selector>,
         bug_manager: &mut BugManager,
         input: &[u8],
     ) {
@@ -176,6 +184,8 @@ impl FuzzerEngine for Fuzzer {
 
 #[cfg(test)]
 mod tests {
+    use crate::fuzzer::parser::Message;
+    use ink_metadata::Selector;
     use std::path::Path;
     use std::sync::Mutex;
 

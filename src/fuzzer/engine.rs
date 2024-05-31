@@ -20,7 +20,6 @@ pub trait FuzzerEngine {
     fn harness(
         client: Fuzzer,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
-        _selectors: &mut Vec<Selector>,
         bug_manager: &mut BugManager,
         input: &[u8],
     );

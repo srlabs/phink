@@ -52,17 +52,15 @@ enum Commands {
 }
 
 fn main() {
+    env::set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
 
     if env::var("PHINK_FROM_ZIGGY").is_ok() {
         println!("🫢 Let's use Ziggy");
-
-        let path = PathBuf::from(
-            env::var("PHINK_CONTRACT_DIR").unwrap_or("sample/dns/".parse().unwrap()),
-        );
-
+        let path =
+            PathBuf::from(env::var("PHINK_CONTRACT_DIR").unwrap_or("sample/dns/".parse().unwrap()));
         let mut engine = instrument(path);
-        start_fuzzer(&mut engine);
 
+        start_fuzzer(&mut engine);
     } else {
         let cli = Cli::parse();
 
@@ -197,6 +195,7 @@ fn start_fuzzer(engine: &mut InstrumenterEngine) {
     let origin: AccountId32 = AccountId32::new([1; 32]);
 
     let finder = engine.find().unwrap();
+
     match fs::read(&finder.wasm_path) {
         Ok(wasm) => {
             let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, origin);
