@@ -34,17 +34,17 @@ impl Coverage {
     /// TODO! Refactor the 300, it should change depending the contract
     pub fn redirect_coverage(self) {
         // Flatten the branches and collect into a Vec<u8>
-        let flatten_cov: Vec<u8> = self.branches.into_iter().flatten().collect();
+        let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
         // We deduplicate the coverage in case of loop in the contract that wouldn't necessarily
         // Improve the coverage better, and also to avoid duplicate call inside a call
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
+        println!("TOZ={:?}", self.branches.into_iter());
 
         // Fake code, for coverage purposes
         seq_macro::seq!(x in 0..=500 {
            if coverage_str.contains(&format!("COV={}", x)) {
                 let a = 1 + 1;
                 let _b = a + 1;
-                println!("TOZ={:?}", coverage_str);
             }
         });
     }
