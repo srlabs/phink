@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::{
     ffi::OsStr,
     fs,
@@ -50,6 +51,7 @@ pub trait ContractInstrumenter {
         Self: Sized;
     fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
     fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
+    fn already_instrumented(code: &String) -> bool;
 }
 
 impl InstrumenterEngine {
@@ -88,12 +90,11 @@ impl InstrumenterEngine {
     }
 
     pub fn clean() -> Result<(), io::Error> {
-        let tmp_dir = Path::new("/tmp");
         let pattern = "ink_fuzzed_";
-        let dirs_to_remove = Self::get_dirs_to_remove(tmp_dir, pattern)?;
+        let dirs_to_remove = Self::get_dirs_to_remove(Path::new("/tmp"), pattern)?;
 
         if dirs_to_remove.is_empty() {
-            println!("❌ No directories found matching the pattern '{}'", pattern);
+            println!("❌  No directories found matching the pattern '{}'. There's nothing to be cleaned :)", pattern);
             return Ok(());
         }
 
@@ -204,13 +205,19 @@ impl ContractInstrumenter for InstrumenterEngine {
         let code = fs::read_to_string(&lib_rs)
             .map_err(|e| format!("🙅 Failed to read lib.rs: {:?}", e))?;
 
+        Command::new("rustfmt").arg(lib_rs.clone());
+        self.contract_dir = new_working_dir;
+
+        if Self::already_instrumented(&code) {
+            return Err("🙅 Code already instrumented".to_string());
+        }
+
         let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
             .map_err(|_| "🙅 Failed to parse and visit code".to_string())?;
 
         Self::save_and_format(modified_code, lib_rs.clone())
             .map_err(|e| format!("🙅 Failed to save and format code: {:?}", e))?;
 
-        self.contract_dir = new_working_dir;
         Ok(self)
     }
 
@@ -226,6 +233,14 @@ impl ContractInstrumenter for InstrumenterEngine {
         file.flush()?;
         Command::new("rustfmt").arg(lib_rs).status()?;
         Ok(())
+    }
+
+    /// Checks if the given code string is already instrumented.
+    /// This function looks for the presence of the pattern `ink::env::debug_println!("COV=abc")`
+    /// where `abc` can be any number. If this pattern is found, it means the code is instrumented.
+    fn already_instrumented(code: &String) -> bool {
+        let re = Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
+        re.is_match(code)
     }
 }
 
@@ -260,15 +275,50 @@ mod instrument {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
-    use std::{fs, fs::File, io::Write, process::Command};
+    use std::{fs, fs::File, io::Write, path::PathBuf, process::Command};
 
     use quote::quote;
-    use syn::__private::ToTokens;
-    use syn::parse_file;
-    use syn::visit_mut::VisitMut;
+    use syn::{__private::ToTokens, parse_file, visit_mut::VisitMut};
 
-    use crate::fuzzer::instrument::{ContractForker, InstrumenterEngine};
+    use crate::fuzzer::instrument::{ContractForker, ContractInstrumenter, InstrumenterEngine};
+
+    #[test]
+    fn test_already_instrumented_true() {
+        let code = String::from(
+            r#"
+            fn main() {
+                ink::env::debug_println!("COV=123");
+            }
+        "#,
+        );
+        assert!(InstrumenterEngine::already_instrumented(&code));
+    }
+
+    #[test]
+    fn test_already_instrumented_false() {
+        let code = String::from(
+            r#"
+            fn main() {
+                println!("Hello, world!");
+            }
+        "#,
+        );
+        assert!(!InstrumenterEngine::already_instrumented(&code));
+    }
+
+    #[test]
+    fn test_already_instrumented_multiple_lines() {
+        let code = String::from(
+            r#"
+            fn main() {
+                println!("This is a test.");
+                ink::env::debug_println!("COV=456");
+                println!("Another line.");
+            }
+        "#,
+        );
+        assert!(InstrumenterEngine::already_instrumented(&code));
+    }
 
     #[test]
     fn adding_cov_insertion_works() {

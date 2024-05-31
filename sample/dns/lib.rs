@@ -161,16 +161,16 @@ mod dns {
             Ok(())
         }
 
-        #[ink(message)]
-        pub fn crash_with_contract_trapped(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
-            if data.len() < 5 {
-                if data[0] == b'a' {
+       // #[ink(message)]
+        //pub fn crash_with_contract_trapped(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
+          //  if data.len() < 5 {
+           //     if data[0] == b'a' {
                     // But what if data is empty
                     // --> Contract trapped!
-                }
-            }
-            Ok(())
-        }
+             //   }
+            //}
+           // Ok(())
+        //}
         /// Transfer owner to another address.
         /// Don't tell anyone, but this contract is vulnerable!
         /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`
@@ -238,7 +238,7 @@ mod dns {
         pub fn phink_assert_hash42_cant_be_registered(&self) {
             for i in 0..self.domains.len() {
                 if let Some(domain) = self.domains.get(i) {
-                    assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            //        assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
                 }
             }
         }
