@@ -156,9 +156,9 @@ impl ContractBuilder for InstrumenterEngine {
         } else {
             Err(format!(
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
-                Please go to {:?}, edit the lib.rs file, and run cargo contract build again.\
+                Please go to {}, edit the lib.rs file, and run cargo contract build again.\
                 Detailed error — {:?}",
-                &self.contract_dir, status
+                &self.contract_dir.display(), status
             ))
         }
     }

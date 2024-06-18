@@ -9,8 +9,11 @@ use std::{env, fs, path::PathBuf};
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
+use sp_core::hexdisplay::AsBytesRef;
+use FuzzingMode::ExecuteOneInput;
 
 use crate::fuzzer::parser::{MAX_SEED_LEN, MIN_SEED_LEN};
+use crate::FuzzingMode::Fuzz;
 use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
@@ -37,16 +40,7 @@ mod utils;
     \n
     Using Ziggy `PHINK_CONTRACT_DIR=/tmp/ink_fuzzed_QEBAC/ PHINK_FROM_ZIGGY=true cargo ziggy run`"
 )]
-
 struct Cli {
-    /// Path where the `lib.rs` is located
-    #[clap(long, short, value_parser)]
-    path: Option<PathBuf>,
-
-    /// Number of cores to use for Ziggy
-    #[clap(long, short, value_parser, default_value = "1")]
-    cores: Option<u8>,
-
     /// Additional command to specify operation mode
     #[clap(subcommand)]
     command: Commands,
@@ -56,17 +50,54 @@ struct Cli {
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
     /// Starts the fuzzing process. Instrumentation required before!
-    Fuzz,
+    Fuzz {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+        /// Number of cores to use for Ziggy
+        #[clap(long, short, value_parser, default_value = "1")]
+        cores: Option<u8>,
+    },
     /// Instrument the ink! contract, and compile it with Phink features
-    Instrument,
+    Instrument {
+        /// Path where the contract is located. It must be the root directory of the contract path (where the `lib.rs` is located)
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Run all the seeds
-    Run,
+    Run {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
     Clean,
     /// Generate a coverage, only of the harness
+    Cover {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
+    /// Execute one seed
+    Execute {
+        /// Path to the file containing the input seed
+        #[clap(value_parser)]
+        seed_path: PathBuf,
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+
+    },
+}
+
+pub enum ZiggyCommand {
+    Run,
     Cover,
-    /// Execute one seed, currently in TODO!
-    Execute,
+}
+
+pub enum FuzzingMode {
+    ExecuteOneInput(Box<[u8]>),
+    Fuzz,
 }
 
 fn main() {
@@ -82,19 +113,18 @@ fn main() {
         );
         // Here, the contract is already instrumented
 
-        start_fuzzer(&mut InstrumenterEngine { contract_dir: path });
+        execute_harness(&mut InstrumenterEngine { contract_dir: path }, Fuzz);
     } else {
         let cli = Cli::parse();
 
         match &cli.command {
-            Commands::Instrument => {
-                let contract_dir = PathBuf::from(cli.path.unwrap());
-                instrument(contract_dir);
+            Commands::Instrument { contract_path } => {
+                instrument(contract_path);
             }
 
-            Commands::Fuzz => {
-                set_var("PHINK_CONTRACT_DIR", cli.path.unwrap());
-                set_var("PHINK_CORES", cli.cores.unwrap().to_string());
+            Commands::Fuzz { contract_path, cores } => {
+                set_var("PHINK_CONTRACT_DIR", contract_path);
+                set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
 
                 let cores: u8 = var("PHINK_CORES").map_or(1, |v| v.parse().unwrap_or(1));
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
@@ -103,28 +133,28 @@ fn main() {
                 start_cargo_ziggy_fuzz_process(engine.clone().contract_dir, cores);
 
                 if var("PHINK_START_FUZZING").is_ok() {
-                    start_fuzzer(&mut engine);
+                    execute_harness(&mut engine, Fuzz);
                 }
             }
 
-            Commands::Run => {
-                set_var(
-                    "PHINK_CONTRACT_DIR",
-                    cli.path.expect("📂 Contract path is expected"),
-                );
+            Commands::Run { contract_path } => {
+                set_var("PHINK_CONTRACT_DIR", contract_path);
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Run);
             }
 
-            Commands::Execute => {
-                todo!();
+            Commands::Execute { seed_path, contract_path } => {
+                set_var("PHINK_CONTRACT_DIR", contract_path);
+
+                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
+                let mut engine = InstrumenterEngine::new(contract_dir);
+                let data = fs::read(seed_path).expect("Unable to read file");
+
+                execute_harness(&mut engine, ExecuteOneInput(Box::from(data)));
             }
 
-            Commands::Cover => {
-                set_var(
-                    "PHINK_CONTRACT_DIR",
-                    cli.path.expect("📂 Contract path is expected"),
-                );
+            Commands::Cover { contract_path } => {
+                set_var("PHINK_CONTRACT_DIR", contract_path);
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Cover);
             }
@@ -133,11 +163,6 @@ fn main() {
             }
         };
     }
-}
-
-pub enum ZiggyCommand {
-    Run,
-    Cover,
 }
 
 fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {
@@ -193,7 +218,7 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
         for line in reader.lines() {
             match line {
                 Ok(line) => println!("{}", line),
-                Err(e) => eprintln!("Error reading line: {}", e),
+                Err(e) => eprintln!("🙅 Error reading line: {}", e),
             }
         }
     }
@@ -204,7 +229,7 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
     }
 }
 
-fn instrument(path: PathBuf) -> InstrumenterEngine {
+fn instrument(path: &PathBuf) -> InstrumenterEngine {
     let mut engine = InstrumenterEngine::new(path.clone());
 
     engine
@@ -221,7 +246,7 @@ fn instrument(path: PathBuf) -> InstrumenterEngine {
     engine
 }
 
-fn start_fuzzer(engine: &mut InstrumenterEngine) {
+fn execute_harness(engine: &mut InstrumenterEngine, fuzzing_mode: FuzzingMode) {
     let origin: AccountId32 = AccountId32::new([1; 32]);
 
     let finder = engine.find().unwrap();
@@ -230,7 +255,14 @@ fn start_fuzzer(engine: &mut InstrumenterEngine) {
         Ok(wasm) => {
             let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, origin);
             let fuzzer = Fuzzer::new(setup);
-            fuzzer.fuzz();
+            match fuzzing_mode {
+                Fuzz => {
+                    fuzzer.fuzz();
+                }
+                ExecuteOneInput(seed) => {
+                    fuzzer.exec_seed(seed.as_bytes_ref());
+                }
+            }
         }
         Err(e) => {
             eprintln!("🙅 Error reading WASM file. {:?}", e);

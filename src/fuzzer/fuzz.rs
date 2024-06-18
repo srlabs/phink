@@ -23,7 +23,7 @@ impl Fuzzer {
         Fuzzer { setup }
     }
 
-    fn build_corpus_and_dict(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
+    pub fn build_corpus_and_dict(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
         // Create the output directory for the corpus
         fs::create_dir_all("./output/phink/corpus")?;
 
@@ -83,32 +83,7 @@ impl Fuzzer {
 
 impl FuzzerEngine for Fuzzer {
     fn fuzz(self) {
-        let mut transcoder_loader = Mutex::new(
-            ContractMessageTranscoder::load(Path::new(&self.setup.path_to_specs)).unwrap(),
-        );
-
-        let specs = &self.setup.json_specs;
-
-        let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-        let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
-            .expect("No invariants found, check your contract");
-
-        let mut selectors_without_invariants: Vec<Selector> = selectors
-            .clone()
-            .into_iter()
-            .filter(|s| !invariants.clone().contains(s))
-            .collect();
-
-        let mut invariant_manager = BugManager::from(invariants, self.setup.clone());
-
-        Self::build_corpus_and_dict(&mut selectors_without_invariants)
-            .expect("🙅 Failed to create initial corpus");
-
-        println!(
-            "\n\n🚀  Now fuzzing `{}` ({})!\n",
-            self.setup.path_to_specs.as_os_str().to_str().unwrap(),
-            self.setup.contract_address
-        );
+        let (mut transcoder_loader, mut invariant_manager) = init_fuzzer(self.clone());
 
         ziggy::fuzz!(|data: &[u8]| {
             Self::harness(
@@ -127,7 +102,8 @@ impl FuzzerEngine for Fuzzer {
         input: &[u8],
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
-
+        println!("input {:?}", input);
+        println!("{:?}", input.len());
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
         }
@@ -179,6 +155,47 @@ impl FuzzerEngine for Fuzzer {
         // We now fake the coverage
         coverage.redirect_coverage();
     }
+
+    fn exec_seed(self, seed: &[u8]) {
+        let (mut transcoder_loader, mut invariant_manager) = init_fuzzer(self.clone());
+
+        Self::harness(
+            self.clone(),
+            &mut transcoder_loader,
+            &mut invariant_manager,
+            seed,
+        );
+    }
+}
+
+fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager) {
+    let transcoder_loader = Mutex::new(
+        ContractMessageTranscoder::load(Path::new(&fuzzer.setup.path_to_specs)).unwrap(),
+    );
+
+    let specs = &fuzzer.setup.json_specs;
+
+    let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
+    let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
+        .expect("No invariants found, check your contract");
+
+    let mut selectors_without_invariants: Vec<Selector> = selectors
+        .clone()
+        .into_iter()
+        .filter(|s| !invariants.clone().contains(s))
+        .collect();
+
+    let invariant_manager = BugManager::from(invariants, fuzzer.setup.clone());
+
+    Fuzzer::build_corpus_and_dict(&mut selectors_without_invariants)
+        .expect("🙅 Failed to create initial corpus");
+
+    println!(
+        "\n\n🚀  Now fuzzing `{}` ({})!\n",
+        fuzzer.setup.path_to_specs.as_os_str().to_str().unwrap(),
+        fuzzer.setup.contract_address
+    );
+    (transcoder_loader, invariant_manager)
 }
 
 #[cfg(test)]

@@ -96,58 +96,12 @@ mod dns {
             Default::default()
         }
 
-        /// Register specific name with caller as owner.
-        #[ink(message)]
-        pub fn register(&mut self, name: Hash) -> Result<()> {
-            let caller = self.env().caller();
-
-            if self.name_to_owner.contains(name) {
-                return Err(Error::NameAlreadyExists);
-            }
-
-            // We effectively check that we can't register the forbidden domain
-            if name.clone().as_mut() == FORBIDDEN_DOMAIN {
-                return Err(Error::ForbiddenDomain);
-            }
-
-            self.name_to_owner.insert(name, &caller);
-            self.env().emit_event(Register { name, from: caller });
-            self.domains.push(&name);
-
-            Ok(())
-        }
-
-        /// Set address for specific name.
-        #[ink(message)]
-        pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
-            let caller = self.env().caller();
-
-            //Random code for coverage purposes below
-            let a = 1;
-            let b = 3;
-            assert_eq!(a, b - 2);
-
-            let owner = self.get_owner_or_default(name);
-            if caller != owner {
-                return Err(Error::CallerIsNotOwner);
-            }
-
-            let old_address = self.name_to_address.get(name);
-            self.name_to_address.insert(name, &new_address);
-
-            self.env().emit_event(SetAddress {
-                name,
-                from: caller,
-                old_address,
-                new_address,
-            });
-            Ok(())
-        }
 
         #[ink(message)]
         pub fn crash_with_invariant(&mut self, data: Vec<u8>) -> Result<()> {
-            if data.len() == 5 {
-                if data[0] == b'a' {
+            if data.len() < 5 {
+                if data.len() > 0 {
+                    if data[0] == b'a' {
                     if data[1] == b'b' {
                         if data[2] == b'c' {
                             if data[3] == b'd' {
@@ -155,74 +109,13 @@ mod dns {
                             }
                         }
                     }
+                    }
                 }
             }
-
             Ok(())
         }
 
-       // #[ink(message)]
-        //pub fn crash_with_contract_trapped(&mut self, data: Vec<u8>) -> crate::dns::Result<()> {
-          //  if data.len() < 5 {
-           //     if data[0] == b'a' {
-                    // But what if data is empty
-                    // --> Contract trapped!
-             //   }
-            //}
-           // Ok(())
-        //}
-        /// Transfer owner to another address.
-        /// Don't tell anyone, but this contract is vulnerable!
-        /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`
-        #[ink(message)]
-        pub fn transfer(&mut self, name: Hash, to: AccountId, number: u32) -> Result<()> {
-            let caller = self.env().caller();
-            // Let's assume we still transfer if the caller isn't the owner
 
-            let owner = self.get_owner_or_default(name);
-            if caller != owner {
-                return Err(Error::CallerIsNotOwner);
-            }
-
-            let old_owner = self.name_to_owner.get(name);
-            self.name_to_owner.insert(name, &to);
-
-            self.dangerous_number = number;
-            self.domains.push(&name);
-
-            self.env().emit_event(Transfer {
-                name,
-                from: caller,
-                old_owner,
-                new_owner: to,
-            });
-
-            Ok(())
-        }
-
-        /// Get address for specific name.
-        #[ink(message)]
-        pub fn get_address(&self, name: Hash) -> AccountId {
-            self.get_address_or_default(name)
-        }
-
-        /// Get owner of specific name.
-        #[ink(message)]
-        pub fn get_owner(&self, name: Hash) -> AccountId {
-            self.get_owner_or_default(name)
-        }
-
-        /// Returns the owner given the hash or the default address.
-        fn get_owner_or_default(&self, name: Hash) -> AccountId {
-            self.name_to_owner.get(name).unwrap_or(self.default_address)
-        }
-
-        /// Returns the address given the hash or the default address.
-        fn get_address_or_default(&self, name: Hash) -> AccountId {
-            self.name_to_address
-                .get(name)
-                .unwrap_or(self.default_address)
-        }
     }
 
     fn zero_address() -> AccountId {
@@ -232,16 +125,6 @@ mod dns {
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl DomainNameService {
-        // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should register
-        #[cfg(feature = "phink")]
-        #[ink(message)]
-        pub fn phink_assert_hash42_cant_be_registered(&self) {
-            for i in 0..self.domains.len() {
-                if let Some(domain) = self.domains.get(i) {
-            //        assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-                }
-            }
-        }
 
         // This invariant ensures that nobody register the forbidden number
         #[cfg(feature = "phink")]

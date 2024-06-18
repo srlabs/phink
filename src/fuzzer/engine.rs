@@ -68,4 +68,5 @@ pub trait FuzzerEngine {
             .unwrap();
         }
     }
+    fn exec_seed(self, seed: &[u8]);
 }
