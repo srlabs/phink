@@ -6,6 +6,7 @@ use env::{set_var, var};
 use std::io::BufRead;
 use std::process::{Command, Stdio};
 use std::{env, fs, path::PathBuf};
+use std::path::Path;
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
@@ -13,7 +14,7 @@ use sp_core::hexdisplay::AsBytesRef;
 use FuzzingMode::ExecuteOneInput;
 
 use crate::fuzzer::parser::{MAX_SEED_LEN, MIN_SEED_LEN};
-use crate::FuzzingMode::Fuzz;
+use crate::FuzzingMode::FuzzMode;
 use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
@@ -97,7 +98,7 @@ pub enum ZiggyCommand {
 
 pub enum FuzzingMode {
     ExecuteOneInput(Box<[u8]>),
-    Fuzz,
+    FuzzMode,
 }
 
 fn main() {
@@ -112,8 +113,17 @@ fn main() {
                 depending your options. \n\n",
         );
         // Here, the contract is already instrumented
-
-        execute_harness(&mut InstrumenterEngine { contract_dir: path }, Fuzz);
+        if var("PHINK_START_FUZZING").is_ok() {
+            println!("Starting the fuzzer");
+            execute_harness(&mut InstrumenterEngine { contract_dir: path }, FuzzMode);
+        } else {
+            let seed = var("PHINK_EXECUTE_THIS_SEED");
+            if seed.is_ok() {
+                println!("Executing one seed: {:?}", seed);
+                let data = fs::read(Path::new(&seed.unwrap())).expect("Unable to read file");
+                execute_harness(&mut InstrumenterEngine { contract_dir: path }, ExecuteOneInput(Box::from(data)));
+            }
+        }
     } else {
         let cli = Cli::parse();
 
@@ -133,7 +143,7 @@ fn main() {
                 start_cargo_ziggy_fuzz_process(engine.clone().contract_dir, cores);
 
                 if var("PHINK_START_FUZZING").is_ok() {
-                    execute_harness(&mut engine, Fuzz);
+                    execute_harness(&mut engine, FuzzMode);
                 }
             }
 
@@ -203,7 +213,7 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
         ZiggyCommand::Cover => "cover",
     };
 
-    let mut child = Command::new("cargo")
+    let mut ziggy_child = Command::new("cargo")
         .arg("ziggy")
         .arg(command_arg)
         .env("PHINK_CONTRACT_DIR", contract_dir)
@@ -213,7 +223,7 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy command...");
 
-    if let Some(stdout) = child.stdout.take() {
+    if let Some(stdout) = ziggy_child.stdout.take() {
         let reader = std::io::BufReader::new(stdout);
         for line in reader.lines() {
             match line {
@@ -223,7 +233,7 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
         }
     }
 
-    let status = child.wait().expect("🙅 Failed to wait on child process...");
+    let status = ziggy_child.wait().expect("🙅 Failed to wait on child process...");
     if !status.success() {
         eprintln!("🙅 Command executed with failing error code");
     }
@@ -247,7 +257,7 @@ fn instrument(path: &PathBuf) -> InstrumenterEngine {
 }
 
 fn execute_harness(engine: &mut InstrumenterEngine, fuzzing_mode: FuzzingMode) {
-    let origin: AccountId32 = AccountId32::new([1; 32]);
+    let origin: AccountId32 = AccountId32::new([1; 32]); //TODO: This should be configurable
 
     let finder = engine.find().unwrap();
 
@@ -256,7 +266,7 @@ fn execute_harness(engine: &mut InstrumenterEngine, fuzzing_mode: FuzzingMode) {
             let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, origin);
             let fuzzer = Fuzzer::new(setup);
             match fuzzing_mode {
-                Fuzz => {
+                FuzzMode => {
                     fuzzer.fuzz();
                 }
                 ExecuteOneInput(seed) => {

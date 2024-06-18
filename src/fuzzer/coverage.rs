@@ -39,14 +39,14 @@ impl Coverage {
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         println!("TRACE : {:?}", coverage_lines);
-        seq_macro::seq!(x in 0..=500 {
-            let target = format!("COV={}", x);
-            if coverage_lines.contains(&target.as_str()) {
-                let a = black_box(1 + 1);
-                let _b = black_box(a + 1);
-                println!("COV={}", x);
-            }
-        });
+        // seq_macro::seq!(x in 0..=500 {
+        //     let target = format!("COV={}", x);
+        //     if coverage_lines.contains(&target.as_str()) {
+        //         let a = black_box(1 + 1);
+        //         let _b = black_box(a + 1);
+        //         println!("COV={}", x);
+        //     }
+        // });
 
         let target = format!("COV={}", 0);
         if coverage_lines.contains(&target.as_str()) {
