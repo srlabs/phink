@@ -4,9 +4,9 @@ extern crate core;
 
 use env::{set_var, var};
 use std::io::BufRead;
+use std::path::Path;
 use std::process::{Command, Stdio};
 use std::{env, fs, path::PathBuf};
-use std::path::Path;
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
@@ -39,7 +39,7 @@ mod utils;
     \tPHINK_CONTRACT_DIR : Location of the contract code-base. Can be automatically detected.
     \tPHINK_START_FUZZING : Tells the harness to start fuzzing. \n\
     \n
-    Using Ziggy `PHINK_CONTRACT_DIR=/tmp/ink_fuzzed_QEBAC/ PHINK_FROM_ZIGGY=true cargo ziggy run`"
+    Using Ziggy `PHINK_CONTRACT_DIR=/tmp/ink_fuzzed_QEBAC/ PHINK_FROM_ZIGGY=true PHINK_START_FUZZING=true cargo ziggy run`"
 )]
 struct Cli {
     /// Additional command to specify operation mode
@@ -87,7 +87,6 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
-
     },
 }
 
@@ -121,7 +120,10 @@ fn main() {
             if seed.is_ok() {
                 println!("Executing one seed: {:?}", seed);
                 let data = fs::read(Path::new(&seed.unwrap())).expect("Unable to read file");
-                execute_harness(&mut InstrumenterEngine { contract_dir: path }, ExecuteOneInput(Box::from(data)));
+                execute_harness(
+                    &mut InstrumenterEngine { contract_dir: path },
+                    ExecuteOneInput(Box::from(data)),
+                );
             }
         }
     } else {
@@ -132,15 +134,20 @@ fn main() {
                 instrument(contract_path);
             }
 
-            Commands::Fuzz { contract_path, cores } => {
+            Commands::Fuzz {
+                contract_path,
+                cores,
+            } => {
                 set_var("PHINK_CONTRACT_DIR", contract_path);
+                set_var("PHINK_START_FUZZING", "true");
                 set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
+
 
                 let cores: u8 = var("PHINK_CORES").map_or(1, |v| v.parse().unwrap_or(1));
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
 
-                start_cargo_ziggy_fuzz_process(engine.clone().contract_dir, cores);
+                start_cargo_ziggy_fuzz_process( cores);
 
                 if var("PHINK_START_FUZZING").is_ok() {
                     execute_harness(&mut engine, FuzzMode);
@@ -150,10 +157,13 @@ fn main() {
             Commands::Run { contract_path } => {
                 set_var("PHINK_CONTRACT_DIR", contract_path);
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Run);
+                start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run);
             }
 
-            Commands::Execute { seed_path, contract_path } => {
+            Commands::Execute {
+                seed_path,
+                contract_path,
+            } => {
                 set_var("PHINK_CONTRACT_DIR", contract_path);
 
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
@@ -166,7 +176,7 @@ fn main() {
             Commands::Cover { contract_path } => {
                 set_var("PHINK_CONTRACT_DIR", contract_path);
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                start_cargo_ziggy_command_process(contract_dir, ZiggyCommand::Cover);
+                start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Cover);
             }
             Commands::Clean => {
                 InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");
@@ -175,18 +185,18 @@ fn main() {
     }
 }
 
-fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {
+fn start_cargo_ziggy_fuzz_process(cores: u8) {
     let mut child = Command::new("cargo")
         .arg("ziggy")
         .arg("fuzz")
-        .arg("--no-honggfuzz")
+        .arg("--no-honggfuzz")//TODO: just for MacOS debug :)
         .arg(format!("--jobs={}", cores))
-        .env("PHINK_CONTRACT_DIR", contract_dir)
-        .env("PHINK_FROM_ZIGGY", "true")
-        .env("AFL_FORKSRV_INIT_TMOUT", "10000000")
         .arg(format!("--minlength={}", MIN_SEED_LEN))
         .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
+
+        .env("PHINK_FROM_ZIGGY", "true")
+
         .stdout(Stdio::piped())
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy fuzz...");
@@ -207,7 +217,7 @@ fn start_cargo_ziggy_fuzz_process(contract_dir: PathBuf, cores: u8) {
     }
 }
 
-fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyCommand) {
+fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCommand) {
     let command_arg = match command {
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
@@ -233,7 +243,9 @@ fn start_cargo_ziggy_command_process(contract_dir: PathBuf, command: ZiggyComman
         }
     }
 
-    let status = ziggy_child.wait().expect("🙅 Failed to wait on child process...");
+    let status = ziggy_child
+        .wait()
+        .expect("🙅 Failed to wait on child process...");
     if !status.success() {
         eprintln!("🙅 Command executed with failing error code");
     }

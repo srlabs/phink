@@ -101,20 +101,19 @@ mod dns {
         pub fn crash_with_invariant(&mut self, data: Vec<u8>) -> Result<()> {
             if data.len() < 5 {
                 if data.len() > 0 {
-                    if data[0] == b'a' {
-                    if data[1] == b'b' {
-                        if data[2] == b'c' {
-                            if data[3] == b'd' {
-                                self.dangerous_number = 69; //panic!
+                    if data[0] == b'a' && data.len() > 0 {
+                        if data[1] == b'b' && data.len() > 1 {
+                            if data[2] == b'c' && data.len() > 2 {
+                                if data[3] == b'd' && data.len() > 3 {
+                                    self.dangerous_number = 69;
+                                }
                             }
                         }
-                    }
                     }
                 }
             }
             Ok(())
         }
-
 
     }
 
