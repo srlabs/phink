@@ -147,7 +147,7 @@ fn main() {
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
 
-                start_cargo_ziggy_fuzz_process( cores);
+                start_cargo_ziggy_fuzz_process(cores);
 
                 if var("PHINK_START_FUZZING").is_ok() {
                     execute_harness(&mut engine, FuzzMode);
@@ -189,12 +189,13 @@ fn start_cargo_ziggy_fuzz_process(cores: u8) {
     let mut child = Command::new("cargo")
         .arg("ziggy")
         .arg("fuzz")
-        .arg("--no-honggfuzz")//TODO: just for MacOS debug :)
+        .arg("--no-honggfuzz") //TODO: just for MacOS debug :)
         .arg(format!("--jobs={}", cores))
         .arg(format!("--minlength={}", MIN_SEED_LEN))
         .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
 
+        // .env("AFL_LLVM_DENYLIST", "denylist.txt")
         .env("PHINK_FROM_ZIGGY", "true")
 
         .stdout(Stdio::piped())
