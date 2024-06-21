@@ -42,7 +42,7 @@ impl BugManager {
             .replace("\n", " ")
         );
 
-        println!("🎉 Find below the trace that caused that *trapped contract*");
+        println!("🎉 Find below the trace that caused that trapped contract");
 
         <Fuzzer as FuzzerEngine>::pretty_print(
             vec![response],
@@ -52,7 +52,7 @@ impl BugManager {
             },
         );
 
-        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n");
+        panic!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
         //Artificially trigger a bug for AFL
     }
 
@@ -76,9 +76,9 @@ impl BugManager {
 
         println!("\n🫵 This was caused by {}\n", hex);
 
-        println!("🎉 Find below the trace that caused that *invariant*");
+        println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("\nJob is done! Please, don't matter the backtrace below 🫡\n\n\n");
+        panic!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
         //Artificially trigger a bug for AFL
     }
 

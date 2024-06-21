@@ -147,7 +147,6 @@ impl FuzzerEngine for Fuzzer {
         });
 
         // Pretty print all the calls of the current input
-        // #[cfg(not(fuzzing))] //TODO: investigate why this doesn't work
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
         // We now fake the coverage
@@ -175,7 +174,7 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
 
     let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
     let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
-        .expect("No invariants found, check your contract");
+        .expect("🙅 No invariants found, check your contract");
 
     let mut selectors_without_invariants: Vec<Selector> = selectors
         .clone()

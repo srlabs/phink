@@ -3,10 +3,11 @@
 extern crate core;
 
 use env::{set_var, var};
-use std::io::BufRead;
+use std::fs::File;
+use std::io::{BufRead, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::{env, fs, path::PathBuf};
+use std::{env, fs, io, path::PathBuf};
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
@@ -93,6 +94,7 @@ enum Commands {
 pub enum ZiggyCommand {
     Run,
     Cover,
+    Build,
 }
 
 pub enum FuzzingMode {
@@ -142,10 +144,13 @@ fn main() {
                 set_var("PHINK_START_FUZZING", "true");
                 set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
 
-
                 let cores: u8 = var("PHINK_CORES").map_or(1, |v| v.parse().unwrap_or(1));
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                let mut engine = InstrumenterEngine::new(contract_dir);
+                let mut engine = InstrumenterEngine::new(contract_dir.clone());
+
+                // Even if the build should be processed within the fuzz command after this lien
+                // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
+                start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
                 start_cargo_ziggy_fuzz_process(cores);
 
@@ -194,10 +199,8 @@ fn start_cargo_ziggy_fuzz_process(cores: u8) {
         .arg(format!("--minlength={}", MIN_SEED_LEN))
         .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
-
         // .env("AFL_LLVM_DENYLIST", "denylist.txt")
         .env("PHINK_FROM_ZIGGY", "true")
-
         .stdout(Stdio::piped())
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy fuzz...");
@@ -222,14 +225,22 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
     let command_arg = match command {
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
+        ZiggyCommand::Build => {
+            build_llvm_allowlist().expect("🙅 Couldn't write the allow list");
+            "build"
+        }
     };
 
     let mut ziggy_child = Command::new("cargo")
         .arg("ziggy")
         .arg(command_arg)
+
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
+        .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
+        .env("AFL_DEBUG", "1")
+
         .stdout(Stdio::piped())
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy command...");
@@ -250,6 +261,23 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
     if !status.success() {
         eprintln!("🙅 Command executed with failing error code");
     }
+}
+
+// This function creates the allowlist for AFL... thanks to that feature we have a now craaaaazy blazing fast fuzzer :)
+fn build_llvm_allowlist() -> Result<(), io::Error> {
+    let file_path = "./output/phink/allowlist.txt";
+
+    match File::create(&file_path) {
+        Ok(mut allowlist_file) => {
+            writeln!(allowlist_file, "fun: redirect_coverage*")?;
+            writeln!(allowlist_file, "fun: should_stop_now*")?;
+            writeln!(allowlist_file, "fun: parse_input*")?;
+        }
+        Err(e) => {
+            eprintln!("🙅 Failed to create the allowlist: {}", e);
+        }
+    }
+    Ok(())
 }
 
 fn instrument(path: &PathBuf) -> InstrumenterEngine {
