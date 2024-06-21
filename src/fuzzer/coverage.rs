@@ -39,12 +39,10 @@ impl Coverage {
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
-        println!("TRACE : {:?}", coverage_lines);
+        println!("[🚧DEBUG] TRACE : {:?}", coverage_lines);
         seq_macro::seq!(x in 0..=500 {
-            let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
-                let _b = black_box(x + 1);
-                println!("COV={}", x);
+                let ab = black_box(x + 1);
             }
         });
     }

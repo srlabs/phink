@@ -152,10 +152,15 @@ mod dns {
                 return Err(Error::CallerIsNotOwner);
             }
 
+            if number == 69 { //NOP, 69 is forbidden! right?
+                return Err(Error::ForbiddenDomain);
+            }
+
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
 
-            self.dangerous_number = number % 2;
+
+            self.dangerous_number = number % 70;
             self.domains.push(&name);
 
             self.env().emit_event(Transfer {
