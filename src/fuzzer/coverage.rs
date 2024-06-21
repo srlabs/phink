@@ -41,6 +41,7 @@ impl Coverage {
 
         println!("[🚧DEBUG] TRACE : {:?}", coverage_lines);
         seq_macro::seq!(x in 0..=500 {
+            let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
                 let ab = black_box(x + 1);
             }
