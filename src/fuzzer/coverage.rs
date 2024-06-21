@@ -44,6 +44,7 @@ impl Coverage {
             let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
                 let _ = black_box(x + 1);
+                println!(" ");
             }
         });
     }

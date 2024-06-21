@@ -97,8 +97,6 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
                 if MAX_MESSAGES_PER_EXEC != 0
                     && input.messages.len() <= MAX_MESSAGES_PER_EXEC
                 {
-                    println!("payload {:?}", encoded_message.as_bytes_ref());
-
                     input.messages.push(Message {
                         is_payable: false, //todo
                         payload: encoded_message.into(),
@@ -106,7 +104,6 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
                         message_metadata: decoded_msg.unwrap(),
                         origin: input.origin,
                     });
-                    println!("input.messages.len() {}", input.messages.len());
                 }
             }
             Err(_) => {
