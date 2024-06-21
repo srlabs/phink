@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::{fs, path::PathBuf};
 
 use frame_support::{
@@ -47,11 +48,11 @@ impl ContractBridge {
 
     pub fn initialize_wasm(
         wasm_bytes: Vec<u8>,
-        path_to_specs: &PathBuf,
+        path_to_specs: &Path,
         origin: AccountId,
     ) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = origin;
-        let json_specs = fs::read_to_string(path_to_specs.clone()).unwrap();
+        let json_specs = fs::read_to_string(path_to_specs).unwrap();
         let genesis_storage: Storage = {
             let storage = Self::storage();
             let mut chain = BasicExternalities::new(storage.clone());
@@ -74,7 +75,7 @@ impl ContractBridge {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
-            path_to_specs: path_to_specs.clone(),
+            path_to_specs: path_to_specs.to_path_buf(),
         }
     }
 
@@ -87,7 +88,7 @@ impl ContractBridge {
     /// * `amount`: Amount to pass to the contract
     pub fn call(
         self,
-        payload: &Vec<u8>,
+        payload: &[u8],
         who: u8,
         transfer_value: BalanceOf<Test>,
     ) -> FullContractResponse {
@@ -98,23 +99,21 @@ impl ContractBridge {
             transfer_value,
             Self::GAS_LIMIT,
             None,
-            payload.clone(),
+            payload.to_owned(),
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
             Determinism::Enforced,
         )
     }
 
-    pub fn upload(wasm_bytes: &Vec<u8>, who: AccountId) -> H256 {
-        let code_hash =
-            Contracts::bare_upload_code(who, wasm_bytes.clone(), None, Determinism::Enforced)
-                .unwrap()
-                .code_hash;
-        code_hash
+    pub fn upload(wasm_bytes: &[u8], who: AccountId) -> H256 {
+        Contracts::bare_upload_code(who, wasm_bytes.to_owned(), None, Determinism::Enforced)
+            .unwrap()
+            .code_hash
     }
 
     pub fn instantiate(
-        json_specs: &String,
+        json_specs: &str,
         code_hash: H256,
         who: AccountId,
     ) -> Option<AccountIdOf<Test>> {
@@ -124,7 +123,7 @@ impl ContractBridge {
             Self::GAS_LIMIT,
             None,
             Code::Existing(code_hash),
-            Vec::from(payload::PayloadCrafter::get_constructor(json_specs).clone()?),
+            Vec::from(payload::PayloadCrafter::get_constructor(json_specs)?),
             vec![],
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,

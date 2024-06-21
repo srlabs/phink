@@ -61,7 +61,7 @@ impl Fuzzer {
     // required in order to continue
     fn should_stop_now(bug_manager: &mut BugManager, decoded_msgs: &OneInput) -> bool {
         // Condition 1: we break if we cannot decode any message
-        if decoded_msgs.messages.len() == 0 {
+        if decoded_msgs.messages.is_empty() {
             return true;
         }
 

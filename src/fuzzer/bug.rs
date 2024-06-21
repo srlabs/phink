@@ -36,7 +36,7 @@ impl BugManager {
 
         println!(
             "\n🐛 IMPORTANT STACKTRACE : {}\n",
-            String::from_utf8_lossy(&*Coverage::remove_cov_from_trace(
+            String::from_utf8_lossy(&Coverage::remove_cov_from_trace(
                 response.clone().debug_message
             ))
             .replace("\n", " ")
@@ -69,7 +69,7 @@ impl BugManager {
         let mut invariant_slice: &[u8] = &invariant_tested.0;
 
         let hex = transcoder_loader
-            .lock()
+            .get_mut()
             .unwrap()
             .decode_contract_message(&mut invariant_slice)
             .unwrap();
@@ -88,8 +88,8 @@ impl BugManager {
             let invariant_call: FullContractResponse =
                 self.contract_bridge
                     .clone()
-                    .call(&invariant.to_vec(), origin as u8, 0);
-            if let Err(_) = invariant_call.result {
+                    .call(invariant.as_ref(), origin as u8, 0);
+            if invariant_call.result.is_err() {
                 return Err((*invariant, invariant_call));
             }
         }

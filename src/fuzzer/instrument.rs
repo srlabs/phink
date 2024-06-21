@@ -51,7 +51,7 @@ pub trait ContractInstrumenter {
         Self: Sized;
     fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
     fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
-    fn already_instrumented(code: &String) -> bool;
+    fn already_instrumented(code: &str) -> bool;
 }
 
 impl InstrumenterEngine {
@@ -239,7 +239,7 @@ impl ContractInstrumenter for InstrumenterEngine {
     /// Checks if the given code string is already instrumented.
     /// This function looks for the presence of the pattern `ink::env::debug_println!("COV=abc")`
     /// where `abc` can be any number. If this pattern is found, it means the code is instrumented.
-    fn already_instrumented(code: &String) -> bool {
+    fn already_instrumented(code: &str) -> bool {
         let re = Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
         re.is_match(code)
     }
@@ -255,7 +255,7 @@ mod instrument {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
             let mut new_stmts = Vec::new();
             // Temporarily replace block.stmts with an empty Vec to avoid borrowing issues
-            let mut stmts = std::mem::replace(&mut block.stmts, Vec::new());
+            let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
                 let line_lit =
                     LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());

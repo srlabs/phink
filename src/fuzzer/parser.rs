@@ -8,7 +8,7 @@ pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter: `********`
                                         // (lapse[0..4]: disabled from now : 0 ) + value[0..4] + origin[4..6] + selector[6..10] + value selector[10..] (can be zero)
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
 pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this
-pub const MAX_MESSAGES_PER_EXEC: usize = 1; // One execution contains maximum 4 messages
+pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
                                             // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
                                             // panicking on finalize.
                                             // const MAX_BLOCK_LAPSE: u32 = 100800;
@@ -37,7 +37,7 @@ pub struct OneInput {
 
 impl<'a> Data<'a> {
     fn size_limit_reached(&self) -> bool {
-        !(MAX_MESSAGES_PER_EXEC == 0) && self.size >= MAX_MESSAGES_PER_EXEC
+        MAX_MESSAGES_PER_EXEC != 0 && self.size >= MAX_MESSAGES_PER_EXEC
     }
 }
 
@@ -95,7 +95,7 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         let encoded_message: &[u8] = &decoded_payloads[6..];
 
         let decoded_msg = transcoder
-            .lock()
+            .get_mut()
             .unwrap()
             .decode_contract_message(&mut &*encoded_message);
 

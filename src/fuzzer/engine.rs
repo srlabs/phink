@@ -59,7 +59,7 @@ pub trait FuzzerEngine {
         .unwrap();
         if lapse > 0 {
             <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
-            block = block.saturating_add(u32::from(lapse));
+            block = block.saturating_add(lapse);
             <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
             Timestamp::set(
                 RuntimeOrigin::none(),

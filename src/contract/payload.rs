@@ -22,7 +22,7 @@ impl PayloadCrafter {
     /// # Argument
     /// * `json_data`: The JSON metadata of the smart-contract
 
-    pub fn extract_all(json_data: &String) -> Vec<Selector> {
+    pub fn extract_all(json_data: &str) -> Vec<Selector> {
         #[derive(Deserialize)]
         struct Spec {
             constructors: Vec<SelectorEntry>,
@@ -34,13 +34,13 @@ impl PayloadCrafter {
             selector: String,
         }
 
-        let v: Value = serde_json::from_str(json_data.as_str()).unwrap();
+        let v: Value = serde_json::from_str(json_data).unwrap();
 
         let spec: Spec = serde_json::from_value(v["spec"].clone()).unwrap();
 
         let mut selectors: Vec<Selector> = Vec::new();
         for entry in spec.constructors.iter().chain(spec.messages.iter()) {
-            let bytes: Vec<u8> = hex::decode(&entry.selector.trim_start_matches("0x"))
+            let bytes: Vec<u8> = hex::decode(entry.selector.trim_start_matches("0x"))
                 .unwrap()
                 .try_into()
                 .map_err(|_| serde_json::Error::custom("Selector is not a valid 4-byte array"))
@@ -68,7 +68,7 @@ impl PayloadCrafter {
                         .as_str()
                         .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
                         .and_then(|_| message["selector"].as_str())
-                        .and_then(|selector| Some(Self::decode_selector(selector)))
+                        .map(Self::decode_selector)
                 })
                 .collect(),
         )
@@ -77,9 +77,9 @@ impl PayloadCrafter {
     /// Return the smart-contract constructor based on its spec. If there are multiple constructors,
     /// returns the one that preferably doesn't have args. If no suitable constructor is found or there
     /// is an error in processing, this function returns `None`.
-    pub fn get_constructor(json_data: &String) -> Option<Selector> {
+    pub fn get_constructor(json_data: &str) -> Option<Selector> {
         // Parse the JSON data safely, return None if parsing fails.
-        let parsed_json: Value = match serde_json::from_str(&json_data) {
+        let parsed_json: Value = match serde_json::from_str(json_data) {
             Ok(data) => data,
             Err(_) => return None,
         };

@@ -105,7 +105,9 @@ pub enum FuzzingMode {
 fn main() {
     if var("PHINK_FROM_ZIGGY").is_ok() {
         println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
-        set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+        unsafe {
+            set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+        }
 
         let path = var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
             "\n🈲️ PHINK_CONTRACT_DIR is not set. \
@@ -140,10 +142,11 @@ fn main() {
                 contract_path,
                 cores,
             } => {
-                set_var("PHINK_CONTRACT_DIR", contract_path);
-                set_var("PHINK_START_FUZZING", "true");
-                set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
-
+                unsafe {
+                    set_var("PHINK_CONTRACT_DIR", contract_path);
+                    set_var("PHINK_START_FUZZING", "true");
+                    set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
+                }
                 let cores: u8 = var("PHINK_CORES").map_or(1, |v| v.parse().unwrap_or(1));
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir.clone());
@@ -160,7 +163,9 @@ fn main() {
             }
 
             Commands::Run { contract_path } => {
-                set_var("PHINK_CONTRACT_DIR", contract_path);
+                unsafe {
+                    set_var("PHINK_CONTRACT_DIR", contract_path);
+                }
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run);
             }
@@ -169,7 +174,9 @@ fn main() {
                 seed_path,
                 contract_path,
             } => {
-                set_var("PHINK_CONTRACT_DIR", contract_path);
+                unsafe {
+                    set_var("PHINK_CONTRACT_DIR", contract_path);
+                }
 
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
@@ -179,7 +186,9 @@ fn main() {
             }
 
             Commands::Cover { contract_path } => {
-                set_var("PHINK_CONTRACT_DIR", contract_path);
+                unsafe {
+                    set_var("PHINK_CONTRACT_DIR", contract_path);
+                }
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Cover);
             }
@@ -199,7 +208,6 @@ fn start_cargo_ziggy_fuzz_process(cores: u8) {
         .arg(format!("--minlength={}", MIN_SEED_LEN))
         .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
-        // .env("AFL_LLVM_DENYLIST", "denylist.txt")
         .env("PHINK_FROM_ZIGGY", "true")
         .stdout(Stdio::piped())
         .spawn()
@@ -266,7 +274,7 @@ fn build_llvm_allowlist() -> Result<(), io::Error> {
     let file_path = "./output/phink/allowlist.txt";
     fs::create_dir_all("./output/phink/")?;
 
-    let mut allowlist_file = File::create(&file_path)?;
+    let mut allowlist_file = File::create(file_path)?;
     writeln!(allowlist_file, "fun: redirect_coverage*")?;
     writeln!(allowlist_file, "fun: should_stop_now*")?;
     writeln!(allowlist_file, "fun: parse_input*")?;
