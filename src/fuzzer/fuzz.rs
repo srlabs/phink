@@ -29,13 +29,16 @@ impl Fuzzer {
 
         // Create or truncate the dictionary file
         let mut dict_file = File::create("./output/phink/selectors.dict")?;
-
         // Write the dictionary header comments
         writeln!(dict_file, "# Dictionary file for selectors")?;
         writeln!(
             dict_file,
             "# Lines starting with '#' and empty lines are ignored."
         )?;
+
+        writeln!(dict_file, "2a2a2a2a2a2a2a2a")?; //delimiters
+        writeln!(dict_file, "********")?;
+
         writeln!(dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {

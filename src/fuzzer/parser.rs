@@ -1,16 +1,14 @@
 use contract_transcode::{ContractMessageTranscoder, Value};
-use std::sync::Mutex;
 use sp_core::hexdisplay::AsBytesRef;
+use std::sync::Mutex;
 
 use crate::contract::remote::{BalanceOf, Test};
 
-pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter: `********`
-                                        // Minimum size for the seed
+pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter:
+// Minimum size for the seed
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
 pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this, for now it's infinite
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
-                                            // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
-                                            // panicking on finalize.
 
 pub struct Data<'a> {
     pub data: &'a [u8],
@@ -35,7 +33,7 @@ pub struct OneInput {
 
 impl<'a> Data<'a> {
     fn size_limit_reached(&self) -> bool {
-        MAX_MESSAGES_PER_EXEC != 0 && self.size >= MAX_MESSAGES_PER_EXEC
+        self.size >= MAX_MESSAGES_PER_EXEC
     }
 }
 
@@ -75,7 +73,6 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         origin: 1,
     };
     for decoded_payloads in iterable {
-
         let value_token: u32 = u32::from_ne_bytes(
             decoded_payloads[0..4]
                 .try_into()
@@ -96,9 +93,11 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
             .decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
-
             Ok(_) => {
-                if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC && input.messages.len() > 1 {
+                if MAX_MESSAGES_PER_EXEC != 0
+                    && input.messages.len() <= MAX_MESSAGES_PER_EXEC
+                    && input.messages.len() > 1
+                {
                     println!("payload {:?}", encoded_message.as_bytes_ref());
 
                     input.messages.push(Message {
