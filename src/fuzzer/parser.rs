@@ -95,8 +95,7 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         match &decoded_msg {
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0
-                    && input.messages.len() <= MAX_MESSAGES_PER_EXEC
-                    && input.messages.len() > 1
+                    && input.messages.len() <= MAX_MESSAGES_PER_EXEC 
                 {
                     println!("payload {:?}", encoded_message.as_bytes_ref());
 
