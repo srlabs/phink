@@ -124,6 +124,8 @@ mod test {
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
     use contract_transcode::ContractMessageTranscoder;
     use std::{fs, path::Path};
+    use sp_core::hexdisplay::AsBytesRef;
+    use crate::fuzzer::parser::parse_input;
 
     #[test]
     fn fetch_good_invariants() {
@@ -137,6 +139,7 @@ mod test {
         // DNS invariants
         assert_eq!(extracted, "b587edaf 27d8f137 ");
     }
+
     #[test]
     fn fetch_correct_selectors() {
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
@@ -175,6 +178,31 @@ mod test {
         let hex = hex::encode(data);
         println!("Encoded constructor data {}", hex);
         assert!(!hex.is_empty())
+    }
+
+
+    #[test]
+    fn parse_one_input_with_two_messages() {
+        let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+
+        let encoded_bytes =
+            hex::decode("\
+            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000\
+            2a2a2a2a2a2a2a2a\
+            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000")
+                .unwrap();
+
+        let mut transcoder_loader = std::sync::Mutex::new(
+            ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
+        );
+
+        let msg = parse_input(encoded_bytes.as_bytes_ref(), &mut transcoder_loader).messages;
+        println!("{:?}", msg);
+
+        for i in 0..msg.len() {
+            let hex = transcoder_loader.lock().unwrap().decode_contract_message(&mut &*msg.get(i).unwrap().payload);
+            println!("{:?}", hex);
+        }
     }
 
     #[test]

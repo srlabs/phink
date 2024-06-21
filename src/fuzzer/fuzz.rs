@@ -36,7 +36,7 @@ impl Fuzzer {
             "# Lines starting with '#' and empty lines are ignored."
         )?;
 
-        writeln!(dict_file, "\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A")?;
+        write!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")?;
         writeln!(dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {
