@@ -39,7 +39,7 @@ pub trait FuzzerEngine {
                 .unwrap_or_else(|| "FAIL".to_string());
 
             let debug = match curr_result {
-                Some(result) => String::from_utf8_lossy(&result.debug_message).replace('\n', " "),
+                Some(result) => String::from_utf8_lossy(&result.events).replace('\n', " "),
                 None => "FAIL".to_string(),
             };
 
