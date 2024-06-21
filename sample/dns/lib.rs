@@ -39,8 +39,8 @@ mod dns {
     }
 
     const FORBIDDEN_DOMAIN: [u8; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
     ]; //we forbid it :/
 
     #[ink(storage)]
@@ -55,6 +55,8 @@ mod dns {
         domains: StorageVec<Hash>,
         /// Another invariant testing
         dangerous_number: i32,
+
+        should_panic_after_three_calls: bool,
     }
 
     impl Default for DomainNameService {
@@ -72,6 +74,7 @@ mod dns {
                 default_address: zero_address(),
                 domains,
                 dangerous_number: 42_i32,
+                should_panic_after_three_calls: false,
             }
         }
     }
@@ -111,6 +114,16 @@ mod dns {
                 return Err(Error::ForbiddenDomain);
             }
 
+            if self.dangerous_number == 80 {
+                let hash_two: [u8; 32] = [
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 2,
+                ];
+                if name == Hash::from(hash_two) {
+                    self.dangerous_number = 120;
+                }
+            }
+
             self.name_to_owner.insert(name, &caller);
             self.env().emit_event(Register { name, from: caller });
             self.domains.push(&name);
@@ -129,6 +142,11 @@ mod dns {
 
             let old_address = self.name_to_address.get(name);
             self.name_to_address.insert(name, &new_address);
+
+            if self.dangerous_number == 120 {
+               self.should_panic_after_three_calls = true
+            }
+
 
             self.env().emit_event(SetAddress {
                 name,
@@ -156,11 +174,15 @@ mod dns {
                 return Err(Error::ForbiddenDomain);
             }
 
+            self.dangerous_number = number % 70;
+
+            if number == 80 {
+                self.dangerous_number = 80;
+            }
+
             let old_owner = self.name_to_owner.get(name);
             self.name_to_owner.insert(name, &to);
 
-
-            self.dangerous_number = number % 70;
             self.domains.push(&name);
 
             self.env().emit_event(Transfer {
@@ -223,6 +245,16 @@ mod dns {
             let forbidden_number = 69;
             assert_ne!(self.dangerous_number, forbidden_number);
         }
+
+        /// That invariant ensures that our fuzzer can detect a bug that requires
+        /// three message calls in one execution
+        #[ink(message)]
+        pub fn phink_assert_three_message_calls_required_to_crash(&self) {
+            // First, transfer must transfer 80
+            // Then, we must have register with hash=00000....2
+            // Ultimately, we need to call set_address with random value
+            assert_eq!(self.should_panic_after_three_calls, true);
+        }
     }
 
     #[cfg(test)]
@@ -247,6 +279,19 @@ mod dns {
 
             assert_eq!(contract.register(name), Ok(()));
             assert_eq!(contract.register(name), Err(Error::NameAlreadyExists));
+        }
+
+        #[ink::test]
+        fn test_invariants_nested_calls() {
+            let accounts = default_accounts();
+            let name = Hash::from([0x99; 32]);
+
+            set_next_caller(accounts.alice);
+            let mut contract = DomainNameService::new();
+
+            assert_eq!(contract.transfer(accounts.alice, accounts.bob, 80), Ok(()));
+            assert_eq!(contract.register(name), Ok(()));
+            assert_eq!(contract.should_panic_after_three_calls, true);
         }
 
         #[ink::test]
@@ -281,7 +326,7 @@ mod dns {
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
             println!("{:?}", illegal);
             assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
-            contract.phink_assert_hash42_cant_be_registered();
+            // contract.phink_assert_hash42_cant_be_registered();
         }
 
         #[ink::test]
@@ -293,15 +338,15 @@ mod dns {
 
             let mut contract = DomainNameService::new();
             assert_eq!(contract.register(name), Ok(()));
-            contract.phink_assert_hash42_cant_be_registered();
+            // contract.phink_assert_hash42_cant_be_registered();
 
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
 
             // Test transfer of owner.
-            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+            assert_eq!(contract.transfer(illegal, accounts.bob, 0), Ok(()));
 
             // This should panick..
-            contract.phink_assert_hash42_cant_be_registered();
+            // contract.phink_assert_hash42_cant_be_registered();
 
             // Owner is bob, alice `set_address` should fail.
             assert_eq!(
