@@ -27,7 +27,7 @@ pub trait FuzzerEngine {
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Debug trace (and coverage)"]);
+        table.add_row(row!["Message", "Consummed gas"]);
 
         for i in 0..responses.len() {
             let curr_result = responses.get(i);
@@ -39,8 +39,8 @@ pub trait FuzzerEngine {
                 .unwrap_or_else(|| "FAIL".to_string());
 
             let debug = match curr_result {
-                Some(result) => String::from_utf8_lossy(&result.events).replace('\n', " "),
-                None => "FAIL".to_string(),
+                Some(result) => &result.gas_consumed.to_string(),
+                None => &"FAIL".to_string(),
             };
 
             table.add_row(row![description, debug]);
