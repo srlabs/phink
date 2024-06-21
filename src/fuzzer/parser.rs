@@ -1,17 +1,16 @@
 use contract_transcode::{ContractMessageTranscoder, Value};
 use std::sync::Mutex;
+use sp_core::hexdisplay::AsBytesRef;
 
 use crate::contract::remote::{BalanceOf, Test};
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter: `********`
                                         // Minimum size for the seed
-                                        // (lapse[0..4]: disabled from now : 0 ) + value[0..4] + origin[4..6] + selector[6..10] + value selector[10..] (can be zero)
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
-pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this
+pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this, for now it's infinite
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
                                             // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
                                             // panicking on finalize.
-                                            // const MAX_BLOCK_LAPSE: u32 = 100800;
 
 pub struct Data<'a> {
     pub data: &'a [u8],
@@ -32,7 +31,6 @@ pub struct Message {
 pub struct OneInput {
     pub messages: Vec<Message>,
     pub origin: usize,
-    // pub lapse: u32,
 }
 
 impl<'a> Data<'a> {
@@ -75,10 +73,8 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
     let mut input = OneInput {
         messages: vec![],
         origin: 1,
-        // lapse: 0,
     };
     for decoded_payloads in iterable {
-        // input.lapse =  u32::from_ne_bytes(extrinsic[0..4].try_into().expect("missing lapse bytes"));
 
         let value_token: u32 = u32::from_ne_bytes(
             decoded_payloads[0..4]
@@ -100,8 +96,13 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
             .decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
+
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
+                    println!("MAX_MESSAGES_PER_EXEC {}", MAX_MESSAGES_PER_EXEC);
+                    println!("payload {:?}", encoded_message.as_bytes_ref());
+                    println!("input.messages.len() {}", input.messages.len());
+
                     input.messages.push(Message {
                         is_payable: false, //todo
                         payload: encoded_message.into(),

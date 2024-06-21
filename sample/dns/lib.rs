@@ -253,7 +253,7 @@ mod dns {
             // First, transfer must transfer 80
             // Then, we must have register with hash=00000....2
             // Ultimately, we need to call set_address with random value
-            assert_eq!(self.should_panic_after_three_calls, true);
+            assert_eq!(self.should_panic_after_three_calls, false);
         }
     }
 
@@ -289,7 +289,7 @@ mod dns {
             set_next_caller(accounts.alice);
             let mut contract = DomainNameService::new();
 
-            assert_eq!(contract.transfer(accounts.alice, accounts.bob, 80), Ok(()));
+            assert_eq!(contract.transfer(Hash::from([1; 32]), accounts.bob, 80), Ok(()));
             assert_eq!(contract.register(name), Ok(()));
             assert_eq!(contract.should_panic_after_three_calls, true);
         }
@@ -315,7 +315,7 @@ mod dns {
             set_next_caller(accounts.alice);
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
             assert_eq!(contract.get_address(name), accounts.bob);
-            contract.phink_assert_hash42_cant_be_registered();
+            contract.phink_assert_three_message_calls_required_to_crash();
         }
 
         #[ink::test]
@@ -325,7 +325,7 @@ mod dns {
             let mut contract = DomainNameService::new();
             let illegal = Hash::from(FORBIDDEN_DOMAIN);
             println!("{:?}", illegal);
-            assert_eq!(contract.transfer(illegal, accounts.bob), Ok(()));
+            assert_eq!(contract.transfer(illegal, accounts.bob, 42), Ok(()));
             // contract.phink_assert_hash42_cant_be_registered();
         }
 

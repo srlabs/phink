@@ -206,7 +206,7 @@ fn start_cargo_ziggy_fuzz_process(cores: u8) {
         .arg("--no-honggfuzz") //TODO: just for MacOS debug :)
         .arg(format!("--jobs={}", cores))
         .arg(format!("--minlength={}", MIN_SEED_LEN))
-        .arg(format!("--maxlength={}", MAX_SEED_LEN))
+        // .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
         .env("PHINK_FROM_ZIGGY", "true")
         .stdout(Stdio::piped())
