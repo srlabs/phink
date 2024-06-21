@@ -226,7 +226,7 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
         ZiggyCommand::Build => {
-            build_llvm_allowlist().expect("🙅 Couldn't write the allow list");
+            build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allow-list");
             "build"
         }
     };
@@ -234,13 +234,11 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
     let mut ziggy_child = Command::new("cargo")
         .arg("ziggy")
         .arg(command_arg)
-
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
         .env("AFL_DEBUG", "1")
-
         .stdout(Stdio::piped())
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy command...");
@@ -266,17 +264,14 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
 // This function creates the allowlist for AFL... thanks to that feature we have a now craaaaazy blazing fast fuzzer :)
 fn build_llvm_allowlist() -> Result<(), io::Error> {
     let file_path = "./output/phink/allowlist.txt";
+    fs::create_dir_all("./output/phink/")?;
 
-    match File::create(&file_path) {
-        Ok(mut allowlist_file) => {
-            writeln!(allowlist_file, "fun: redirect_coverage*")?;
-            writeln!(allowlist_file, "fun: should_stop_now*")?;
-            writeln!(allowlist_file, "fun: parse_input*")?;
-        }
-        Err(e) => {
-            eprintln!("🙅 Failed to create the allowlist: {}", e);
-        }
-    }
+    let mut allowlist_file = File::create(&file_path)?;
+    writeln!(allowlist_file, "fun: redirect_coverage*")?;
+    writeln!(allowlist_file, "fun: should_stop_now*")?;
+    writeln!(allowlist_file, "fun: parse_input*")?;
+
+    println!("✅ Allowlist created successfully");
     Ok(())
 }
 
