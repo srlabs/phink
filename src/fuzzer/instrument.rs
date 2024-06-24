@@ -113,9 +113,16 @@ impl InstrumenterEngine {
     }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
-        //TODO: Handle this, sometimes the contract is not compiled in `target/ink`
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
-            .map_err(|e| format!("🙅 Failed to read target directory: {:?}", e))?
+            .map_err(|e| {
+                format!(
+                    "🙅 It seems that your contract is not compiled into `target/ink`.\
+             Please, ensure that your the WASM blob and the JSON specs are stored into \
+             '{}/target/ink/' (more infos: {:?})",
+                    self.contract_dir.to_str().unwrap(),
+                    e
+                )
+            })?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
                 if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
@@ -127,7 +134,6 @@ impl InstrumenterEngine {
             .next()
             .ok_or("🙅 No .wasm file found in target directory")?;
 
-        //TODO: Handle this, we assume that the specs name has the same filename as the wasm. Laziness...
         let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
         Ok(InkFilesPath {
@@ -145,7 +151,7 @@ impl ContractBuilder for InstrumenterEngine {
             .status()
             .map_err(|e| {
                 format!(
-                    "🙅 Failed to execute cargo command: {:?}.\
+                    "🙅 Failed to execute cargo command: {}.\
             The command was simply 'cargo contract build --features=phink",
                     e
                 )
@@ -156,8 +162,8 @@ impl ContractBuilder for InstrumenterEngine {
         } else {
             Err(format!(
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
-                Please go to {}, edit the lib.rs file, and run cargo contract build again.\
-                Detailed error — {:?}",
+                Please go to {}, edit the `lib.rs` file, and run cargo contract build again.\
+                (more infos: {})",
                 &self.contract_dir.display(),
                 status
             ))
@@ -175,7 +181,7 @@ impl ContractForker for InstrumenterEngine {
 
         let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
         fs::create_dir_all(&new_dir)
-            .map_err(|e| format!("🙅 Failed to create directory: {:?}", e))?;
+            .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
 
         for entry in WalkDir::new(&self.contract_dir) {
             let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {:?}", e))?;
@@ -183,12 +189,12 @@ impl ContractForker for InstrumenterEngine {
                 entry
                     .path()
                     .strip_prefix(&self.contract_dir)
-                    .map_err(|e| format!("🙅 Failed to strip prefix: {:?}", e))?,
+                    .map_err(|e| format!("🙅 Failed to strip prefix: {}", e))?,
             );
 
             if entry.path().is_dir() {
                 fs::create_dir_all(&target_path)
-                    .map_err(|e| format!("🙅 Failed to create subdirectory: {:?}", e))?;
+                    .map_err(|e| format!("🙅 Failed to create subdirectory: {}", e))?;
             } else {
                 copy(entry.path(), &target_path)
                     .map_err(|e| format!("🙅 Failed to copy file: {:?}", e))?;

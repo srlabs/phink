@@ -121,12 +121,12 @@ impl PayloadCrafter {
 
 #[cfg(test)]
 mod test {
+    use crate::fuzzer::parser::parse_input;
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
     use contract_transcode::ContractMessageTranscoder;
-    use std::{fs, path::Path};
     use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
-    use crate::fuzzer::parser::parse_input;
+    use std::{fs, path::Path};
 
     #[test]
     fn fetch_good_invariants() {
@@ -181,17 +181,17 @@ mod test {
         assert!(!hex.is_empty())
     }
 
-
     #[test]
     fn parse_one_input_with_two_messages() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
 
-        let encoded_bytes =
-            hex::decode("\
+        let encoded_bytes = hex::decode(
+            "\
             3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000\
             2a2a2a2a2a2a2a2a\
-            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000")
-                .unwrap();
+            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000",
+        )
+        .unwrap();
 
         let mut transcoder_loader = std::sync::Mutex::new(
             ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
@@ -201,13 +201,16 @@ mod test {
         println!("{:?}", msg);
 
         for i in 0..msg.len() {
-            let hex = transcoder_loader.lock().unwrap().decode_contract_message(&mut &*msg.get(i).unwrap().payload);
+            let hex = transcoder_loader
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
             println!("{:?}", hex);
         }
 
         let hash_two: [u8; 32] = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 2,
         ];
 
         println!("{:?}", hex::encode(hash_two.encode()));

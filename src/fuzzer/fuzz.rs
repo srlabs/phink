@@ -40,7 +40,10 @@ impl Fuzzer {
         write!(dict_file, "\n")?;
         write!(dict_file, "\'\\x00\\x00\\x00\\x02")?;
         write!(dict_file, "\n")?;
-        write!(dict_file, "0000000000000000000000000000000000000000000000000000000000000002")?;
+        write!(
+            dict_file,
+            "0000000000000000000000000000000000000000000000000000000000000002"
+        )?;
 
         writeln!(dict_file)?;
 
@@ -225,8 +228,6 @@ mod tests {
             .unwrap();
         let string = hex.to_string();
         println!("{}", string);
-
-
 
         // assert_eq!(
         //     string,

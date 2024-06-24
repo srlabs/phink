@@ -1,14 +1,12 @@
 use contract_transcode::{ContractMessageTranscoder, Value};
-use sp_core::hexdisplay::AsBytesRef;
 use std::sync::Mutex;
 
 use crate::contract::remote::{BalanceOf, Test};
 
-pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter:
-// Minimum size for the seed
+pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
+                                        // Minimum size for the seed
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
-pub const MAX_SEED_LEN: usize = 500; //TODO: Run some benchmarks for this, for now it's infinite
-pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages
+pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages. Todo: make it as a User parameter
 
 pub struct Data<'a> {
     pub data: &'a [u8],
@@ -94,9 +92,7 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
 
         match &decoded_msg {
             Ok(_) => {
-                if MAX_MESSAGES_PER_EXEC != 0
-                    && input.messages.len() <= MAX_MESSAGES_PER_EXEC
-                {
+                if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
                     input.messages.push(Message {
                         is_payable: false, //todo
                         payload: encoded_message.into(),

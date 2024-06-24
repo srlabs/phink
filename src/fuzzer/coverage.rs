@@ -38,15 +38,19 @@ impl Coverage {
         let flatten_cov: Vec<u8> = self.branches.into_iter().flatten().collect();
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
+        let max_cov = coverage_lines.len();
 
         println!("[🚧DEBUG TRACE] : {:?}", coverage_lines);
-        seq_macro::seq!(x in 0..=500 {
-            let target = format!("COV={}", x);
-            if coverage_lines.contains(&target.as_str()) {
-                let _ = black_box(x + 1);
-                println!(" ");
-            }
-        });
+        println!("[🚧MAX REACHABLE COVERAGE] : {:?}", max_cov);
+        for _ in 0..max_cov {
+            seq_macro::seq!(x in 0..=1 {
+                let target = format!("COV={}", x);
+                if coverage_lines.contains(&target.as_str()) {
+                    let _ = black_box(x + 1);
+                    println!(" A ");
+                }
+            });
+        }
     }
 }
 

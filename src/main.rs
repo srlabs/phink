@@ -14,7 +14,7 @@ use sp_core::crypto::AccountId32;
 use sp_core::hexdisplay::AsBytesRef;
 use FuzzingMode::ExecuteOneInput;
 
-use crate::fuzzer::parser::{MAX_SEED_LEN, MIN_SEED_LEN};
+use crate::fuzzer::parser::MIN_SEED_LEN;
 use crate::FuzzingMode::FuzzMode;
 use crate::{
     contract::remote::ContractBridge,
@@ -59,6 +59,9 @@ enum Commands {
         /// Number of cores to use for Ziggy
         #[clap(long, short, value_parser, default_value = "1")]
         cores: Option<u8>,
+        /// Add Hongfuzz as a fuzzer... or not
+        #[clap(long, short, value_parser, default_value = "false")]
+        use_honggfuzz: bool,
     },
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument {
@@ -141,6 +144,7 @@ fn main() {
             Commands::Fuzz {
                 contract_path,
                 cores,
+                use_honggfuzz,
             } => {
                 unsafe {
                     set_var("PHINK_CONTRACT_DIR", contract_path);
@@ -155,7 +159,7 @@ fn main() {
                 // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
                 start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
-                start_cargo_ziggy_fuzz_process(cores);
+                start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
 
                 if var("PHINK_START_FUZZING").is_ok() {
                     execute_harness(&mut engine, FuzzMode);
@@ -199,17 +203,22 @@ fn main() {
     }
 }
 
-fn start_cargo_ziggy_fuzz_process(cores: u8) {
-    let mut child = Command::new("cargo")
-        .arg("ziggy")
-        .arg("fuzz")
-        .arg("--no-honggfuzz") //TODO: just for MacOS debug :)
+fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
+    let mut command = Command::new("cargo");
+    command.arg("ziggy").arg("fuzz");
+
+    if !use_honggfuzz {
+        command.arg("--no-honggfuzz");
+    }
+
+    command
         .arg(format!("--jobs={}", cores))
         .arg(format!("--minlength={}", MIN_SEED_LEN))
-        // .arg(format!("--maxlength={}", MAX_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
         .env("PHINK_FROM_ZIGGY", "true")
-        .stdout(Stdio::piped())
+        .stdout(Stdio::piped());
+
+    let mut child = command
         .spawn()
         .expect("🙅 Failed to execute cargo ziggy fuzz...");
 
