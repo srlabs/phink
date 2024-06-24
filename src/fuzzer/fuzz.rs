@@ -37,6 +37,9 @@ impl Fuzzer {
         )?;
 
         write!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")?;
+        write!(dict_file, "\'\\x00\\x00\\x00\\x02")?;
+        write!(dict_file, "0000000000000000000000000000000000000000000000000000000000000002")?;
+
         writeln!(dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {
@@ -220,6 +223,9 @@ mod tests {
             .unwrap();
         let string = hex.to_string();
         println!("{}", string);
+
+
+
         // assert_eq!(
         //     string,
         //     "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"

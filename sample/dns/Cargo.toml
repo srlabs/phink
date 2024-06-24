@@ -25,3 +25,4 @@ phink = []
 
 ink-as-dependency = []
 e2e-tests = []
+fuzz-testing = []

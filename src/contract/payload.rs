@@ -124,6 +124,7 @@ mod test {
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
     use contract_transcode::ContractMessageTranscoder;
     use std::{fs, path::Path};
+    use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
     use crate::fuzzer::parser::parse_input;
 
@@ -203,6 +204,13 @@ mod test {
             let hex = transcoder_loader.lock().unwrap().decode_contract_message(&mut &*msg.get(i).unwrap().payload);
             println!("{:?}", hex);
         }
+
+        let hash_two: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 2,
+        ];
+
+        println!("{:?}", hex::encode(hash_two.encode()));
     }
 
     #[test]

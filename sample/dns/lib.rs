@@ -117,7 +117,7 @@ mod dns {
             if self.dangerous_number == 80 {
                 let hash_two: [u8; 32] = [
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 2,
+                    0, 0,
                 ];
                 if name == Hash::from(hash_two) {
                     self.dangerous_number = 120;
