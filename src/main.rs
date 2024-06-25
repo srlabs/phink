@@ -159,6 +159,8 @@ fn main() {
                 // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
                 start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
+                println!("");
+
                 start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
 
                 if var("PHINK_START_FUZZING").is_ok() {
@@ -261,7 +263,7 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
         .expect("🙅 Failed to execute cargo ziggy command...");
 
     if let Some(stdout) = ziggy_child.stdout.take() {
-        let reader = std::io::BufReader::new(stdout);
+        let reader = io::BufReader::new(stdout);
         for line in reader.lines() {
             match line {
                 Ok(line) => println!("{}", line),

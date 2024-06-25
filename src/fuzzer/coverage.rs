@@ -41,10 +41,9 @@ impl Coverage {
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         println!("[🚧DEBUG TRACE] : {:?}", coverage_lines);
-        println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
+        // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
             seq_macro::seq!(x in 0..=500 {
                 let target = format!("COV={}", x);
-
                 if coverage_lines.contains(&target.as_str()) {
                     let _ = black_box(x + 1);
                     println!(" A ");
