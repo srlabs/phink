@@ -11,6 +11,7 @@ use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 
 use crate::contract::runtime::AccountId;
+use crate::fuzzer::instrument::InstrumenterEngine;
 use crate::{
     contract::payload,
     contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},

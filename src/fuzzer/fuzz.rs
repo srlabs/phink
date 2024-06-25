@@ -118,7 +118,7 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage: Coverage = Coverage::new();
+        let mut coverage: Coverage = Coverage::new(9); //todo
         let mut all_msg_responses: Vec<FullContractResponse> = Vec::new();
 
         chain.execute_with(|| {

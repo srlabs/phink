@@ -328,7 +328,13 @@ fn execute_harness(engine: &mut InstrumenterEngine, fuzzing_mode: FuzzingMode) {
             }
         }
         Err(e) => {
-            eprintln!("🙅 Error reading WASM file. {:?}", e);
+            eprintln!(
+                "🙅 Error reading WASM file. Maybe the JSON file is not equal to the WASM file ?\
+            Please, ensure that both are identitical.\
+            Example: mycontract.wasm and mycontract.json.\
+            (more details: {})",
+                e
+            );
         }
     }
 }

@@ -6,12 +6,14 @@ pub type CoverageTrace = Vec<u8>;
 #[derive(Clone)]
 pub struct Coverage {
     branches: Vec<CoverageTrace>,
+    max_coverage: u32,
 }
 
 impl Coverage {
-    pub fn new() -> Self {
+    pub fn new(max_coverage: u32) -> Self {
         Coverage {
             branches: Vec::new(),
+            max_coverage,
         }
     }
 
@@ -33,24 +35,22 @@ impl Coverage {
     }
 
     /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
-    /// TODO! Refactor the 300, it should change depending the contract
     pub fn redirect_coverage(self) {
         let flatten_cov: Vec<u8> = self.branches.into_iter().flatten().collect();
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
-        let max_cov = coverage_lines.len();
 
         println!("[🚧DEBUG TRACE] : {:?}", coverage_lines);
-        println!("[🚧MAX REACHABLE COVERAGE] : {:?}", max_cov);
-        for _ in 0..max_cov {
-            seq_macro::seq!(x in 0..=1 {
+        println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
+            seq_macro::seq!(x in 0..=500 {
                 let target = format!("COV={}", x);
+
                 if coverage_lines.contains(&target.as_str()) {
                     let _ = black_box(x + 1);
                     println!(" A ");
                 }
             });
-        }
+
     }
 }
 
