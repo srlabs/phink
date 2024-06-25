@@ -109,9 +109,8 @@ mod dns {
                 return Err(Error::NameAlreadyExists);
             }
 
-
             if self.dangerous_number == 80 {
-                if name == FORBIDDEN_DOMAIN {
+                if name == FORBIDDEN_DOMAIN.into() {
                     self.dangerous_number = 120;
                 }
             }
@@ -136,9 +135,8 @@ mod dns {
             self.name_to_address.insert(name, &new_address);
 
             if self.dangerous_number == 120 {
-               self.should_panic_after_three_calls = true
+                self.should_panic_after_three_calls = true
             }
-
 
             self.env().emit_event(SetAddress {
                 name,
@@ -162,7 +160,8 @@ mod dns {
                 return Err(Error::CallerIsNotOwner);
             }
 
-            if number == 69 { //NOP, 69 is forbidden! right?
+            if number == 69 {
+                //NOP, 69 is forbidden! right?
                 return Err(Error::ForbiddenDomain);
             }
 
@@ -225,11 +224,11 @@ mod dns {
         /// This invariant should be triggered at some point... the contract being vulnerable
         #[ink(message)]
         pub fn phink_assert_hash42_cant_be_registered(&self) {
-//            for i in 0..self.domains.len() {
-  //              if let Some(domain) = self.domains.get(i) {
-    //                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-      //          }
-            }
+            //            for i in 0..self.domains.len() {
+            //              if let Some(domain) = self.domains.get(i) {
+            //                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            //          }
+            //   }
         }
 
         #[ink(message)]
@@ -281,7 +280,10 @@ mod dns {
             set_next_caller(accounts.alice);
             let mut contract = DomainNameService::new();
 
-            assert_eq!(contract.transfer(Hash::from([1; 32]), accounts.bob, 80), Ok(()));
+            assert_eq!(
+                contract.transfer(Hash::from([1; 32]), accounts.bob, 80),
+                Ok(())
+            );
             assert_eq!(contract.register(name), Ok(()));
             assert_eq!(contract.should_panic_after_three_calls, true);
         }
