@@ -55,6 +55,7 @@ mod dummy {
         #[ink(message)]
         pub fn phink_assert_dangerous_number(&self) {
             let forbidden_number = 69;
+            ink::env::debug_println!("xx");
             assert_ne!(self.forbidden_number, forbidden_number);
         }
     }

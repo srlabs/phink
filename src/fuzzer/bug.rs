@@ -78,8 +78,9 @@ impl BugManager {
 
         println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        panic!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
+        //todo investigate process::exit(1) to avoid ugly console
         //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.

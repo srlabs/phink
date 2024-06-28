@@ -100,6 +100,7 @@ impl FuzzerEngine for Fuzzer {
                 &mut transcoder_loader,
                 &mut invariant_manager,
                 data,
+                false,
             );
         });
     }
@@ -109,6 +110,7 @@ impl FuzzerEngine for Fuzzer {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
+        save_coverage: bool,
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
@@ -160,6 +162,9 @@ impl FuzzerEngine for Fuzzer {
 
         // We now fake the coverage
         coverage.redirect_coverage();
+        if save_coverage {
+            coverage.save().expect("Cannot save the coverage");
+        }
     }
 
     fn exec_seed(self, seed: &[u8]) {
@@ -170,6 +175,7 @@ impl FuzzerEngine for Fuzzer {
             &mut transcoder_loader,
             &mut invariant_manager,
             seed,
+            true,
         );
     }
 }

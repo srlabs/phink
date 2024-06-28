@@ -229,7 +229,10 @@ impl ContractInstrumenter for InstrumenterEngine {
     }
 
     fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
-        let mut ast = parse_file(code).unwrap();
+        let mut ast = parse_file(code).expect(
+            "⚠️ This is most likely that your ink! contract\
+        contains invalid syntax. Try to compile it first. ",
+        );
         visitor.visit_file_mut(&mut ast);
         Ok(quote!(#ast).to_string())
     }

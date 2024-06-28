@@ -14,13 +14,14 @@ use sp_core::crypto::AccountId32;
 use sp_core::hexdisplay::AsBytesRef;
 use FuzzingMode::ExecuteOneInput;
 
-use crate::fuzzer::parser::MIN_SEED_LEN;
-use crate::FuzzingMode::FuzzMode;
 use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
     fuzzer::fuzz::Fuzzer,
     fuzzer::instrument::{ContractBuilder, ContractInstrumenter, InstrumenterEngine},
+    fuzzer::parser::MIN_SEED_LEN,
+    fuzzer::report::CoverageTracker,
+    FuzzingMode::FuzzMode,
 };
 
 mod contract;
@@ -77,8 +78,15 @@ enum Commands {
     },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
     Clean,
-    /// Generate a coverage, only of the harness
-    Cover {
+    /// Generate a coverage, only of the harness. You won't have your contract coverage here.
+    /// It's mainly for debugging purposes inly
+    HarnessCover {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
+    /// Generate a coverage, for your smart-contract
+    Coverage {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
@@ -159,7 +167,7 @@ fn main() {
                 // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
                 start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
-                println!("");
+                println!();
 
                 start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
 
@@ -186,17 +194,31 @@ fn main() {
 
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
-                let data = fs::read(seed_path).expect("Unable to read file");
+                let data = fs::read(seed_path).expect("Unable to read the seed");
 
                 execute_harness(&mut engine, ExecuteOneInput(Box::from(data)));
             }
 
-            Commands::Cover { contract_path } => {
+            Commands::HarnessCover { contract_path } => {
                 unsafe {
                     set_var("PHINK_CONTRACT_DIR", contract_path);
                 }
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Cover);
+            }
+
+            Commands::Coverage { contract_path } => {
+                //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
+                let mut tracker = CoverageTracker::new("COV=236, COV=237, COV=238");
+                tracker
+                    .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
+                    .expect("Cannot process file"); //todo: should do it for every file
+
+                tracker
+                    .generate_report(
+                        format!("{}{}", contract_path.display(), "/coverage_report").as_str(),
+                    )
+                    .expect("Cannot generate coverage report");
             }
             Commands::Clean => {
                 InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");

@@ -21,6 +21,7 @@ pub trait FuzzerEngine {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
+        save_harness: bool,
     );
 
     /// Pretty print the result of `OneInput`

@@ -1,5 +1,7 @@
 use crate::utils;
+use std::fs::File;
 use std::hint::black_box;
+use std::io::Write;
 
 pub type CoverageTrace = Vec<u8>;
 
@@ -34,22 +36,28 @@ impl Coverage {
         cleaned_str.into_bytes()
     }
 
+    pub fn save(&self) -> std::io::Result<()> {
+        let serialized = serde_json::to_string(&self.branches).unwrap();
+        let mut file = File::create("./output/phink/traces.cov")?;
+        file.write_all(serialized.as_bytes())?;
+
+        Ok(())
+    }
+
     /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
-    pub fn redirect_coverage(self) {
-        let flatten_cov: Vec<u8> = self.branches.into_iter().flatten().collect();
+    pub fn redirect_coverage(&self) {
+        let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         println!("[🚧DEBUG TRACE] : {:?}", coverage_lines);
         // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
-            seq_macro::seq!(x in 0..=500 {
-                let target = format!("COV={}", x);
-                if coverage_lines.contains(&target.as_str()) {
-                    let _ = black_box(x + 1);
-                    println!(" A ");
-                }
-            });
-
+        seq_macro::seq!(x in 0..=500 {
+            let target = format!("COV={}", x);
+            if coverage_lines.contains(&target.as_str()) {
+                let _ = black_box(x + 1);
+            }
+        });
     }
 }
 
