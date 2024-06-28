@@ -222,7 +222,7 @@ fn main() {
                     .expect("Cannot process file"); //todo: should do it for every file
 
                 tracker
-                    .generate_report(format!("{}{}", contract_path.display(), report_path).as_str())
+                    .generate_report(format!("{}{}", contract_path.display(), report_path.display()).as_str())
                     .expect("Cannot generate coverage report");
             }
             Commands::Clean => {
