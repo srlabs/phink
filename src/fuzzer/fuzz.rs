@@ -165,10 +165,11 @@ impl FuzzerEngine for Fuzzer {
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
         // Simply comment out the following line :)
-        #[cfg(not(fuzzing))] {
+        #[cfg(not(fuzzing))]
+        {
+            println!("[🚧UPDATE] Adding to the coverage file...");
             coverage.save().expect("Cannot save the coverage");
         }
-
     }
 
     fn exec_seed(self, seed: &[u8]) {

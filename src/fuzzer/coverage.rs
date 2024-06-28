@@ -37,10 +37,16 @@ impl Coverage {
     }
 
     pub fn save(&self) -> std::io::Result<()> {
-        let serialized = serde_json::to_string(&self.branches).unwrap();
         let mut file = File::create("./output/phink/traces.cov")?;
-        file.write_all(serialized.as_bytes())?;
+        let mut trace_strings = Vec::new();
 
+        for trace in &self.branches {
+            let trace_string = String::from_utf8_lossy(trace).replace("\n", ", ").to_string();
+            trace_strings.push(trace_string.trim().to_string());
+        }
+        
+        let joined_traces = trace_strings.join(", ");
+        writeln!(file, "{}", joined_traces)?;
         Ok(())
     }
 

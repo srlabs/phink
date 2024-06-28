@@ -90,7 +90,7 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
-        /// Path where the contract is located. It must be the root directory of the contract
+        /// Output directory for the coverage report
         #[clap(value_parser, default_value = "coverage_report")]
         report_path: PathBuf,
     },
@@ -222,7 +222,9 @@ fn main() {
                     .expect("Cannot process file"); //todo: should do it for every file
 
                 tracker
-                    .generate_report(format!("{}{}", contract_path.display(), report_path.display()).as_str())
+                    .generate_report(
+                        format!("{}{}", contract_path.display(), report_path.display()).as_str(),
+                    )
                     .expect("Cannot generate coverage report");
             }
             Commands::Clean => {
