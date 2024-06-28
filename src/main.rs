@@ -215,15 +215,21 @@ fn main() {
                 report_path,
             } => {
                 //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
+                use std::io::Read;
 
-                let mut tracker = CoverageTracker::new("COV=236, COV=237, COV=238");
+                let mut file = fs::File::open("./output/phink/traces.cov").unwrap();
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).unwrap();
+                
+                let mut tracker = CoverageTracker::new(&contents);
+
                 tracker
                     .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
                     .expect("Cannot process file"); //todo: should do it for every file
 
                 tracker
                     .generate_report(
-                        format!("{}{}", contract_path.display(), report_path.display()).as_str(),
+                        report_path.to_str().unwrap(),
                     )
                     .expect("Cannot generate coverage report");
             }
