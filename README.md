@@ -8,10 +8,17 @@
 ## Install  
   
 ```bash
+cargo install --force ziggy cargo-afl honggfuzz grcov
 git clone https://github.com/kevin-valerio/phink
 cd phink/
-cargo ziggy run   
-```  
+```
+
+## Usage
+
+```bash
+cargo run -- instrument path/to/ink_contract
+cargo run -- fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
+```
   
 ## Example  
 #### Creating an invariant  
@@ -45,20 +52,18 @@ impl DomainNameService {
     
 ## Features and upcoming ideas  
   
- - [x] Custom runtime integration 
+ - [x] Integration of a custom runtime, using a generic one by default
+ - [x] Handling of multiple message calls 
  - [x] Invariants-based fuzzing
  - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
  - [x] Handling of ink! specific encoding and constructors
  - [x] Automatic contract instantiation
- - [x] Crafting multiple `messages` in the same transaction
- - [ ] LLM-based invariant creation using [rust-llama](https://github.com/mdrokz/rust-llama.cpp)
- - [ ] Proper binary usage
- - [ ] Custom fuzzing dashboard
- - [ ] Seeds and constants extraction out of code-base
+ - [x] Crafting multiple messages in a single transaction
+ - [x] Visualization of ink! contract coverage
+ - [x] Proper binary usage
+ - [ ] Creation of default invariants common to every contract
  - [ ] Provision of a specified on-chain state
- - [ ] Handling of multiple blocks within the same state
- 
-## Licence
-
-Kinda WTFPL, but still under discussion.
-
+ - [ ] Implementation of a snapshot-based fuzzing approach
+ - [ ] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
+ - [ ] Extraction of seeds and constants from the codebase (_research needed_)
+ - [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_) 

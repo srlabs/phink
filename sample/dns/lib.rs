@@ -109,17 +109,8 @@ mod dns {
                 return Err(Error::NameAlreadyExists);
             }
 
-            // We effectively check that we can't register the forbidden domain
-            if name.clone().as_mut() == FORBIDDEN_DOMAIN {
-                return Err(Error::ForbiddenDomain);
-            }
-
             if self.dangerous_number == 80 {
-                let hash_two: [u8; 32] = [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0,
-                ];
-                if name == Hash::from(hash_two) {
+                if name == FORBIDDEN_DOMAIN.into() {
                     self.dangerous_number = 120;
                 }
             }
@@ -144,9 +135,8 @@ mod dns {
             self.name_to_address.insert(name, &new_address);
 
             if self.dangerous_number == 120 {
-               self.should_panic_after_three_calls = true
+                self.should_panic_after_three_calls = true
             }
-
 
             self.env().emit_event(SetAddress {
                 name,
@@ -170,7 +160,8 @@ mod dns {
                 return Err(Error::CallerIsNotOwner);
             }
 
-            if number == 69 { //NOP, 69 is forbidden! right?
+            if number == 69 {
+                //NOP, 69 is forbidden! right?
                 return Err(Error::ForbiddenDomain);
             }
 
@@ -233,11 +224,11 @@ mod dns {
         /// This invariant should be triggered at some point... the contract being vulnerable
         #[ink(message)]
         pub fn phink_assert_hash42_cant_be_registered(&self) {
-            for i in 0..self.domains.len() {
-                if let Some(domain) = self.domains.get(i) {
-                    assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-                }
-            }
+            //            for i in 0..self.domains.len() {
+            //              if let Some(domain) = self.domains.get(i) {
+            //                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            //          }
+            //   }
         }
 
         #[ink(message)]
@@ -251,7 +242,7 @@ mod dns {
         #[ink(message)]
         pub fn phink_assert_three_message_calls_required_to_crash(&self) {
             // First, transfer must transfer 80
-            // Then, we must have register with hash=00000....2
+            // Then, we must have register with hash=FORBIDDEN_DOMAIn
             // Ultimately, we need to call set_address with random value
             assert_eq!(self.should_panic_after_three_calls, false);
         }
@@ -289,7 +280,10 @@ mod dns {
             set_next_caller(accounts.alice);
             let mut contract = DomainNameService::new();
 
-            assert_eq!(contract.transfer(Hash::from([1; 32]), accounts.bob, 80), Ok(()));
+            assert_eq!(
+                contract.transfer(Hash::from([1; 32]), accounts.bob, 80),
+                Ok(())
+            );
             assert_eq!(contract.register(name), Ok(()));
             assert_eq!(contract.should_panic_after_three_calls, true);
         }
