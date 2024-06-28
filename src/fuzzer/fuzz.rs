@@ -113,6 +113,9 @@ impl FuzzerEngine for Fuzzer {
         save_coverage: bool,
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
+        #[cfg(not(fuzzing))] {
+            println!("HOOOOOOOOOOOOO");
+        }
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
         }
@@ -212,8 +215,6 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
 
 #[cfg(test)]
 mod tests {
-    use crate::fuzzer::parser::Message;
-    use ink_metadata::Selector;
     use std::path::Path;
     use std::sync::Mutex;
 

@@ -99,18 +99,18 @@ impl frame_system::Config for Runtime {
 }
 
 impl pallet_balances::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxLocks = MaxLocks;
-    type MaxReserves = MaxReserves;
-    type ReserveIdentifier = [u8; 8];
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     type Balance = Balance;
     type DustRemoval = ();
-    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = frame_system::Pallet<Runtime>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+    type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
     type MaxFreezes = ConstU32<1>;
 }
 
@@ -141,7 +141,6 @@ impl pallet_contracts::Config for Runtime {
     type Randomness = Randomness;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
-    type Migrations = ();
     type RuntimeCall = RuntimeCall;
     /// The safest default is to allow no calls at all.
     ///
@@ -167,13 +166,15 @@ impl pallet_contracts::Config for Runtime {
     /// This must be `true` in order to get proper coverage feedback
     type UnsafeUnstableInterface = ConstBool<true>;
     type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
-    type RuntimeHoldReason = RuntimeHoldReason;
-    type Debug = ();
-    type Environment = (); //pallet_contracts::Environment<Self>
-    type ApiVersion = ();
-    type Xcm = ();
     type UploadOrigin = EnsureSigned<Self::AccountId>;
     type InstantiateOrigin = EnsureSigned<Self::AccountId>;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type Migrations = ();
+    type Debug = ();
+    type Environment = ();
+    //pallet_contracts::Environment<Self>
+    type ApiVersion = ();
+    type Xcm = ();
 }
 
 construct_runtime!(
