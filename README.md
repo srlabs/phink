@@ -53,7 +53,6 @@ impl DomainNameService {
 ## Features and upcoming ideas  
   
  - [x] Integration of a custom runtime, using a generic one by default
- - [x] Handling of multiple message calls 
  - [x] Invariants-based fuzzing
  - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
  - [x] Handling of ink! specific encoding and constructors
