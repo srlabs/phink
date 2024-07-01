@@ -60,6 +60,7 @@ impl DomainNameService {
  - [x] Crafting multiple messages in a single transaction
  - [x] Visualization of ink! contract coverage
  - [x] Proper binary usage
+ - [ ] Enabling multi-contract fuzzing and cross-contract interactions
  - [ ] Creation of default invariants common to every contract
  - [ ] Provision of a specified on-chain state
  - [ ] Implementation of a snapshot-based fuzzing approach
