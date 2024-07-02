@@ -9,6 +9,7 @@
   
 ```bash
 cargo install --force ziggy cargo-afl honggfuzz grcov
+cargo install --force --locked cargo-contract
 git clone https://github.com/kevin-valerio/phink
 cd phink/
 ```
