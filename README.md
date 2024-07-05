@@ -49,8 +49,35 @@ impl DomainNameService {
     }
 }
 ```
-   
-    
+#### Catching an invariant  
+
+```bash
+cargo run -- execute output/phink/crashes/1720191069751/id:000000,sig:06,src:000001,time:77,execs:2314,op:havoc,rep:4   /tmp/ink_fuzzed_XqUCn/
+```
+Below, the trace after executing the crash:
+```
+🚀 Now fuzzing `/tmp/ink_fuzzed_XqUCn/target/ink/transfer.json` (5H31F11yQUkqugbgC7ur4rT2WLKSkZKAZUfcmHkKoLkaRaZ4)!
+
+🤯 An invariant got caught! Let's dive into it
+
+🫵  This was caused by `phink_assert_cannot_transfer_1337`
+
+🎉 Find below the trace that caused that invariant
+
+🌱 Executing new seed
+
++---------+-------------------------------------------------------------------+
+| Message | Details                                                           |
++---------+-------------------------------------------------------------------+
+| pay_me  |  ⛽️ Gas required : Weight(ref_time: 591391866, proof_size: 28781) |
+|         | 🔥 Gas consumed : Weight(ref_time: 582570121, proof_size: 12443)  |
+|         | 💾 Storage deposit : StorageDeposit::Charge(0)                    |
+|         | 💸 Message was payable, and 1809739 units were transferred        |
++---------+-------------------------------------------------------------------+
+thread 'main' panicked at src/fuzzer/bug.rs:83:9:
+
+Job is done! Please, don't matter the backtrace below/above 🫡
+```
 ## Features and upcoming ideas  
   
  - [x] Integration of a custom runtime, using a generic one by default
