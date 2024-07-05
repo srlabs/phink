@@ -1,9 +1,9 @@
 use crate::utils;
 use std::fs::File;
-use std::hint::black_box;
-use std::io::Write;
 use std::fs::OpenOptions;
+use std::hint::black_box;
 use std::io::Read;
+use std::io::Write;
 pub type CoverageTrace = Vec<u8>;
 
 #[derive(Clone)]
@@ -37,34 +37,33 @@ impl Coverage {
         cleaned_str.into_bytes()
     }
     pub fn save(&self) -> std::io::Result<()> {
-        
-    // Open the file for reading to check its content
-    let mut existing_content = String::new();
-    if let Ok(mut file) = File::open("./output/phink/traces.cov") {
-        file.read_to_string(&mut existing_content)?;
-    }
+        let mut existing_content = String::new();
+        let output_path = "./output/phink/traces.cov";
+        if let Ok(mut file) = File::open(output_path) {
+            file.read_to_string(&mut existing_content)?;
+        }
 
-    // Prepare the new content to be appended
-    let mut trace_strings = Vec::new();
-    for trace in &self.branches {
-        let trace_string = String::from_utf8_lossy(trace).replace("\n", ", ").to_string();
-        trace_strings.push(trace_string.trim().to_string());
-    }
-    let joined_traces = trace_strings.join(", ");
+        let mut trace_strings = Vec::new();
+        for trace in &self.branches {
+            let trace_string = String::from_utf8_lossy(trace)
+                .replace("\n", ", ")
+                .to_string();
+            trace_strings.push(trace_string.trim().to_string());
+        }
+        let joined_traces = trace_strings.join(", ");
 
-    // Open the file in append mode and write the new content
-    let mut file = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open("./output/phink/traces.cov")?;
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(output_path)?;
 
-    if existing_content.trim().is_empty() {
-        write!(file, "{}", joined_traces)?;
-    } else {
-        write!(file, ", {}", joined_traces)?;
-    }
+        if existing_content.trim().is_empty() {
+            write!(file, "{}", joined_traces)?;
+        } else {
+            write!(file, ", {}", joined_traces)?;
+        }
 
-    Ok(())
+        Ok(())
     }
 
     /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
@@ -73,7 +72,7 @@ impl Coverage {
         let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
-        println!("[🚧DEBUG TRACE] : {:?}", coverage_lines);
+        println!("[🚧DEBUG TRACE] {:?}", coverage_lines);
         // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
         seq_macro::seq!(x in 0..=500 {
             let target = format!("COV={}", x);

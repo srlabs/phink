@@ -38,9 +38,16 @@ pub trait FuzzerEngine {
                 .map(|msg| msg.message_metadata.to_string())
                 .unwrap_or_else(|| "FAIL".to_string());
 
+            let debug_string;
             let debug = match curr_result {
-                Some(result) => &result.gas_consumed.to_string(),
-                None => &"FAIL".to_string(),
+                Some(result) => {
+                    debug_string = result.gas_consumed.to_string();
+                    &debug_string
+                }
+                None => {
+                    debug_string = "FAIL".to_string();
+                    &debug_string
+                }
             };
 
             table.add_row(row![description, debug]);

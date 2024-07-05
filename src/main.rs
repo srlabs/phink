@@ -220,18 +220,16 @@ fn main() {
                 let mut file = fs::File::open("./output/phink/traces.cov").unwrap();
                 let mut contents = String::new();
                 file.read_to_string(&mut contents).unwrap();
-                
+
                 let mut tracker = CoverageTracker::new(&contents);
 
                 tracker
                     .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
-                    .expect("Cannot process file"); //todo: should do it for every file
+                    .expect("🙅Cannot process file"); //todo: should do it for every file
 
                 tracker
-                    .generate_report(
-                        report_path.to_str().unwrap(),
-                    )
-                    .expect("Cannot generate coverage report");
+                    .generate_report(report_path.to_str().unwrap())
+                    .expect("🙅Cannot generate coverage report");
             }
             Commands::Clean => {
                 InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");

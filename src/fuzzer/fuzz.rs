@@ -1,8 +1,5 @@
 use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
 
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::__private::BasicExternalities;
-
 use crate::{
     contract::payload::{PayloadCrafter, Selector},
     contract::remote::ContractBridge,
@@ -12,6 +9,9 @@ use crate::{
     fuzzer::engine::FuzzerEngine,
     fuzzer::parser::{parse_input, OneInput},
 };
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::__private::BasicExternalities;
+use ink_metadata::InkProject;
 
 #[derive(Clone)]
 pub struct Fuzzer {
@@ -168,7 +168,7 @@ impl FuzzerEngine for Fuzzer {
         #[cfg(not(fuzzing))]
         {
             println!("[🚧UPDATE] Adding to the coverage file...");
-            coverage.save().expect("Cannot save the coverage");
+            coverage.save().expect("🙅 Cannot save the coverage");
         }
     }
 
@@ -228,14 +228,22 @@ mod tests {
 
         let mut transcoder = Mutex::new(ContractMessageTranscoder::load(metadata_path).unwrap());
 
-        let encoded_bytes = hex::decode("fa80c2f61061626364").unwrap();
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .unwrap();
         let hex = transcoder
             .lock()
             .unwrap()
             .decode_contract_message(&mut &encoded_bytes[..])
             .unwrap();
-        let string = hex.to_string();
-        println!("{}", string);
+
+        // let string = hex.to_string();
+        // println!("{}", string);
+
+        let binding = transcoder.lock().unwrap();
+
+        let abcccc = binding.metadata().spec().messages();
+        println!("{:#?}", abcccc);
 
         // assert_eq!(
         //     string,
