@@ -27,24 +27,33 @@ pub trait FuzzerEngine {
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Consummed gas"]);
+        table.add_row(row!["Message", "Details"]);
 
         for i in 0..responses.len() {
             let curr_result = responses.get(i);
-
             let curr_msg = one_input.messages.get(i);
 
             let call_description = curr_msg
                 .map(|msg| msg.message_metadata.to_string())
                 .unwrap_or_else(|| "FAIL".to_string());
 
-            let mut debug_string;
+            let mut debug_string = String::new();
             let debug = match curr_result {
                 Some(result) => {
-                    debug_string = result.gas_consumed.to_string();
+                    debug_string += format!("⛽️ Gas required : {}", result.gas_required)
+                        .to_string()
+                        .as_str();
+
+                    debug_string += format!("\n🔥 Gas consumed : {}", result.gas_consumed)
+                        .to_string()
+                        .as_str();
+                    debug_string += format!("\n💾 Storage deposit {:?}", result.storage_deposit)
+                        .to_string()
+                        .as_str();
+
                     if curr_msg.unwrap().is_payable {
                         debug_string += format!(
-                            "\nMessage was payable, and {} units were transfered",
+                            "\n💸 Message was payable, and {} units were transferred",
                             curr_msg.unwrap().value_token.to_string().as_str()
                         )
                         .to_string()
