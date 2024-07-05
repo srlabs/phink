@@ -274,12 +274,12 @@ fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
 }
 
 fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCommand) {
-    let mut allowlist_path = "";
+    let mut allowlist_path = String::new();
     let command_arg = match command {
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
         ZiggyCommand::Build => {
-            allowlist_path = build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist").as_str();
+            allowlist_path = build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist");
             "build"
         }
     };
