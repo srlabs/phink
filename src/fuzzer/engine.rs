@@ -44,7 +44,7 @@ pub trait FuzzerEngine {
                     debug_string = result.gas_consumed.to_string();
                     if curr_msg.unwrap().is_payable {
                         debug_string += format!(
-                            "Transfered : {}",
+                            "\n Message was payable, and {} was transfered",
                             curr_msg.unwrap().value_token.to_string().as_str()
                         )
                         .to_string()
