@@ -74,7 +74,7 @@ impl BugManager {
             .decode_contract_message(&mut invariant_slice)
             .unwrap();
 
-        println!("\n🫵 This was caused by {}\n", hex);
+        println!("\n🫵  This was caused by `{}`\n", hex);
 
         println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);

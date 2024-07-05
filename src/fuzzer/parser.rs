@@ -1,7 +1,7 @@
-use contract_transcode::{ContractMessageTranscoder, Value};
-use std::sync::Mutex;
-
 use crate::contract::remote::{BalanceOf, Test};
+use contract_transcode::{ContractMessageTranscoder, Value};
+use ink_metadata::{InkProject, Selector};
+use std::sync::Mutex;
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
                                         // Minimum size for the seed
@@ -59,6 +59,15 @@ impl<'a> Iterator for Data<'a> {
         }
     }
 }
+fn is_message_payable(selector: &Selector, metadata: &InkProject) -> bool {
+    metadata
+        .spec()
+        .messages()
+        .iter()
+        .find(|msg| msg.selector().eq(selector))
+        .map(|msg| msg.payable())
+        .unwrap_or(false)
+}
 
 pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder>) -> OneInput {
     let iterable = Data {
@@ -84,17 +93,21 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
         ) as usize;
 
         let encoded_message: &[u8] = &decoded_payloads[6..];
-
-        let decoded_msg = transcoder
-            .get_mut()
-            .unwrap()
-            .decode_contract_message(&mut &*encoded_message);
+        let binding = transcoder.get_mut().unwrap();
+        let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
             Ok(_) => {
                 if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
+                    let is_payable: bool = is_message_payable(
+                        &Selector::from(
+                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4]).unwrap(),
+                        ),
+                        transcoder.lock().unwrap().metadata(),
+                    );
+
                     input.messages.push(Message {
-                        is_payable: false, //todo
+                        is_payable,
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
                         message_metadata: decoded_msg.unwrap(),

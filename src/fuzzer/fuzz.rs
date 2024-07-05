@@ -1,8 +1,5 @@
 use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
 
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::__private::BasicExternalities;
-
 use crate::{
     contract::payload::{PayloadCrafter, Selector},
     contract::remote::ContractBridge,
@@ -12,6 +9,8 @@ use crate::{
     fuzzer::engine::FuzzerEngine,
     fuzzer::parser::{parse_input, OneInput},
 };
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::__private::BasicExternalities;
 
 #[derive(Clone)]
 pub struct Fuzzer {
@@ -100,7 +99,6 @@ impl FuzzerEngine for Fuzzer {
                 &mut transcoder_loader,
                 &mut invariant_manager,
                 data,
-                false,
             );
         });
     }
@@ -110,9 +108,9 @@ impl FuzzerEngine for Fuzzer {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
-        save_coverage: bool,
     ) {
         let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
+
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
         }
@@ -162,8 +160,14 @@ impl FuzzerEngine for Fuzzer {
 
         // We now fake the coverage
         coverage.redirect_coverage();
-        if save_coverage {
-            coverage.save().expect("Cannot save the coverage");
+
+        // If we are not in fuzzing mode, we save the coverage
+        // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
+        // Simply comment out the following line :)
+        #[cfg(not(fuzzing))]
+        {
+            println!("[🚧UPDATE] Adding to the coverage file...");
+            coverage.save().expect("🙅 Cannot save the coverage");
         }
     }
 
@@ -175,7 +179,6 @@ impl FuzzerEngine for Fuzzer {
             &mut transcoder_loader,
             &mut invariant_manager,
             seed,
-            true,
         );
     }
 }
@@ -212,8 +215,6 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
 
 #[cfg(test)]
 mod tests {
-    use crate::fuzzer::parser::Message;
-    use ink_metadata::Selector;
     use std::path::Path;
     use std::sync::Mutex;
 
@@ -226,14 +227,22 @@ mod tests {
 
         let mut transcoder = Mutex::new(ContractMessageTranscoder::load(metadata_path).unwrap());
 
-        let encoded_bytes = hex::decode("fa80c2f61061626364").unwrap();
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .unwrap();
         let hex = transcoder
             .lock()
             .unwrap()
             .decode_contract_message(&mut &encoded_bytes[..])
             .unwrap();
-        let string = hex.to_string();
-        println!("{}", string);
+
+        // let string = hex.to_string();
+        // println!("{}", string);
+
+        let binding = transcoder.lock().unwrap();
+
+        let abcccc = binding.metadata().spec().messages();
+        println!("{:#?}", abcccc);
 
         // assert_eq!(
         //     string,

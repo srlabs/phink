@@ -3,15 +3,16 @@
 extern crate core;
 
 use env::{set_var, var};
+use std::{env, fs, io, path::PathBuf};
 use std::fs::File;
 use std::io::{BufRead, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::{env, fs, io, path::PathBuf};
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
 use sp_core::hexdisplay::AsBytesRef;
+
 use FuzzingMode::ExecuteOneInput;
 
 use crate::{
@@ -90,6 +91,9 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
+        /// Output directory for the coverage report
+        #[clap(value_parser, default_value = "coverage_report")]
+        report_path: PathBuf,
     },
     /// Execute one seed
     Execute {
@@ -167,7 +171,7 @@ fn main() {
                 // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
                 start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
-                println!();
+                println!("ZiggyCommand::Build over");
 
                 start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
 
@@ -194,7 +198,7 @@ fn main() {
 
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
-                let data = fs::read(seed_path).expect("Unable to read the seed");
+                let data = fs::read(seed_path).expect("🤔 Unable to read the seed, maybe you opened the directory instead of the seed itself ?");
 
                 execute_harness(&mut engine, ExecuteOneInput(Box::from(data)));
             }
@@ -207,18 +211,26 @@ fn main() {
                 start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Cover);
             }
 
-            Commands::Coverage { contract_path } => {
+            Commands::Coverage {
+                contract_path,
+                report_path,
+            } => {
                 //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
-                let mut tracker = CoverageTracker::new("COV=236, COV=237, COV=238");
-                tracker
-                    .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
-                    .expect("Cannot process file"); //todo: should do it for every file
+                use std::io::Read;
+
+                let mut file = File::open("./output/phink/traces.cov").unwrap();
+                let mut contents = String::new();
+                file.read_to_string(&mut contents).unwrap();
+
+                let mut tracker = CoverageTracker::new(&contents);
 
                 tracker
-                    .generate_report(
-                        format!("{}{}", contract_path.display(), "/coverage_report").as_str(),
-                    )
-                    .expect("Cannot generate coverage report");
+                    .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
+                    .expect("🙅Cannot process file"); //todo: should do it for every file
+
+                tracker
+                    .generate_report(report_path.to_str().unwrap())
+                    .expect("🙅Cannot generate coverage report");
             }
             Commands::Clean => {
                 InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");
@@ -247,7 +259,7 @@ fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
         .expect("🙅 Failed to execute cargo ziggy fuzz...");
 
     if let Some(stdout) = child.stdout.take() {
-        let reader = std::io::BufReader::new(stdout);
+        let reader = io::BufReader::new(stdout);
         for line in reader.lines() {
             match line {
                 Ok(line) => println!("{}", line),
@@ -263,11 +275,12 @@ fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
 }
 
 fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCommand) {
+    let mut allowlist_path = String::new();
     let command_arg = match command {
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
         ZiggyCommand::Build => {
-            build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allow-list");
+            allowlist_path = build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist");
             "build"
         }
     };
@@ -278,7 +291,7 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
-        .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
+        .env("AFL_LLVM_ALLOWLIST", allowlist_path)
         .env("AFL_DEBUG", "1")
         .stdout(Stdio::piped())
         .spawn()
@@ -303,17 +316,25 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
 }
 
 // This function creates the allowlist for AFL... thanks to that feature we have a now craaaaazy blazing fast fuzzer :)
-fn build_llvm_allowlist() -> Result<(), io::Error> {
+fn build_llvm_allowlist() -> Result<String, io::Error> {
     let file_path = "./output/phink/allowlist.txt";
-    fs::create_dir_all("./output/phink/")?;
 
-    let mut allowlist_file = File::create(file_path)?;
-    writeln!(allowlist_file, "fun: redirect_coverage*")?;
-    writeln!(allowlist_file, "fun: should_stop_now*")?;
-    writeln!(allowlist_file, "fun: parse_input*")?;
+    // Check if the file already exists
+    let path = Path::new(file_path);
+    return if path.exists() {
+        println!("❗ Allowlist already exists... skipping ");
+        Ok(fs::canonicalize(path)?.display().to_string())
+    } else {
+        fs::create_dir_all("./output/phink/")?;
 
-    println!("✅ Allowlist created successfully");
-    Ok(())
+        let mut allowlist_file = File::create(file_path)?;
+        writeln!(allowlist_file, "fun: redirect_coverage*")?;
+        writeln!(allowlist_file, "fun: should_stop_now*")?;
+        writeln!(allowlist_file, "fun: parse_input*")?;
+
+        println!("✅ Allowlist created successfully");
+        Ok(fs::canonicalize(path)?.display().to_string())
+    };
 }
 
 fn instrument(path: &PathBuf) -> InstrumenterEngine {

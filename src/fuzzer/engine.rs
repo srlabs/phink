@@ -2,7 +2,8 @@ use std::sync::Mutex;
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use prettytable::{row, Table};
+use pallet_contracts::ContractResult;
+use prettytable::{Cell, Row, Table};
 
 use crate::{
     contract::remote::FullContractResponse,
@@ -21,30 +22,38 @@ pub trait FuzzerEngine {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
-        save_harness: bool,
     );
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
+
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Consummed gas"]);
+        table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 
-        for i in 0..responses.len() {
-            let curr_result = responses.get(i);
+        for (response, message) in responses.iter().zip(&one_input.messages) {
+            let call_description = message.message_metadata.to_string();
 
-            let description = one_input
-                .messages
-                .get(i)
-                .map(|msg| msg.message_metadata.to_string())
-                .unwrap_or_else(|| "FAIL".to_string());
-
-            let debug = match curr_result {
-                Some(result) => &result.gas_consumed.to_string(),
-                None => &"FAIL".to_string(),
+            let debug = match response {
+                ContractResult { result: _result, .. } => format!(
+                    " ⛽️ Gas required : {}\n\
+                 🔥 Gas consumed : {}\n\
+                 💾 Storage deposit : {:?}{}",
+                    response.gas_required,
+                    response.gas_consumed,
+                    response.storage_deposit,
+                    if message.is_payable {
+                        format!(
+                            "\n💸 Message was payable, and {} units were transferred",
+                            message.value_token
+                        )
+                    } else {
+                        String::new()
+                    }
+                ),
             };
 
-            table.add_row(row![description, debug]);
+            table.add_row(Row::new(vec![Cell::new(&call_description), Cell::new(&debug)]));
         }
 
         table.printstd();

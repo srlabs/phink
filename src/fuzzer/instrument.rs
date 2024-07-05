@@ -118,7 +118,7 @@ impl InstrumenterEngine {
                 format!(
                     "🙅 It seems that your contract is not compiled into `target/ink`.\
              Please, ensure that your the WASM blob and the JSON specs are stored into \
-             '{}/target/ink/' (more infos: {:?})",
+             '{}/target/ink/' (more infos: {})",
                     self.contract_dir.to_str().unwrap(),
                     e
                 )
@@ -180,11 +180,13 @@ impl ContractForker for InstrumenterEngine {
             .collect();
 
         let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
+        println!("🏗️ Creating new directory: {:?}", new_dir);
         fs::create_dir_all(&new_dir)
             .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
 
+        println!("📁 Starting to copy files from {:?}", self.contract_dir);
         for entry in WalkDir::new(&self.contract_dir) {
-            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {:?}", e))?;
+            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
@@ -193,14 +195,20 @@ impl ContractForker for InstrumenterEngine {
             );
 
             if entry.path().is_dir() {
+                println!("📂 Creating subdirectory: {:?}", target_path);
                 fs::create_dir_all(&target_path)
                     .map_err(|e| format!("🙅 Failed to create subdirectory: {}", e))?;
             } else {
+                println!("📄 Copying file: {:?} -> {:?}", entry.path(), target_path);
                 copy(entry.path(), &target_path)
-                    .map_err(|e| format!("🙅 Failed to copy file: {:?}", e))?;
+                    .map_err(|e| format!("🙅 Failed to copy file: {}", e))?;
             }
         }
 
+        println!(
+            "✅ Fork completed successfully! New directory: {:?}",
+            new_dir
+        );
         Ok(new_dir)
     }
 }
@@ -231,7 +239,7 @@ impl ContractInstrumenter for InstrumenterEngine {
     fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
         let mut ast = parse_file(code).expect(
             "⚠️ This is most likely that your ink! contract\
-        contains invalid syntax. Try to compile it first. ",
+        contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
         );
         visitor.visit_file_mut(&mut ast);
         Ok(quote!(#ast).to_string())

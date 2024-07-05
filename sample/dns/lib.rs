@@ -57,6 +57,7 @@ mod dns {
         dangerous_number: i32,
 
         should_panic_after_three_calls: bool,
+
     }
 
     impl Default for DomainNameService {
@@ -121,6 +122,7 @@ mod dns {
 
             Ok(())
         }
+
 
         /// Set address for specific name.
         #[ink(message)]

@@ -52,7 +52,7 @@ pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", bra
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
 
-ziggy = { version = "1.0.2", default-features = false }
+ziggy = { version = "1.1.0", default-features = false }
 hex = { version = "0.4.3" }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0.115" }
@@ -64,12 +64,15 @@ itertools = { version = "0.13.0" }
 strsim = { version = "0.11.1" }
 tracing = { version = "0.1.40" }
 ink_metadata = { version = "5.0.0" }
-clap = { version = "4.5.4" , features = ["derive"]}
-syn = { version = "2.0.60" , features = ["parsing", "full", "visit-mut"]}
+clap = { version = "4.5.4", features = ["derive"] }
+syn = { version = "2.0.60", features = ["parsing", "full", "visit-mut"] }
 quote = { version = "1.0.36" }
-proc-macro2 = { version = "1.0.81", features = ["span-locations"]}
+proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
 regex = "1.10.4"
 tempfile = "3.10.1"
+afl = "0.15.8"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }

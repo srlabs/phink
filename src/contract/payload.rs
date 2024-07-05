@@ -43,7 +43,7 @@ impl PayloadCrafter {
             let bytes: Vec<u8> = hex::decode(entry.selector.trim_start_matches("0x"))
                 .unwrap()
                 .try_into()
-                .map_err(|_| serde_json::Error::custom("Selector is not a valid 4-byte array"))
+                .map_err(|_| serde_json::Error::custom("🙅 Selector is not a valid 4-byte array"))
                 .unwrap();
             selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
         }
