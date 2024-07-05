@@ -32,16 +32,24 @@ pub trait FuzzerEngine {
         for i in 0..responses.len() {
             let curr_result = responses.get(i);
 
-            let description = one_input
-                .messages
-                .get(i)
+            let curr_msg = one_input.messages.get(i);
+
+            let call_description = curr_msg
                 .map(|msg| msg.message_metadata.to_string())
                 .unwrap_or_else(|| "FAIL".to_string());
 
-            let debug_string;
+            let mut debug_string;
             let debug = match curr_result {
                 Some(result) => {
                     debug_string = result.gas_consumed.to_string();
+                    if curr_msg.unwrap().is_payable {
+                        debug_string += format!(
+                            "Transfered : {}",
+                            curr_msg.unwrap().value_token.to_string().as_str()
+                        )
+                        .to_string()
+                        .as_str();
+                    }
                     &debug_string
                 }
                 None => {
@@ -50,7 +58,7 @@ pub trait FuzzerEngine {
                 }
             };
 
-            table.add_row(row![description, debug]);
+            table.add_row(row![call_description, debug]);
         }
 
         table.printstd();

@@ -197,7 +197,7 @@ fn main() {
 
                 let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
                 let mut engine = InstrumenterEngine::new(contract_dir);
-                let data = fs::read(seed_path).expect("Unable to read the seed");
+                let data = fs::read(seed_path).expect("🤔 Unable to read the seed, maybe you opened the directory instead of the seed itself ?");
 
                 execute_harness(&mut engine, ExecuteOneInput(Box::from(data)));
             }
