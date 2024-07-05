@@ -170,7 +170,7 @@ fn main() {
                 // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
                 start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
 
-                println!();
+                println!("ZiggyCommand::Build over");
 
                 start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
 
@@ -217,7 +217,7 @@ fn main() {
                 //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
                 use std::io::Read;
 
-                let mut file = fs::File::open("./output/phink/traces.cov").unwrap();
+                let mut file = File::open("./output/phink/traces.cov").unwrap();
                 let mut contents = String::new();
                 file.read_to_string(&mut contents).unwrap();
 
@@ -274,11 +274,12 @@ fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
 }
 
 fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCommand) {
+    let mut allowlist_path = "";
     let command_arg = match command {
         ZiggyCommand::Run => "run",
         ZiggyCommand::Cover => "cover",
         ZiggyCommand::Build => {
-            build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist");
+            allowlist_path = build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist").as_str();
             "build"
         }
     };
@@ -289,7 +290,7 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
-        .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
+        .env("AFL_LLVM_ALLOWLIST", allowlist_path)
         .env("AFL_DEBUG", "1")
         .stdout(Stdio::piped())
         .spawn()
@@ -314,13 +315,14 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
 }
 
 // This function creates the allowlist for AFL... thanks to that feature we have a now craaaaazy blazing fast fuzzer :)
-fn build_llvm_allowlist() -> Result<(), io::Error> {
+fn build_llvm_allowlist() -> Result<String, io::Error> {
     let file_path = "./output/phink/allowlist.txt";
 
     // Check if the file already exists
-    if Path::new(file_path).exists() {
+    let path = Path::new(file_path);
+    return if path.exists() {
         println!("❗ Allowlist already exists... skipping ");
-        return Ok(());
+        Ok(fs::canonicalize(path)?.display().to_string())
     } else {
         fs::create_dir_all("./output/phink/")?;
 
@@ -330,9 +332,8 @@ fn build_llvm_allowlist() -> Result<(), io::Error> {
         writeln!(allowlist_file, "fun: parse_input*")?;
 
         println!("✅ Allowlist created successfully");
-    }
-
-    Ok(())
+        Ok(fs::canonicalize(path)?.display().to_string())
+    };
 }
 
 fn instrument(path: &PathBuf) -> InstrumenterEngine {
