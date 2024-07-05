@@ -2,7 +2,8 @@ use std::sync::Mutex;
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use prettytable::{row, Table};
+use pallet_contracts::ContractResult;
+use prettytable::{Cell, Row, Table};
 
 use crate::{
     contract::remote::FullContractResponse,
@@ -25,49 +26,34 @@ pub trait FuzzerEngine {
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
+
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
-        table.add_row(row!["Message", "Details"]);
+        table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 
-        for i in 0..responses.len() {
-            let curr_result = responses.get(i);
-            let curr_msg = one_input.messages.get(i);
+        for (response, message) in responses.iter().zip(&one_input.messages) {
+            let call_description = message.message_metadata.to_string();
 
-            let call_description = curr_msg
-                .map(|msg| msg.message_metadata.to_string())
-                .unwrap_or_else(|| "FAIL".to_string());
-
-            let mut debug_string = String::new();
-            let debug = match curr_result {
-                Some(result) => {
-                    debug_string += format!("⛽️ Gas required : {}", result.gas_required)
-                        .to_string()
-                        .as_str();
-
-                    debug_string += format!("\n🔥 Gas consumed : {}", result.gas_consumed)
-                        .to_string()
-                        .as_str();
-                    debug_string += format!("\n💾 Storage deposit {:?}", result.storage_deposit)
-                        .to_string()
-                        .as_str();
-
-                    if curr_msg.unwrap().is_payable {
-                        debug_string += format!(
+            let debug = match response {
+                ContractResult { result: _result, .. } => format!(
+                    " ⛽️ Gas required : {}\n\
+                 🔥 Gas consumed : {}\n\
+                 💾 Storage deposit : {:?}{}",
+                    response.gas_required,
+                    response.gas_consumed,
+                    response.storage_deposit,
+                    if message.is_payable {
+                        format!(
                             "\n💸 Message was payable, and {} units were transferred",
-                            curr_msg.unwrap().value_token.to_string().as_str()
+                            message.value_token
                         )
-                        .to_string()
-                        .as_str();
+                    } else {
+                        String::new()
                     }
-                    &debug_string
-                }
-                None => {
-                    debug_string = "FAIL".to_string();
-                    &debug_string
-                }
+                ),
             };
 
-            table.add_row(row![call_description, debug]);
+            table.add_row(Row::new(vec![Cell::new(&call_description), Cell::new(&debug)]));
         }
 
         table.printstd();

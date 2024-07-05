@@ -11,7 +11,6 @@ use crate::{
 };
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
-use ink_metadata::InkProject;
 
 #[derive(Clone)]
 pub struct Fuzzer {

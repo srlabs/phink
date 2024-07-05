@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::{self};
-use std::io::Write;
 use std::path::Path;
 
 pub struct CoverageTracker {

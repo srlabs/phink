@@ -1,7 +1,6 @@
 use crate::contract::remote::{BalanceOf, Test};
 use contract_transcode::{ContractMessageTranscoder, Value};
 use ink_metadata::{InkProject, Selector};
-use sp_runtime::traits::Lazy;
 use std::sync::Mutex;
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
