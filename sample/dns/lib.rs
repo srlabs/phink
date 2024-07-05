@@ -58,7 +58,6 @@ mod dns {
 
         should_panic_after_three_calls: bool,
 
-        leet_transfered: bool
     }
 
     impl Default for DomainNameService {
@@ -77,7 +76,6 @@ mod dns {
                 domains,
                 dangerous_number: 42_i32,
                 should_panic_after_three_calls: false,
-                leet_transfered: false
             }
         }
     }
@@ -122,15 +120,6 @@ mod dns {
             self.env().emit_event(Register { name, from: caller });
             self.domains.push(&name);
 
-            Ok(())
-        }
-
-        #[ink(message, payable)]
-        pub fn pay_me(&mut self) -> Result<()> {
-            let transferred = self.env().transferred_value();
-            if transferred == 1377 {
-                self.leet_transfered = true;
-            }
             Ok(())
         }
 
@@ -248,11 +237,6 @@ mod dns {
         pub fn phink_assert_dangerous_number(&self) {
             let forbidden_number = 69;
             assert_ne!(self.dangerous_number, forbidden_number);
-        }
-
-        #[ink(message)]
-        pub fn phink_assert_cannot_transfer_1337(&self) {
-            assert_ne!(self.leet_transfered, true);
         }
 
         /// That invariant ensures that our fuzzer can detect a bug that requires
