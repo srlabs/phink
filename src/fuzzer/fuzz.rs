@@ -156,7 +156,7 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_default_dict_entries(dict_file: &mut fs::File) -> io::Result<()> {
-    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")
+    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")?;
 }
 
 fn write_corpus_file(index: usize, selector: &Selector) -> io::Result<()> {
