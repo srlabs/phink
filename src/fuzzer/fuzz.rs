@@ -1,16 +1,28 @@
-use std::{fs, fs::File, io::Write, path::Path, sync::Mutex};
-
-use crate::{
-    contract::payload::{PayloadCrafter, Selector},
-    contract::remote::ContractBridge,
-    contract::remote::FullContractResponse,
-    fuzzer::bug::BugManager,
-    fuzzer::coverage::Coverage,
-    fuzzer::engine::FuzzerEngine,
-    fuzzer::parser::{parse_input, OneInput},
+use std::{
+    fs,
+    io::{self, Write},
+    path::{Path, PathBuf},
+    sync::Mutex,
 };
+
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
+
+use crate::{
+    contract::{
+        payload::{PayloadCrafter, Selector},
+        remote::{ContractBridge, FullContractResponse},
+    },
+    fuzzer::{
+        bug::BugManager,
+        coverage::Coverage,
+        engine::FuzzerEngine,
+        parser::{parse_input, OneInput},
+    },
+};
+
+const CORPUS_DIR: &str = "./output/phink/corpus";
+const DICT_FILE: &str = "./output/phink/selectors.dict";
 
 #[derive(Clone)]
 pub struct Fuzzer {
@@ -18,86 +30,46 @@ pub struct Fuzzer {
 }
 
 impl Fuzzer {
-    pub fn new(setup: ContractBridge) -> Fuzzer {
-        Fuzzer { setup }
+    pub fn new(setup: ContractBridge) -> Self {
+        Self { setup }
     }
 
-    pub fn build_corpus_and_dict(selectors: &mut [Selector]) -> Result<(), std::io::Error> {
-        // Create the output directory for the corpus
-        fs::create_dir_all("./output/phink/corpus")?;
+    fn build_corpus_and_dict(selectors: &[Selector]) -> io::Result<()> {
+        fs::create_dir_all(CORPUS_DIR)?;
+        let mut dict_file = fs::File::create(DICT_FILE)?;
 
-        // Create or truncate the dictionary file
-        let mut dict_file = File::create("./output/phink/selectors.dict")?;
-        // Write the dictionary header comments
-        writeln!(dict_file, "# Dictionary file for selectors")?;
-        writeln!(
-            dict_file,
-            "# Lines starting with '#' and empty lines are ignored."
-        )?;
-
-        write!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")?;
-        write!(dict_file, "\n")?;
-        write!(dict_file, "\'\\x00\\x00\\x00\\x02")?;
-        write!(dict_file, "\n")?;
-        write!(
-            dict_file,
-            "0000000000000000000000000000000000000000000000000000000000000002"
-        )?;
-
-        writeln!(dict_file)?;
+        write_dict_header(&mut dict_file)?;
+        write_default_dict_entries(&mut dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {
-            // Create the corpus file path
-            let file_path = format!("{}/selector_{}.bin", "./output/phink/corpus", i);
-            let mut file = File::create(&file_path)?;
-
-            // Write the selector to the corpus file
-            file.write_all(selector)?;
-
-            // Write the selector to the dictionary file in the required format
-            let selector_string = selector
-                .iter()
-                .map(|b| format!("\\x{:02X}", b))
-                .collect::<String>();
-            writeln!(dict_file, "\"{}\"", selector_string)?;
+            write_corpus_file(i, selector)?;
+            write_dict_entry(&mut dict_file, selector)?;
         }
 
         Ok(())
     }
 
-    // This function handles edge cases where the fuzzer should understand that some conditions are
-    // required in order to continue
-    fn should_stop_now(bug_manager: &mut BugManager, decoded_msgs: &OneInput) -> bool {
-        // Condition 1: we break if we cannot decode any message
-        if decoded_msgs.messages.is_empty() {
-            return true;
-        }
-
-        // Condition 2: we break if the fuzzed message is an invariant message
-        if decoded_msgs.messages.iter().any(|payload| {
+    fn should_stop_now(bug_manager: &BugManager, decoded_msgs: &OneInput) -> bool {
+        decoded_msgs.messages.is_empty()
+            || decoded_msgs.messages.iter().any(|payload| {
             payload
                 .payload
-                .get(0..4)
+                .get(..4)
                 .and_then(|slice| slice.try_into().ok())
-                .map_or(false, |slice: &[u8; 4]| {
-                    bug_manager.contains_selector(slice)
-                })
-        }) {
-            return true;
-        }
-        false
+                .map_or(false, |slice: &[u8; 4]| bug_manager.contains_selector(slice))
+        })
     }
 }
 
 impl FuzzerEngine for Fuzzer {
     fn fuzz(self) {
-        let (mut transcoder_loader, mut invariant_manager) = init_fuzzer(self.clone());
+        let (mut transcoder_loader, invariant_manager) = init_fuzzer(self.clone());
 
         ziggy::fuzz!(|data: &[u8]| {
             Self::harness(
                 self.clone(),
                 &mut transcoder_loader,
-                &mut invariant_manager,
+                &mut invariant_manager.clone(),
                 data,
             );
         });
@@ -118,52 +90,20 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage: Coverage = Coverage::new(9); //todo
-        let mut all_msg_responses: Vec<FullContractResponse> = Vec::new();
+        let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
+        let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
 
-        chain.execute_with(|| {
-            for message in &decoded_msgs.messages {
-                let transfer_value = if message.is_payable {
-                    message.value_token
-                } else {
-                    0
-                };
+        check_invariants(
+            bug_manager,
+            &all_msg_responses,
+            &decoded_msgs,
+            transcoder_loader,
+        );
 
-                let result: FullContractResponse = client.setup.clone().call(
-                    &message.payload,
-                    decoded_msgs.origin as u8,
-                    transfer_value,
-                );
-
-                // For each call, we verify that it isn't trapped
-                if bug_manager.is_contract_trapped(&result) {
-                    bug_manager.display_trap(message.clone(), result.clone());
-                }
-
-                coverage.add_cov(&result.debug_message);
-                all_msg_responses.push(result);
-            }
-
-            // For each group of call, we verify that invariants aren't broken
-            if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
-                bug_manager.display_invariant(
-                    all_msg_responses.clone(),
-                    decoded_msgs.clone(),
-                    invariant_tested,
-                    transcoder_loader,
-                );
-            }
-        });
-
-        // Pretty print all the calls of the current input
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
-        // We now fake the coverage
         coverage.redirect_coverage();
 
-        // If we are not in fuzzing mode, we save the coverage
-        // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
-        // Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
             println!("[🚧UPDATE] Adding to the coverage file...");
@@ -173,36 +113,29 @@ impl FuzzerEngine for Fuzzer {
 
     fn exec_seed(self, seed: &[u8]) {
         let (mut transcoder_loader, mut invariant_manager) = init_fuzzer(self.clone());
-
-        Self::harness(
-            self.clone(),
-            &mut transcoder_loader,
-            &mut invariant_manager,
-            seed,
-        );
+        Self::harness(self, &mut transcoder_loader, &mut invariant_manager, seed);
     }
 }
 
 fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager) {
     let transcoder_loader = Mutex::new(
-        ContractMessageTranscoder::load(Path::new(&fuzzer.setup.path_to_specs)).unwrap(),
+        ContractMessageTranscoder::load(Path::new(&fuzzer.setup.path_to_specs))
+            .expect("Failed to load ContractMessageTranscoder"),
     );
 
     let specs = &fuzzer.setup.json_specs;
-
-    let selectors: Vec<Selector> = PayloadCrafter::extract_all(specs);
-    let invariants: Vec<Selector> = PayloadCrafter::extract_invariants(specs)
+    let selectors = PayloadCrafter::extract_all(specs);
+    let invariants = PayloadCrafter::extract_invariants(specs)
         .expect("🙅 No invariants found, check your contract");
 
-    let mut selectors_without_invariants: Vec<Selector> = selectors
-        .clone()
+    let selectors_without_invariants: Vec<Selector> = selectors
         .into_iter()
-        .filter(|s| !invariants.clone().contains(s))
+        .filter(|s| !invariants.contains(s))
         .collect();
 
     let invariant_manager = BugManager::from(invariants, fuzzer.setup.clone());
 
-    Fuzzer::build_corpus_and_dict(&mut selectors_without_invariants)
+    Fuzzer::build_corpus_and_dict(&selectors_without_invariants)
         .expect("🙅 Failed to create initial corpus");
 
     println!(
@@ -210,55 +143,113 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
         fuzzer.setup.path_to_specs.as_os_str().to_str().unwrap(),
         fuzzer.setup.contract_address
     );
+
     (transcoder_loader, invariant_manager)
+}
+
+fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
+    writeln!(dict_file, "# Dictionary file for selectors")?;
+    writeln!(
+        dict_file,
+        "# Lines starting with '#' and empty lines are ignored."
+    )
+}
+
+fn write_default_dict_entries(dict_file: &mut fs::File) -> io::Result<()> {
+    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")
+}
+
+fn write_corpus_file(index: usize, selector: &Selector) -> io::Result<()> {
+    let file_path = PathBuf::from(CORPUS_DIR).join(format!("selector_{}.bin", index));
+    fs::write(file_path, selector)
+}
+
+fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> io::Result<()> {
+    let selector_string = selector
+        .iter()
+        .map(|b| format!("\\x{:02X}", b))
+        .collect::<String>();
+    writeln!(dict_file, "\"{}\"", selector_string)
+}
+
+fn execute_messages(
+    client: &Fuzzer,
+    decoded_msgs: &OneInput,
+    chain: &mut BasicExternalities,
+    coverage: &mut Coverage,
+) -> Vec<FullContractResponse> {
+    let mut all_msg_responses = Vec::new();
+
+    chain.execute_with(|| {
+        for message in &decoded_msgs.messages {
+            let transfer_value = if message.is_payable {
+                message.value_token
+            } else {
+                0
+            };
+
+            let result: FullContractResponse = client.setup.clone().call(
+                &message.payload,
+                decoded_msgs.origin as u8,
+                transfer_value,
+            );
+
+            coverage.add_cov(&result.debug_message);
+            all_msg_responses.push(result);
+        }
+    });
+
+    all_msg_responses
+}
+
+fn check_invariants(
+    bug_manager: &mut BugManager,
+    all_msg_responses: &[FullContractResponse],
+    decoded_msgs: &OneInput,
+    transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
+) {
+    for result in all_msg_responses {
+        if bug_manager.is_contract_trapped(result) {
+            bug_manager.display_trap(decoded_msgs.messages[0].clone(), result.clone());
+        }
+    }
+
+    if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
+        bug_manager.display_invariant(
+            all_msg_responses.to_vec(),
+            decoded_msgs.clone(),
+            invariant_tested,
+            transcoder_loader,
+        );
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-    use std::sync::Mutex;
-
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn test_parse_input() {
-        // Input data
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
+        let mut transcoder = Mutex::new(
+            ContractMessageTranscoder::load(metadata_path)
+                .expect("Failed to load ContractMessageTranscoder"),
+        );
 
-        let mut transcoder = Mutex::new(ContractMessageTranscoder::load(metadata_path).unwrap());
+        let encoded_bytes = hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+            .expect("Failed to decode hex string");
 
-        let encoded_bytes =
-            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
-                .unwrap();
         let hex = transcoder
             .lock()
             .unwrap()
             .decode_contract_message(&mut &encoded_bytes[..])
-            .unwrap();
+            .expect("Failed to decode contract message");
 
-        // let string = hex.to_string();
-        // println!("{}", string);
+        println!("{:#?}", hex);
 
         let binding = transcoder.lock().unwrap();
-
-        let abcccc = binding.metadata().spec().messages();
-        println!("{:#?}", abcccc);
-
-        // assert_eq!(
-        //     string,
-        //     "register { name: 0x9400000000000000000027272727272727272700002727272727272727272727 }"
-        // );
-
-        // 00000000 : money
-        // 0001 : alice
-        // 229b553f: selector
-        // 9400000000000000000027272727272727272700002727272727272727272727: params
-        // 2a2a2a2a2a2a2a2a: delimiter
-        // let double_call =
-        //     hex::decode("000000000001229b553f94000000000000000000272727272727272727000027272727272727272727272a2a2a2a2a2a2a2a000000000001229b553f9400000000000000000027272727272727272700002727272727272727272727")
-        //         .unwrap();
-        //
-        // let result = parse_input(double_call.as_slice(), &mut transcoder);
-        // assert_eq!(result.messages.len(), 2);
+        let messages = binding.metadata().spec().messages();
+        println!("{:#?}", messages);
     }
 }

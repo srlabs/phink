@@ -14,6 +14,7 @@ use crate::{
 
 pub type FailedInvariantTrace = (Selector, FullContractResponse);
 
+#[derive(Clone)]
 pub struct BugManager {
     pub contract_bridge: ContractBridge,
     pub invariant_selectors: Vec<Selector>,

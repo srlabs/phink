@@ -14,23 +14,33 @@ mod transfer {
 
     impl Transfer {
         #[ink(constructor)]
-        pub fn default() -> Self {
+        pub fn new() -> Self {
             Transfer {
                 leet_transfered: false,
             }
         }
-
         #[ink(message, payable)]
         pub fn pay_me(&mut self) -> Result<()> {
             let transferred = self.env().transferred_value();
-            if transferred > 1000 {
-                if transferred == 1377 {
+            if transferred > 1337 {
                     self.leet_transfered = true;
                 }
-            }
+
             Ok(())
         }
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[ink::test]
+        fn pay_me_test() {
+            let mut contract = Transfer::new();
+            assert_eq!(contract.pay_me(), Ok(()));
+        }
+    }
+
 
     #[cfg(feature = "phink")]
     #[ink(impl)]
