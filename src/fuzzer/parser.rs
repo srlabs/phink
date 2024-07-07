@@ -4,7 +4,7 @@ use ink_metadata::{InkProject, Selector};
 use std::sync::Mutex;
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
-// Minimum size for the seed
+                                        // Minimum size for the seed
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages. Todo: make it as a User parameter
 

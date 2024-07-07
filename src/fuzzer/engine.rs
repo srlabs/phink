@@ -26,7 +26,6 @@ pub trait FuzzerEngine {
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
-
         println!("\n🌱 Executing new seed\n");
         let mut table = Table::new();
         table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
@@ -35,7 +34,9 @@ pub trait FuzzerEngine {
             let call_description = message.message_metadata.to_string();
 
             let debug = match response {
-                ContractResult { result: _result, .. } => format!(
+                ContractResult {
+                    result: _result, ..
+                } => format!(
                     " ⛽️ Gas required : {}\n\
                  🔥 Gas consumed : {}\n\
                  💾 Storage deposit : {:?}{}",
@@ -53,7 +54,10 @@ pub trait FuzzerEngine {
                 ),
             };
 
-            table.add_row(Row::new(vec![Cell::new(&call_description), Cell::new(&debug)]));
+            table.add_row(Row::new(vec![
+                Cell::new(&call_description),
+                Cell::new(&debug),
+            ]));
         }
 
         table.printstd();

@@ -52,12 +52,14 @@ impl Fuzzer {
     fn should_stop_now(bug_manager: &BugManager, decoded_msgs: &OneInput) -> bool {
         decoded_msgs.messages.is_empty()
             || decoded_msgs.messages.iter().any(|payload| {
-            payload
-                .payload
-                .get(..4)
-                .and_then(|slice| slice.try_into().ok())
-                .map_or(false, |slice: &[u8; 4]| bug_manager.contains_selector(slice))
-        })
+                payload
+                    .payload
+                    .get(..4)
+                    .and_then(|slice| slice.try_into().ok())
+                    .map_or(false, |slice: &[u8; 4]| {
+                        bug_manager.contains_selector(slice)
+                    })
+            })
     }
 }
 
@@ -93,12 +95,14 @@ impl FuzzerEngine for Fuzzer {
         let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
         let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
 
-        check_invariants(
-            bug_manager,
-            &all_msg_responses,
-            &decoded_msgs,
-            transcoder_loader,
-        );
+        chain.execute_with(|| {
+            check_invariants(
+                bug_manager,
+                &all_msg_responses,
+                &decoded_msgs,
+                transcoder_loader,
+            )
+        });
 
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
@@ -156,7 +160,7 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_default_dict_entries(dict_file: &mut fs::File) -> io::Result<()> {
-    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")?;
+    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")
 }
 
 fn write_corpus_file(index: usize, selector: &Selector) -> io::Result<()> {
@@ -237,8 +241,9 @@ mod tests {
                 .expect("Failed to load ContractMessageTranscoder"),
         );
 
-        let encoded_bytes = hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
-            .expect("Failed to decode hex string");
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .expect("Failed to decode hex string");
 
         let hex = transcoder
             .lock()

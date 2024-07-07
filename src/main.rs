@@ -3,11 +3,11 @@
 extern crate core;
 
 use env::{set_var, var};
-use std::{env, fs, io, path::PathBuf};
 use std::fs::File;
 use std::io::{BufRead, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::{env, fs, io, path::PathBuf};
 
 use clap::Parser;
 use sp_core::crypto::AccountId32;
