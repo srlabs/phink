@@ -163,8 +163,11 @@ fn handle_ziggy_mode() -> io::Result<()> {
         .and_then(|addr| AccountId32::from_string(&addr).ok());
 
     let mut engine = InstrumenterEngine::new(path);
-
-    if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
+    if var("PHINK_START_FUZZING").is_ok() {
+        println!("🏃Starting the fuzzer");
+        execute_harness(&mut engine, FuzzMode(Some(3)), deployer_address)?;
+    }
+    else if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
         println!("🌱 Executing one seed: {:?}", seed_path);
         let data = fs::read(Path::new(&seed_path))?;
 
