@@ -370,7 +370,7 @@ fn execute_harness(
     fuzzing_mode: FuzzingMode,
     deployer_id: Option<AccountId32>,
 ) -> io::Result<()> {
-    let contract_deployer_origin = deployer_id. .unwrap_or_else(|| AccountId32::new([0u8; 32]));
+    let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([0u8; 32]));
     let finder = engine.find().unwrap();
 
     let wasm = fs::read(&finder.wasm_path)?;
