@@ -3,15 +3,22 @@
 extern crate core;
 
 use env::{set_var, var};
-use std::fs::File;
-use std::io::{BufRead, Write};
-use std::path::Path;
-use std::process::{Command, Stdio};
-use std::{env, fs, io, path::PathBuf};
+use std::{
+    env, fs,
+    fs::File,
+    io,
+    io::Read,
+    io::{BufRead, Write},
+    path::Path,
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
 use clap::Parser;
-use sp_core::crypto::{AccountId32, Ss58Codec};
-use sp_core::hexdisplay::AsBytesRef;
+use sp_core::{
+    crypto::{AccountId32, Ss58Codec},
+    hexdisplay::AsBytesRef,
+};
 
 use FuzzingMode::ExecuteOneInput;
 
@@ -103,9 +110,6 @@ enum Commands {
         /// Output directory for the coverage report
         #[clap(value_parser, default_value = "coverage_report")]
         report_path: PathBuf,
-        // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser)]
-        deployer_address: Option<AccountId32>,
     },
     /// Execute one seed
     Execute {
@@ -132,6 +136,8 @@ pub enum FuzzingMode {
     FuzzMode,
 }
 
+pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([0u8; 32]);
+
 fn main() -> io::Result<()> {
     if var("PHINK_FROM_ZIGGY").is_ok() {
         handle_ziggy_mode()
@@ -140,7 +146,6 @@ fn main() -> io::Result<()> {
     }
 }
 
-
 fn handle_ziggy_mode() -> io::Result<()> {
     println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
     unsafe {
@@ -148,7 +153,7 @@ fn handle_ziggy_mode() -> io::Result<()> {
     }
 
     let path = var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
-        "PHINK_CONTRACT_DIR is not set. Set it manually to the source code of your contract.",
+        "📙 PHINK_CONTRACT_DIR is not set. Set it manually to the source code of your contract.",
     );
 
     let deployer_address = var("PHINK_ACCOUNT_DEPLOYER")
@@ -158,10 +163,10 @@ fn handle_ziggy_mode() -> io::Result<()> {
     let mut engine = InstrumenterEngine::new(path);
 
     if var("PHINK_START_FUZZING").is_ok() {
-        println!("Starting the fuzzer");
+        println!("🏃Starting the fuzzer");
         execute_harness(&mut engine, FuzzMode, deployer_address)?;
     } else if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
-        println!("Executing one seed: {:?}", seed_path);
+        println!("🌱 Executing one seed: {:?}", seed_path);
         let data = fs::read(Path::new(&seed_path))?;
         execute_harness(
             &mut engine,
@@ -215,9 +220,8 @@ fn handle_cli_mode() -> io::Result<()> {
         Commands::Coverage {
             contract_path,
             report_path,
-            deployer_address,
         } => {
-            handle_coverage_command(contract_path, report_path, deployer_address)?;
+            handle_coverage_command(contract_path, report_path);
         }
         Commands::Clean => {
             InstrumenterEngine::clean()?;
@@ -234,6 +238,7 @@ fn handle_fuzz_command(
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
     set_env_vars(&contract_path, cores, &deployer_address);
+
     let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
     let mut engine = InstrumenterEngine::new(contract_dir.clone());
 
@@ -257,7 +262,7 @@ fn set_env_vars(contract_path: &Path, cores: u8, deployer_address: &Option<Accou
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
                 .clone()
-                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
+                .unwrap_or_else(|| DEFAULT_DEPLOYER)
                 .to_string(),
         );
     }
@@ -334,18 +339,15 @@ fn start_cargo_ziggy_not_fuzzing_process(
 fn build_llvm_allowlist() -> io::Result<String> {
     let file_path = "./output/phink/allowlist.txt";
     let path = Path::new(file_path);
-
     if path.exists() {
         println!("❗ Allowlist already exists... skipping ");
         return Ok(fs::canonicalize(path)?.display().to_string());
     }
-
     fs::create_dir_all("./output/phink/")?;
     let mut allowlist_file = File::create(file_path)?;
-    writeln!(allowlist_file, "fun: redirect_coverage*")?;
-    writeln!(allowlist_file, "fun: should_stop_now*")?;
-    writeln!(allowlist_file, "fun: parse_input*")?;
-
+    for func in ["redirect_coverage*", "should_stop_now*", "parse_input*"] {
+        writeln!(allowlist_file, "fun: {}", func)?;
+    }
     println!("✅ Allowlist created successfully");
     Ok(fs::canonicalize(path)?.display().to_string())
 }
@@ -372,7 +374,7 @@ fn execute_harness(
     fuzzing_mode: FuzzingMode,
     deployer_id: Option<AccountId32>,
 ) -> io::Result<()> {
-    let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([0u8; 32]));
+    let contract_deployer_origin = deployer_id.unwrap_or_else(|| DEFAULT_DEPLOYER);
     let finder = engine.find().unwrap();
 
     let wasm = fs::read(&finder.wasm_path)?;
@@ -395,18 +397,7 @@ fn handle_run_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    unsafe {
-        set_var("PHINK_CONTRACT_DIR", &contract_path);
-
-        set_var(
-            "PHINK_ACCOUNT_DEPLOYER",
-            deployer_address
-                .clone()
-                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
-                .to_string(),
-        );
-    }
-
+    set_env_vars(&contract_path, 1, &deployer_address);
     start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)
 }
 
@@ -415,16 +406,7 @@ fn handle_execute_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    unsafe {
-        set_var(
-            "PHINK_ACCOUNT_DEPLOYER",
-            deployer_address
-                .clone()
-                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
-                .to_string(),
-        );
-        set_var("PHINK_CONTRACT_DIR", &contract_path);
-    }
+    set_env_vars(&contract_path, 1, &deployer_address);
 
     let mut engine = InstrumenterEngine::new(contract_path);
     let data = fs::read(seed_path)?;
@@ -440,24 +422,25 @@ fn handle_harness_cover_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    unsafe {
-        set_var(
-            "PHINK_ACCOUNT_DEPLOYER",
-            deployer_address
-                .clone()
-                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
-                .to_string(),
-        );
-        set_var("PHINK_CONTRACT_DIR", &contract_path);
-    }
+    set_env_vars(&contract_path, 1, &deployer_address);
 
     start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)
 }
 
-fn handle_coverage_command(
-    contract_path: PathBuf,
-    report_path: PathBuf,
-    deployer_address: Option<AccountId32>,
-) -> io::Result<()> {
-    todo!()
+fn handle_coverage_command(contract_path: PathBuf, report_path: PathBuf) {
+    //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
+
+    let mut file = File::open("./output/phink/traces.cov").unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+
+    let mut tracker = CoverageTracker::new(&contents);
+
+    tracker
+        .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
+        .expect("🙅Cannot process file"); //todo: should do it for every file
+
+    tracker
+        .generate_report(report_path.to_str().unwrap())
+        .expect("🙅Cannot generate coverage report");
 }
