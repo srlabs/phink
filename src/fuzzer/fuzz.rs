@@ -103,16 +103,16 @@ impl FuzzerEngine for Fuzzer {
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
         let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
-        let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
+        let all_msg_responses = execute_messages(
+            &client,
+            &decoded_msgs,
+            &mut chain,
+            &mut coverage,
+            bug_manager,
+            transcoder_loader,
+        );
 
-        chain.execute_with(|| {
-            check_invariants(
-                bug_manager,
-                &all_msg_responses,
-                &decoded_msgs,
-                transcoder_loader,
-            )
-        });
+        chain.execute_with(|| {});
 
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
@@ -191,6 +191,8 @@ fn execute_messages(
     decoded_msgs: &OneInput,
     chain: &mut BasicExternalities,
     coverage: &mut Coverage,
+    bug_manager: &mut BugManager,
+    transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
 ) -> Vec<FullContractResponse> {
     let mut all_msg_responses = Vec::new();
 
@@ -206,6 +208,13 @@ fn execute_messages(
                 &message.payload,
                 decoded_msgs.origin as u8,
                 transfer_value,
+            );
+
+            check_invariants(
+                bug_manager,
+                &all_msg_responses,
+                &decoded_msgs,
+                transcoder_loader,
             );
 
             coverage.add_cov(&result.debug_message);
