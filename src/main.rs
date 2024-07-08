@@ -59,7 +59,7 @@ enum Commands {
         #[clap(value_parser)]
         contract_path: PathBuf,
         /// Number of cores to use for Ziggy
-        #[clap(long, short, value_parser, default_value = "1")]
+        #[clap(long, short, value_parser)]
         cores: Option<u8>,
         /// Add Hongfuzz as a fuzzer... or not
         #[clap(long, short, value_parser, default_value = "false")]
@@ -80,7 +80,7 @@ enum Commands {
         #[clap(value_parser)]
         contract_path: PathBuf,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser, default_value = "1")]
+        #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
@@ -104,7 +104,7 @@ enum Commands {
         #[clap(value_parser, default_value = "coverage_report")]
         report_path: PathBuf,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser, default_value = "1")]
+        #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
     /// Execute one seed
@@ -116,7 +116,7 @@ enum Commands {
         #[clap(value_parser)]
         contract_path: PathBuf,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser, default_value = "1")]
+        #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
 }
