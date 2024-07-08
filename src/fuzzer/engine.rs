@@ -45,7 +45,7 @@ pub trait FuzzerEngine {
                     response.storage_deposit,
                     if message.is_payable {
                         format!(
-                            "\n💸 Message was payable, and {} units were transferred",
+                            "\n💸 Message was payable and {} units were transferred",
                             message.value_token
                         )
                     } else {

@@ -37,6 +37,7 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
+    //TODO: make this configurable
     pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
@@ -52,21 +53,31 @@ impl ContractBridge {
         origin: AccountId,
     ) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = origin;
+        println!(
+            "🛠️ Initializing contract address from the origin: {:?}",
+            contract_addr
+        );
+
         let json_specs = fs::read_to_string(path_to_specs).unwrap();
         let genesis_storage: Storage = {
             let storage = Self::storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
+                println!("🔍 Uploaded the WASM bytes. Code hash: {:?}", code_hash);
+
                 contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone()).expect(
                     "🙅 Can't fetch the contract address because because of incorrect instantiation",
                 );
+                println!("🏗️ Instantiated the contract. New contract address: {:?}", contract_addr);
+
                 // We verify if the contract is correctly instantiated
                 assert!(
                     pallet_contracts::migration::v13::ContractInfoOf::<Test>::contains_key(
                         &contract_addr
                     )
                 );
+                println!("✅ Contract instantiated correctly");
             });
             chain.into_storages()
         };
@@ -107,9 +118,26 @@ impl ContractBridge {
     }
 
     pub fn upload(wasm_bytes: &[u8], who: AccountId) -> H256 {
-        Contracts::bare_upload_code(who, wasm_bytes.to_owned(), None, Determinism::Enforced)
-            .unwrap()
-            .code_hash
+        println!("📤 Starting upload of WASM bytes by: {:?}", who);
+        let upload_result = Contracts::bare_upload_code(
+            who.clone(),
+            wasm_bytes.to_owned(),
+            None,
+            Determinism::Enforced,
+        );
+        match upload_result {
+            Ok(upload_info) => {
+                println!(
+                    "✅ Upload successful. Code hash: {:?}",
+                    upload_info.code_hash
+                );
+                upload_info.code_hash
+            }
+            Err(e) => {
+                println!("❌ Upload failed for: {:?} with error: {:?}", who, e);
+                panic!("Upload failed");
+            }
+        }
     }
 
     pub fn instantiate(
@@ -132,6 +160,7 @@ impl ContractBridge {
         Some(instantiate.result.unwrap().account_id)
     }
 
+    //TODO: Make this configurable as a Generic kind of
     fn storage() -> Storage {
         let storage = RuntimeGenesisConfig {
             balances: BalancesConfig {

@@ -10,7 +10,7 @@ use std::process::{Command, Stdio};
 use std::{env, fs, io, path::PathBuf};
 
 use clap::Parser;
-use sp_core::crypto::AccountId32;
+use sp_core::crypto::{AccountId32, Ss58Codec};
 use sp_core::hexdisplay::AsBytesRef;
 
 use FuzzingMode::ExecuteOneInput;
@@ -35,14 +35,14 @@ mod utils;
     author,
     version,
     about = "Phink is a command line tool for fuzzing ink! smart contracts.",
-    long_about = "🐙 Phink, a ink! smart-contract property-based and coverage-guided fuzzer\n\n\
-    Phink depends on various environment variables:
+    long_about = "🐙 Phink, an ink! smart-contract property-based and coverage-guided fuzzer
 
-    \tPHINK_FROM_ZIGGY : Informs the tooling that the binary is being ran with Ziggy, and not directly from the CLI
-    \tPHINK_CONTRACT_DIR : Location of the contract code-base. Can be automatically detected.
-    \tPHINK_START_FUZZING : Tells the harness to start fuzzing. \n\
-    \n
-    Using Ziggy `PHINK_CONTRACT_DIR=/tmp/ink_fuzzed_QEBAC/ PHINK_FROM_ZIGGY=true PHINK_START_FUZZING=true cargo ziggy run`"
+Environment variables:
+    PHINK_FROM_ZIGGY: Informs the tooling that the binary is being run with Ziggy, not directly from the CLI
+    PHINK_CONTRACT_DIR: Location of the contract code-base. Can be automatically detected.
+    PHINK_START_FUZZING: Tells the harness to start fuzzing.
+
+Using Ziggy: PHINK_CONTRACT_DIR=/tmp/ink_fuzzed_QEBAC/ PHINK_FROM_ZIGGY=true PHINK_START_FUZZING=true cargo ziggy run"
 )]
 struct Cli {
     /// Additional command to specify operation mode
@@ -64,6 +64,9 @@ enum Commands {
         /// Add Hongfuzz as a fuzzer... or not
         #[clap(long, short, value_parser, default_value = "false")]
         use_honggfuzz: bool,
+        // Origin deploying and instantiating the contract
+        #[clap(long, short, value_parser, default_value = "false")]
+        deployer_address: Option<AccountId32>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument {
@@ -76,6 +79,9 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
+        // Origin deploying and instantiating the contract
+        #[clap(long, short, value_parser, default_value = "1")]
+        deployer_address: Option<AccountId32>,
     },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
     Clean,
@@ -85,6 +91,9 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
+        // Origin deploying and instantiating the contract
+        #[clap(long, short, value_parser, default_value = "1")]
+        deployer_address: Option<AccountId32>,
     },
     /// Generate a coverage, for your smart-contract
     Coverage {
@@ -94,6 +103,9 @@ enum Commands {
         /// Output directory for the coverage report
         #[clap(value_parser, default_value = "coverage_report")]
         report_path: PathBuf,
+        // Origin deploying and instantiating the contract
+        #[clap(long, short, value_parser, default_value = "1")]
+        deployer_address: Option<AccountId32>,
     },
     /// Execute one seed
     Execute {
@@ -103,6 +115,9 @@ enum Commands {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
+        // Origin deploying and instantiating the contract
+        #[clap(long, short, value_parser, default_value = "1")]
+        deployer_address: Option<AccountId32>,
     },
 }
 
@@ -117,172 +132,175 @@ pub enum FuzzingMode {
     FuzzMode,
 }
 
-fn main() {
+fn main() -> io::Result<()> {
     if var("PHINK_FROM_ZIGGY").is_ok() {
-        println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
-        unsafe {
-            set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
-        }
-
-        let path = var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
-            "\n🈲️ PHINK_CONTRACT_DIR is not set. \
-                You can set it manually, it should contain the source code of your contract, \
-                with or without the instrumented binary,\
-                depending your options. \n\n",
-        );
-        // Here, the contract is already instrumented
-        if var("PHINK_START_FUZZING").is_ok() {
-            println!("Starting the fuzzer");
-            execute_harness(&mut InstrumenterEngine { contract_dir: path }, FuzzMode);
-        } else {
-            let seed = var("PHINK_EXECUTE_THIS_SEED");
-            if seed.is_ok() {
-                println!("Executing one seed: {:?}", seed);
-                let data = fs::read(Path::new(&seed.unwrap())).expect("Unable to read file");
-                execute_harness(
-                    &mut InstrumenterEngine { contract_dir: path },
-                    ExecuteOneInput(Box::from(data)),
-                );
-            }
-        }
+        handle_ziggy_mode()
     } else {
-        let cli = Cli::parse();
+        handle_cli_mode()
+    }
+}
+fn handle_ziggy_mode() -> io::Result<()> {
+    println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
+    unsafe {
+        set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+    }
 
-        match &cli.command {
-            Commands::Instrument { contract_path } => {
-                instrument(contract_path);
-            }
+    let path = env::var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
+        "PHINK_CONTRACT_DIR is not set. Set it manually to the source code of your contract.",
+    );
 
-            Commands::Fuzz {
+    let deployer_address = env::var("PHINK_ACCOUNT_DEPLOYER")
+        .ok()
+        .and_then(|addr| AccountId32::from_string(&addr).ok());
+
+    let mut engine = InstrumenterEngine::new(path);
+
+    if env::var("PHINK_START_FUZZING").is_ok() {
+        println!("Starting the fuzzer");
+        execute_harness(&mut engine, FuzzingMode::FuzzMode, deployer_address)?;
+    } else if let Ok(seed_path) = env::var("PHINK_EXECUTE_THIS_SEED") {
+        println!("Executing one seed: {:?}", seed_path);
+        let data = fs::read(Path::new(&seed_path))?;
+        execute_harness(
+            &mut engine,
+            FuzzingMode::ExecuteOneInput(Box::from(data)),
+            deployer_address,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn handle_cli_mode() -> io::Result<()> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::Instrument { contract_path } => {
+            instrument(&contract_path);
+        }
+        Commands::Fuzz {
+            contract_path,
+            cores,
+            use_honggfuzz,
+            deployer_address,
+        } => {
+            handle_fuzz_command(
                 contract_path,
-                cores,
+                cores.unwrap_or(1),
                 use_honggfuzz,
-            } => {
-                unsafe {
-                    set_var("PHINK_CONTRACT_DIR", contract_path);
-                    set_var("PHINK_START_FUZZING", "true");
-                    set_var("PHINK_CORES", cores.unwrap_or(1).to_string());
-                }
-                let cores: u8 = var("PHINK_CORES").map_or(1, |v| v.parse().unwrap_or(1));
-                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                let mut engine = InstrumenterEngine::new(contract_dir.clone());
+                deployer_address,
+            )?;
+        }
+        Commands::Run {
+            contract_path,
+            deployer_address,
+        } => {
+            handle_run_command(contract_path, deployer_address)?;
+        }
+        Commands::Execute {
+            seed_path,
+            contract_path,
+            deployer_address,
+        } => {
+            handle_execute_command(seed_path, contract_path, deployer_address)?;
+        }
+        Commands::HarnessCover {
+            contract_path,
+            deployer_address,
+        } => {
+            handle_harness_cover_command(contract_path, deployer_address)?;
+        }
+        Commands::Coverage {
+            contract_path,
+            report_path,
+            deployer_address,
+        } => {
+            handle_coverage_command(contract_path, report_path, deployer_address)?;
+        }
+        Commands::Clean => {
+            InstrumenterEngine::clean()?;
+        }
+    }
 
-                // Even if the build should be processed within the fuzz command after this lien
-                // We still manually execute ziggy build, to ensure that the ALLOW_LIST works correctly
-                start_cargo_ziggy_not_fuzzing_process(contract_dir.clone(), ZiggyCommand::Build);
+    Ok(())
+}
 
-                println!("ZiggyCommand::Build over");
+fn handle_fuzz_command(
+    contract_path: PathBuf,
+    cores: u8,
+    use_honggfuzz: bool,
+    deployer_address: Option<AccountId32>,
+) -> io::Result<()> {
+    set_env_vars(&contract_path, cores, &deployer_address);
+    let contract_dir = PathBuf::from(env::var("PHINK_CONTRACT_DIR").unwrap());
+    let mut engine = InstrumenterEngine::new(contract_dir.clone());
 
-                start_cargo_ziggy_fuzz_process(cores, use_honggfuzz);
+    start_cargo_ziggy_not_fuzzing_process(&contract_dir, ZiggyCommand::Build)?;
+    println!("`ZiggyCommand::Build` completed");
 
-                if var("PHINK_START_FUZZING").is_ok() {
-                    execute_harness(&mut engine, FuzzMode);
-                }
-            }
+    start_cargo_ziggy_fuzz_process(cores, use_honggfuzz)?;
 
-            Commands::Run { contract_path } => {
-                unsafe {
-                    set_var("PHINK_CONTRACT_DIR", contract_path);
-                }
-                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run);
-            }
+    if var("PHINK_START_FUZZING").is_ok() {
+        execute_harness(&mut engine, FuzzMode, deployer_address)?;
+    }
 
-            Commands::Execute {
-                seed_path,
-                contract_path,
-            } => {
-                unsafe {
-                    set_var("PHINK_CONTRACT_DIR", contract_path);
-                }
-
-                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                let mut engine = InstrumenterEngine::new(contract_dir);
-                let data = fs::read(seed_path).expect("🤔 Unable to read the seed, maybe you opened the directory instead of the seed itself ?");
-
-                execute_harness(&mut engine, ExecuteOneInput(Box::from(data)));
-            }
-
-            Commands::HarnessCover { contract_path } => {
-                unsafe {
-                    set_var("PHINK_CONTRACT_DIR", contract_path);
-                }
-                let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
-                start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Cover);
-            }
-
-            Commands::Coverage {
-                contract_path,
-                report_path,
-            } => {
-                //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
-                use std::io::Read;
-
-                let mut file = File::open("./output/phink/traces.cov").unwrap();
-                let mut contents = String::new();
-                file.read_to_string(&mut contents).unwrap();
-
-                let mut tracker = CoverageTracker::new(&contents);
-
-                tracker
-                    .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
-                    .expect("🙅Cannot process file"); //todo: should do it for every file
-
-                tracker
-                    .generate_report(report_path.to_str().unwrap())
-                    .expect("🙅Cannot generate coverage report");
-            }
-            Commands::Clean => {
-                InstrumenterEngine::clean().expect("🧼 Cannot execute the cleaning properly.");
-            }
-        };
+    Ok(())
+}
+fn set_env_vars(contract_path: &Path, cores: u8, deployer_address: &Option<AccountId32>) {
+    unsafe {
+        set_var("PHINK_CONTRACT_DIR", contract_path);
+        set_var("PHINK_START_FUZZING", "true");
+        set_var("PHINK_CORES", cores.to_string());
+        set_var(
+            "PHINK_ACCOUNT_DEPLOYER",
+            deployer_address
+                .clone()
+                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .to_string(),
+        );
     }
 }
 
-fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: &bool) {
+fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: bool) -> io::Result<()> {
     let mut command = Command::new("cargo");
-    command.arg("ziggy").arg("fuzz");
-
-    if !use_honggfuzz {
-        command.arg("--no-honggfuzz");
-    }
-
     command
+        .arg("ziggy")
+        .arg("fuzz")
         .arg(format!("--jobs={}", cores))
         .arg(format!("--minlength={}", MIN_SEED_LEN))
         .arg("--dict=./output/phink/selectors.dict")
         .env("PHINK_FROM_ZIGGY", "true")
         .stdout(Stdio::piped());
 
-    let mut child = command
-        .spawn()
-        .expect("🙅 Failed to execute cargo ziggy fuzz...");
+    if !use_honggfuzz {
+        command.arg("--no-honggfuzz");
+    }
+
+    let mut child = command.spawn()?;
 
     if let Some(stdout) = child.stdout.take() {
         let reader = io::BufReader::new(stdout);
         for line in reader.lines() {
-            match line {
-                Ok(line) => println!("{}", line),
-                Err(e) => eprintln!("Error reading line: {}", e),
-            }
+            println!("{}", line?);
         }
     }
 
-    let status = child.wait().expect("🙅 Failed to wait on child process...");
+    let status = child.wait()?;
     if !status.success() {
-        eprintln!("🙅 Command executed with failing error code");
+        eprintln!("Command executed with failing error code");
     }
+
+    Ok(())
 }
 
-fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCommand) {
-    let mut allowlist_path = String::new();
-    let command_arg = match command {
-        ZiggyCommand::Run => "run",
-        ZiggyCommand::Cover => "cover",
-        ZiggyCommand::Build => {
-            allowlist_path = build_llvm_allowlist().expect("🙅 Couldn't write the LLVM allowlist");
-            "build"
-        }
+fn start_cargo_ziggy_not_fuzzing_process(
+    contract_dir: &Path,
+    command: ZiggyCommand,
+) -> io::Result<()> {
+    let (command_arg, allowlist_path) = match command {
+        ZiggyCommand::Run => ("run", String::new()),
+        ZiggyCommand::Cover => ("cover", String::new()),
+        ZiggyCommand::Build => ("build", build_llvm_allowlist()?),
     };
 
     let mut ziggy_child = Command::new("cargo")
@@ -291,60 +309,53 @@ fn start_cargo_ziggy_not_fuzzing_process(contract_dir: PathBuf, command: ZiggyCo
         .env("PHINK_CONTRACT_DIR", contract_dir)
         .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
-        .env("AFL_LLVM_ALLOWLIST", allowlist_path)
+        .env("AFL_LLVM_ALLOWLIST", &allowlist_path)
         .env("AFL_DEBUG", "1")
         .stdout(Stdio::piped())
-        .spawn()
-        .expect("🙅 Failed to execute cargo ziggy command...");
+        .spawn()?;
 
     if let Some(stdout) = ziggy_child.stdout.take() {
         let reader = io::BufReader::new(stdout);
         for line in reader.lines() {
-            match line {
-                Ok(line) => println!("{}", line),
-                Err(e) => eprintln!("🙅 Error reading line: {}", e),
-            }
+            println!("{}", line?);
         }
     }
 
-    let status = ziggy_child
-        .wait()
-        .expect("🙅 Failed to wait on child process...");
+    let status = ziggy_child.wait()?;
     if !status.success() {
-        eprintln!("🙅 Command executed with failing error code");
+        eprintln!("Command executed with failing error code");
     }
+
+    Ok(())
 }
 
-// This function creates the allowlist for AFL... thanks to that feature we have a now craaaaazy blazing fast fuzzer :)
-fn build_llvm_allowlist() -> Result<String, io::Error> {
+fn build_llvm_allowlist() -> io::Result<String> {
     let file_path = "./output/phink/allowlist.txt";
-
-    // Check if the file already exists
     let path = Path::new(file_path);
-    return if path.exists() {
+
+    if path.exists() {
         println!("❗ Allowlist already exists... skipping ");
-        Ok(fs::canonicalize(path)?.display().to_string())
-    } else {
-        fs::create_dir_all("./output/phink/")?;
+        return Ok(fs::canonicalize(path)?.display().to_string());
+    }
 
-        let mut allowlist_file = File::create(file_path)?;
-        writeln!(allowlist_file, "fun: redirect_coverage*")?;
-        writeln!(allowlist_file, "fun: should_stop_now*")?;
-        writeln!(allowlist_file, "fun: parse_input*")?;
+    fs::create_dir_all("./output/phink/")?;
+    let mut allowlist_file = File::create(file_path)?;
+    writeln!(allowlist_file, "fun: redirect_coverage*")?;
+    writeln!(allowlist_file, "fun: should_stop_now*")?;
+    writeln!(allowlist_file, "fun: parse_input*")?;
 
-        println!("✅ Allowlist created successfully");
-        Ok(fs::canonicalize(path)?.display().to_string())
-    };
+    println!("✅ Allowlist created successfully");
+    Ok(fs::canonicalize(path)?.display().to_string())
 }
 
-fn instrument(path: &PathBuf) -> InstrumenterEngine {
-    let mut engine = InstrumenterEngine::new(path.clone());
+fn instrument(path: &Path) -> InstrumenterEngine {
+    let mut engine = InstrumenterEngine::new(path.to_path_buf());
 
     engine
         .instrument()
-        .expect("🙅 Custom instrumentation failed")
+        .expect("Custom instrumentation failed")
         .build()
-        .expect("🙅 Compilation with Phink features failed");
+        .expect("Compilation with Phink features failed");
 
     println!(
         "🤞 Contract {:?} has been instrumented, and is now compiled!",
@@ -354,32 +365,97 @@ fn instrument(path: &PathBuf) -> InstrumenterEngine {
     engine
 }
 
-fn execute_harness(engine: &mut InstrumenterEngine, fuzzing_mode: FuzzingMode) {
-    let origin: AccountId32 = AccountId32::new([1; 32]); //TODO: This should be configurable
-
+fn execute_harness(
+    engine: &mut InstrumenterEngine,
+    fuzzing_mode: FuzzingMode,
+    deployer_id: Option<AccountId32>,
+) -> io::Result<()> {
+    let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([1; 32]));
     let finder = engine.find().unwrap();
 
-    match fs::read(&finder.wasm_path) {
-        Ok(wasm) => {
-            let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, origin);
-            let fuzzer = Fuzzer::new(setup);
-            match fuzzing_mode {
-                FuzzMode => {
-                    fuzzer.fuzz();
-                }
-                ExecuteOneInput(seed) => {
-                    fuzzer.exec_seed(seed.as_bytes_ref());
-                }
-            }
+    let wasm = fs::read(&finder.wasm_path)?;
+    let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, contract_deployer_origin);
+    let fuzzer = Fuzzer::new(setup);
+
+    match fuzzing_mode {
+        FuzzMode => {
+            fuzzer.fuzz();
         }
-        Err(e) => {
-            eprintln!(
-                "🙅 Error reading WASM file. Maybe the JSON file is not equal to the WASM file ?\
-            Please, ensure that both are identitical.\
-            Example: mycontract.wasm and mycontract.json.\
-            (more details: {})",
-                e
-            );
+        ExecuteOneInput(seed) => {
+            fuzzer.exec_seed(seed.as_bytes_ref());
         }
     }
+
+    Ok(())
+}
+
+fn handle_run_command(
+    contract_path: PathBuf,
+    deployer_address: Option<AccountId32>,
+) -> io::Result<()> {
+    unsafe {
+        set_var("PHINK_CONTRACT_DIR", &contract_path);
+
+        set_var(
+            "PHINK_ACCOUNT_DEPLOYER",
+            deployer_address
+                .clone()
+                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .to_string(),
+        );
+    }
+
+    start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)
+}
+
+fn handle_execute_command(
+    seed_path: PathBuf,
+    contract_path: PathBuf,
+    deployer_address: Option<AccountId32>,
+) -> io::Result<()> {
+    unsafe {
+        set_var(
+            "PHINK_ACCOUNT_DEPLOYER",
+            deployer_address
+                .clone()
+                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .to_string(),
+        );
+        set_var("PHINK_CONTRACT_DIR", &contract_path);
+    }
+
+    let mut engine = InstrumenterEngine::new(contract_path);
+    let data = fs::read(seed_path)?;
+
+    execute_harness(
+        &mut engine,
+        ExecuteOneInput(Box::from(data)),
+        deployer_address,
+    )
+}
+
+fn handle_harness_cover_command(
+    contract_path: PathBuf,
+    deployer_address: Option<AccountId32>,
+) -> io::Result<()> {
+    unsafe {
+        set_var(
+            "PHINK_ACCOUNT_DEPLOYER",
+            deployer_address
+                .clone()
+                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .to_string(),
+        );
+        set_var("PHINK_CONTRACT_DIR", &contract_path);
+    }
+
+    start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)
+}
+
+fn handle_coverage_command(
+    contract_path: PathBuf,
+    report_path: PathBuf,
+    deployer_address: Option<AccountId32>,
+) -> io::Result<()> {
+    todo!()
 }
