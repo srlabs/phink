@@ -185,6 +185,8 @@ impl ContractForker for InstrumenterEngine {
             .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
 
         println!("📁 Starting to copy files from {:?}", self.contract_dir);
+
+        //todo: don't copy target/
         for entry in WalkDir::new(&self.contract_dir) {
             let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
             let target_path = new_dir.join(

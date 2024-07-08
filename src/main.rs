@@ -65,7 +65,7 @@ enum Commands {
         #[clap(long, short, value_parser, default_value = "false")]
         use_honggfuzz: bool,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser, default_value = "false")]
+        #[clap(long, short, value_p,arser)]
         deployer_address: Option<AccountId32>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
@@ -139,31 +139,33 @@ fn main() -> io::Result<()> {
         handle_cli_mode()
     }
 }
+
+
 fn handle_ziggy_mode() -> io::Result<()> {
     println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
     unsafe {
         set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
     }
 
-    let path = env::var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
+    let path = var("PHINK_CONTRACT_DIR").map(PathBuf::from).expect(
         "PHINK_CONTRACT_DIR is not set. Set it manually to the source code of your contract.",
     );
 
-    let deployer_address = env::var("PHINK_ACCOUNT_DEPLOYER")
+    let deployer_address = var("PHINK_ACCOUNT_DEPLOYER")
         .ok()
         .and_then(|addr| AccountId32::from_string(&addr).ok());
 
     let mut engine = InstrumenterEngine::new(path);
 
-    if env::var("PHINK_START_FUZZING").is_ok() {
+    if var("PHINK_START_FUZZING").is_ok() {
         println!("Starting the fuzzer");
-        execute_harness(&mut engine, FuzzingMode::FuzzMode, deployer_address)?;
-    } else if let Ok(seed_path) = env::var("PHINK_EXECUTE_THIS_SEED") {
+        execute_harness(&mut engine, FuzzMode, deployer_address)?;
+    } else if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
         println!("Executing one seed: {:?}", seed_path);
         let data = fs::read(Path::new(&seed_path))?;
         execute_harness(
             &mut engine,
-            FuzzingMode::ExecuteOneInput(Box::from(data)),
+            ExecuteOneInput(Box::from(data)),
             deployer_address,
         )?;
     }

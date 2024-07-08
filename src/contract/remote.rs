@@ -134,8 +134,7 @@ impl ContractBridge {
                 upload_info.code_hash
             }
             Err(e) => {
-                println!("❌ Upload failed for: {:?} with error: {:?}", who, e);
-                panic!("Upload failed");
+                panic!("❌ Upload failed for: {:?} with error: {:?}", who, e);
             }
         }
     }
