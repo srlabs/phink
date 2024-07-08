@@ -135,6 +135,7 @@ impl FuzzerEngine for Fuzzer {
                     );
                 }
 
+                println!("aaa{:?}", result);
                 coverage.add_cov(&result.debug_message);
                 all_msg_responses.push(result);
             }
