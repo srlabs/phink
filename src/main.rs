@@ -189,7 +189,10 @@ fn handle_cli_mode() -> io::Result<()> {
                 .expect("Custom instrumentation failed")
                 .build()
                 .expect("Compilation with Phink features failed");
-            println!("🤞 Contract {contract_path} has been instrumented, and is now compiled!");
+            println!(
+                "🤞 Contract {} has been instrumented, and is now compiled!",
+                contract_path.display()
+            );
         }
         Commands::Fuzz {
             contract_path,
