@@ -123,19 +123,20 @@ impl FuzzerEngine for Fuzzer {
                 if bug_manager.is_contract_trapped(&result) {
                     bug_manager.display_trap(message.clone(), result.clone());
                 }
+                // For each group of call, we verify that invariants aren't broken
+                if let Err(invariant_tested) =
+                    bug_manager.are_invariants_passing(decoded_msgs.origin)
+                {
+                    bug_manager.display_invariant(
+                        all_msg_responses.clone(),
+                        decoded_msgs.clone(),
+                        invariant_tested,
+                        transcoder_loader,
+                    );
+                }
 
                 coverage.add_cov(&result.debug_message);
                 all_msg_responses.push(result);
-            }
-
-            // For each group of call, we verify that invariants aren't broken
-            if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
-                bug_manager.display_invariant(
-                    all_msg_responses.clone(),
-                    decoded_msgs.clone(),
-                    invariant_tested,
-                    transcoder_loader,
-                );
             }
         });
 
