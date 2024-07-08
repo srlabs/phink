@@ -69,7 +69,6 @@ impl ContractBridge {
                 contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone()).expect(
                     "🙅 Can't fetch the contract address because because of incorrect instantiation",
                 );
-                println!("🏗️ Instantiated the contract. New contract address: {:?}", contract_addr);
 
                 // We verify if the contract is correctly instantiated
                 assert!(
@@ -77,7 +76,7 @@ impl ContractBridge {
                         &contract_addr
                     )
                 );
-                println!("✅ Contract instantiated correctly");
+                println!("🏗️ Instantiated the contract. New contract address: {:?}", contract_addr);
             });
             chain.into_storages()
         };

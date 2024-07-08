@@ -183,7 +183,13 @@ fn handle_cli_mode() -> io::Result<()> {
 
     match cli.command {
         Commands::Instrument { contract_path } => {
-            handle_instrumentation(&contract_path);
+            let mut engine = InstrumenterEngine::new(contract_path.to_path_buf());
+            engine
+                .instrument()
+                .expect("Custom instrumentation failed")
+                .build()
+                .expect("Compilation with Phink features failed");
+            println!("🤞 Contract {contract_path} has been instrumented, and is now compiled!");
         }
         Commands::Fuzz {
             contract_path,
@@ -204,7 +210,8 @@ fn handle_cli_mode() -> io::Result<()> {
             contract_path,
             deployer_address,
         } => {
-            handle_run_command(contract_path, deployer_address)?;
+            set_env_vars(&contract_path, &deployer_address);
+            start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)?
         }
         Commands::Execute {
             seed_path,
@@ -217,7 +224,8 @@ fn handle_cli_mode() -> io::Result<()> {
             contract_path,
             deployer_address,
         } => {
-            handle_harness_cover_command(contract_path, deployer_address)?;
+            set_env_vars(&contract_path, &deployer_address);
+            start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)?
         }
         Commands::Coverage {
             contract_path,
@@ -358,21 +366,6 @@ fn build_llvm_allowlist() -> io::Result<String> {
     Ok(fs::canonicalize(path)?.display().to_string())
 }
 
-fn handle_instrumentation(path: &Path) {
-    let mut engine = InstrumenterEngine::new(path.to_path_buf());
-
-    engine
-        .instrument()
-        .expect("Custom instrumentation failed")
-        .build()
-        .expect("Compilation with Phink features failed");
-
-    println!(
-        "🤞 Contract {:?} has been instrumented, and is now compiled!",
-        path
-    );
-}
-
 fn execute_harness(
     engine: &mut InstrumenterEngine,
     fuzzing_mode: FuzzingMode,
@@ -398,14 +391,6 @@ fn execute_harness(
     Ok(())
 }
 
-fn handle_run_command(
-    contract_path: PathBuf,
-    deployer_address: Option<AccountId32>,
-) -> io::Result<()> {
-    set_env_vars(&contract_path, &deployer_address);
-    start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)
-}
-
 fn handle_execute_command(
     seed_path: PathBuf,
     contract_path: PathBuf,
@@ -421,15 +406,6 @@ fn handle_execute_command(
         ExecuteOneInput(Box::from(data)),
         deployer_address,
     )
-}
-
-fn handle_harness_cover_command(
-    contract_path: PathBuf,
-    deployer_address: Option<AccountId32>,
-) -> io::Result<()> {
-    set_env_vars(&contract_path, &deployer_address);
-
-    start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)
 }
 
 fn handle_coverage_command(contract_path: PathBuf, report_path: PathBuf) {

@@ -153,7 +153,7 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
         .expect("🙅 Failed to create initial corpus");
 
     println!(
-        "\n\n🚀  Now fuzzing `{}` ({})!\n",
+        "\n🚀  Now fuzzing `{}` ({})!\n",
         fuzzer.setup.path_to_specs.as_os_str().to_str().unwrap(),
         fuzzer.setup.contract_address
     );
