@@ -21,17 +21,26 @@ use crate::{
     },
 };
 
-const CORPUS_DIR: &str = "./output/phink/corpus";
-const DICT_FILE: &str = "./output/phink/selectors.dict";
+pub const CORPUS_DIR: &str = "./output/phink/corpus";
+pub const DICT_FILE: &str = "./output/phink/selectors.dict";
+pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages.
 
 #[derive(Clone)]
 pub struct Fuzzer {
     setup: ContractBridge,
+    max_messages_per_exec: usize,
 }
 
 impl Fuzzer {
     pub fn new(setup: ContractBridge) -> Self {
-        Self { setup }
+        Self {
+            setup,
+            max_messages_per_exec: MAX_MESSAGES_PER_EXEC,
+        }
+    }
+
+    pub fn set_max_messages_per_exec(&mut self, max_messages_per_exec: Option<usize>) {
+        self.max_messages_per_exec = max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
     }
 
     fn build_corpus_and_dict(selectors: &[Selector]) -> io::Result<()> {
@@ -83,7 +92,8 @@ impl FuzzerEngine for Fuzzer {
         bug_manager: &mut BugManager,
         input: &[u8],
     ) {
-        let decoded_msgs: OneInput = parse_input(input, transcoder_loader);
+        let decoded_msgs: OneInput =
+            parse_input(input, transcoder_loader, client.max_messages_per_exec);
 
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;

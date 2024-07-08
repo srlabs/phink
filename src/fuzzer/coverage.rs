@@ -1,9 +1,5 @@
-use crate::utils;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::hint::black_box;
-use std::io::Read;
-use std::io::Write;
+use std::{collections::HashSet, fs::File, fs::OpenOptions, hint::black_box, io::Read, io::Write};
+
 pub type CoverageTrace = Vec<u8>;
 
 #[derive(Clone)]
@@ -69,23 +65,37 @@ impl Coverage {
     /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
     pub fn redirect_coverage(&self) {
         let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
-        let coverage_str = utils::deduplicate(&String::from_utf8_lossy(&flatten_cov));
+        let coverage_str = Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         println!("[🚧DEBUG TRACE] {:?}", coverage_lines);
         // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
-        seq_macro::seq!(x in 0..=500 {
+        seq_macro::seq!(x in 0..=500 { //todo: fix the 500
             let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
                 let _ = black_box(x + 1);
             }
         });
     }
-}
 
+    /// A simple helper to remove some duplicated lines from a `&str`
+    /// This is used mainly to remove coverage returns being inserted many times in the debug vector
+    /// in case of any `iter()`, `for` loop and so on
+    /// # Arguments
+    /// * `input`: The string to deduplicate
+    pub fn deduplicate(input: &str) -> String {
+        let mut unique_lines = HashSet::new();
+        input
+            .lines()
+            .filter(|&line| unique_lines.insert(line))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::borrow::Cow;
 
     #[test]
     fn test_remove_cov_from_trace_simple() {

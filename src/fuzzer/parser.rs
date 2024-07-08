@@ -6,12 +6,13 @@ use std::sync::Mutex;
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
                                         // Minimum size for the seed
 pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
-pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages. Todo: make it as a User parameter
 
+#[derive(Clone, Copy)]
 pub struct Data<'a> {
     pub data: &'a [u8],
     pub pointer: usize,
     pub size: usize,
+    pub max_messages_per_exec: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -31,7 +32,7 @@ pub struct OneInput {
 
 impl<'a> Data<'a> {
     fn size_limit_reached(&self) -> bool {
-        self.size >= MAX_MESSAGES_PER_EXEC
+        self.size >= self.max_messages_per_exec
     }
 }
 
@@ -69,11 +70,16 @@ fn is_message_payable(selector: &Selector, metadata: &InkProject) -> bool {
         .unwrap_or(false)
 }
 
-pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder>) -> OneInput {
+pub fn parse_input(
+    data: &[u8],
+    transcoder: &mut Mutex<ContractMessageTranscoder>,
+    max_messages_per_exec: usize,
+) -> OneInput {
     let iterable = Data {
         data,
         pointer: 0,
         size: 0,
+        max_messages_per_exec,
     };
     let mut input = OneInput {
         messages: vec![],
@@ -98,7 +104,9 @@ pub fn parse_input(data: &[u8], transcoder: &mut Mutex<ContractMessageTranscoder
 
         match &decoded_msg {
             Ok(_) => {
-                if MAX_MESSAGES_PER_EXEC != 0 && input.messages.len() <= MAX_MESSAGES_PER_EXEC {
+                if iterable.max_messages_per_exec != 0
+                    && input.messages.len() <= iterable.max_messages_per_exec
+                {
                     let is_payable: bool = is_message_payable(
                         &Selector::from(
                             <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4]).unwrap(),

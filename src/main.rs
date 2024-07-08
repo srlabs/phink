@@ -34,7 +34,6 @@ use crate::{
 
 mod contract;
 mod fuzzer;
-mod utils;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
@@ -74,6 +73,9 @@ enum Commands {
         // Origin deploying and instantiating the contract
         #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
+        // Maximimum number of ink! message executed per seed
+        #[clap(long, short, value_parser, default_value = "4")]
+        max_messages_per_exec: Option<usize>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument {
@@ -133,7 +135,7 @@ pub enum ZiggyCommand {
 
 pub enum FuzzingMode {
     ExecuteOneInput(Box<[u8]>),
-    FuzzMode,
+    FuzzMode(Option<usize>),
 }
 
 pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([0u8; 32]);
@@ -162,12 +164,10 @@ fn handle_ziggy_mode() -> io::Result<()> {
 
     let mut engine = InstrumenterEngine::new(path);
 
-    if var("PHINK_START_FUZZING").is_ok() {
-        println!("🏃Starting the fuzzer");
-        execute_harness(&mut engine, FuzzMode, deployer_address)?;
-    } else if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
+    if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
         println!("🌱 Executing one seed: {:?}", seed_path);
         let data = fs::read(Path::new(&seed_path))?;
+
         execute_harness(
             &mut engine,
             ExecuteOneInput(Box::from(data)),
@@ -183,19 +183,21 @@ fn handle_cli_mode() -> io::Result<()> {
 
     match cli.command {
         Commands::Instrument { contract_path } => {
-            instrument(&contract_path);
+            handle_instrumentation(&contract_path);
         }
         Commands::Fuzz {
             contract_path,
             cores,
             use_honggfuzz,
             deployer_address,
+            max_messages_per_exec,
         } => {
             handle_fuzz_command(
                 contract_path,
                 cores.unwrap_or(1),
                 use_honggfuzz,
                 deployer_address,
+                max_messages_per_exec,
             )?;
         }
         Commands::Run {
@@ -236,8 +238,9 @@ fn handle_fuzz_command(
     cores: u8,
     use_honggfuzz: bool,
     deployer_address: Option<AccountId32>,
+    max_messages_per_exec: Option<usize>,
 ) -> io::Result<()> {
-    set_env_vars(&contract_path, cores, &deployer_address);
+    set_env_vars(&contract_path, &deployer_address);
 
     let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
     let mut engine = InstrumenterEngine::new(contract_dir.clone());
@@ -248,16 +251,19 @@ fn handle_fuzz_command(
     start_cargo_ziggy_fuzz_process(cores, use_honggfuzz)?;
 
     if var("PHINK_START_FUZZING").is_ok() {
-        execute_harness(&mut engine, FuzzMode, deployer_address)?;
+        execute_harness(
+            &mut engine,
+            FuzzMode(max_messages_per_exec),
+            deployer_address,
+        )?;
     }
 
     Ok(())
 }
-fn set_env_vars(contract_path: &Path, cores: u8, deployer_address: &Option<AccountId32>) {
+fn set_env_vars(contract_path: &Path, deployer_address: &Option<AccountId32>) {
     unsafe {
         set_var("PHINK_CONTRACT_DIR", contract_path);
         set_var("PHINK_START_FUZZING", "true");
-        set_var("PHINK_CORES", cores.to_string());
         set_var(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
@@ -352,7 +358,7 @@ fn build_llvm_allowlist() -> io::Result<String> {
     Ok(fs::canonicalize(path)?.display().to_string())
 }
 
-fn instrument(path: &Path) -> InstrumenterEngine {
+fn handle_instrumentation(path: &Path) {
     let mut engine = InstrumenterEngine::new(path.to_path_buf());
 
     engine
@@ -365,8 +371,6 @@ fn instrument(path: &Path) -> InstrumenterEngine {
         "🤞 Contract {:?} has been instrumented, and is now compiled!",
         path
     );
-
-    engine
 }
 
 fn execute_harness(
@@ -379,10 +383,11 @@ fn execute_harness(
 
     let wasm = fs::read(&finder.wasm_path)?;
     let setup = ContractBridge::initialize_wasm(wasm, &finder.specs_path, contract_deployer_origin);
-    let fuzzer = Fuzzer::new(setup);
+    let mut fuzzer = Fuzzer::new(setup);
 
     match fuzzing_mode {
-        FuzzMode => {
+        FuzzMode(max_messages_per_exec) => {
+            fuzzer.set_max_messages_per_exec(max_messages_per_exec);
             fuzzer.fuzz();
         }
         ExecuteOneInput(seed) => {
@@ -397,7 +402,7 @@ fn handle_run_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    set_env_vars(&contract_path, 1, &deployer_address);
+    set_env_vars(&contract_path, &deployer_address);
     start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)
 }
 
@@ -406,7 +411,7 @@ fn handle_execute_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    set_env_vars(&contract_path, 1, &deployer_address);
+    set_env_vars(&contract_path, &deployer_address);
 
     let mut engine = InstrumenterEngine::new(contract_path);
     let data = fs::read(seed_path)?;
@@ -422,7 +427,7 @@ fn handle_harness_cover_command(
     contract_path: PathBuf,
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
-    set_env_vars(&contract_path, 1, &deployer_address);
+    set_env_vars(&contract_path, &deployer_address);
 
     start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)
 }

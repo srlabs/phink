@@ -1,7 +1,7 @@
 use contract_transcode::ContractMessageTranscoder;
 use sp_runtime::{DispatchError, ModuleError};
+use std::panic;
 use std::sync::Mutex;
-use std::{panic, process};
 
 use crate::fuzzer::coverage::Coverage;
 use crate::{
@@ -80,8 +80,7 @@ impl BugManager {
         println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
         //Artificially trigger a bug for AFL
-        println!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
-        process::exit(1);
+        panic!("\nJob is done! Please, don't matter the backtrace below/above 🫡\n\n\n");
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.

@@ -21,7 +21,8 @@ mod overflow {
         }
         #[allow(arithmetic_overflow)]
         #[ink(message, payable)]
-        pub fn pay_me(&mut self, overflower: u16) -> Result<()> {
+        pub fn overflow(&mut self, overflower: u16) -> Result<()> {
+            //todo: make me bug
             let abc: u16 = u16::MAX - 1 + overflower; //21845 is `u16::MAX/3`
             self.random_number = abc;
             Ok(())
@@ -32,7 +33,7 @@ mod overflow {
     mod tests {
         use super::*;
         #[ink::test]
-        fn pay_me_test() {
+        fn overflow_succeed() {
             // let mut contract = Overflow::new();
             // assert_eq!(contract.pay_me(44), Ok(()));
         }
