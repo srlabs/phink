@@ -92,7 +92,7 @@ enum Commands {
         #[clap(value_parser)]
         contract_path: PathBuf,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_parser, default_value = "1")]
+        #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
     /// Generate a coverage, for your smart-contract
@@ -232,7 +232,7 @@ fn handle_fuzz_command(
     deployer_address: Option<AccountId32>,
 ) -> io::Result<()> {
     set_env_vars(&contract_path, cores, &deployer_address);
-    let contract_dir = PathBuf::from(env::var("PHINK_CONTRACT_DIR").unwrap());
+    let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
     let mut engine = InstrumenterEngine::new(contract_dir.clone());
 
     start_cargo_ziggy_not_fuzzing_process(&contract_dir, ZiggyCommand::Build)?;
@@ -255,7 +255,7 @@ fn set_env_vars(contract_path: &Path, cores: u8, deployer_address: &Option<Accou
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
                 .clone()
-                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
                 .to_string(),
         );
     }
@@ -370,7 +370,7 @@ fn execute_harness(
     fuzzing_mode: FuzzingMode,
     deployer_id: Option<AccountId32>,
 ) -> io::Result<()> {
-    let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([1; 32]));
+    let contract_deployer_origin = deployer_id. .unwrap_or_else(|| AccountId32::new([0u8; 32]));
     let finder = engine.find().unwrap();
 
     let wasm = fs::read(&finder.wasm_path)?;
@@ -400,7 +400,7 @@ fn handle_run_command(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
                 .clone()
-                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
                 .to_string(),
         );
     }
@@ -418,7 +418,7 @@ fn handle_execute_command(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
                 .clone()
-                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
                 .to_string(),
         );
         set_var("PHINK_CONTRACT_DIR", &contract_path);
@@ -443,7 +443,7 @@ fn handle_harness_cover_command(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
                 .clone()
-                .unwrap_or_else(|| AccountId32::new([1; 32]))
+                .unwrap_or_else(|| AccountId32::new([0u8; 32]))
                 .to_string(),
         );
         set_var("PHINK_CONTRACT_DIR", &contract_path);
