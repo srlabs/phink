@@ -65,7 +65,7 @@ enum Commands {
         #[clap(long, short, value_parser, default_value = "false")]
         use_honggfuzz: bool,
         // Origin deploying and instantiating the contract
-        #[clap(long, short, value_p,arser)]
+        #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
