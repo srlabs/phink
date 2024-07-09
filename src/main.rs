@@ -319,7 +319,7 @@ fn start_cargo_ziggy(
         .arg("ziggy")
         .arg(command_arg)
         .env("PHINK_CONTRACT_DIR", contract_dir)
-        // .env("PHINK_FROM_ZIGGY", "true")
+        .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .env("AFL_LLVM_ALLOWLIST", &allowlist_path)
         .env("AFL_DEBUG", "1")
