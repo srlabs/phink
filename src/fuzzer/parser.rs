@@ -95,11 +95,7 @@ pub fn parse_input(
                 .expect("missing transfer value bytes"),
         );
 
-        input.origin = u8::from_ne_bytes(
-            decoded_payloads[4]
-                .try_into()
-                .expect("missing origin bytes"),
-        ) ;
+        input.origin = decoded_payloads[4];
 
         let encoded_message: &[u8] = &decoded_payloads[5..];
         let binding = transcoder.get_mut().unwrap();
