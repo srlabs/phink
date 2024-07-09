@@ -21,13 +21,13 @@ pub struct Message {
     pub payload: Vec<u8>,
     pub value_token: BalanceOf<Test>,
     pub message_metadata: Value,
-    pub origin: usize,
+    pub origin: u8,
 }
 
 #[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
-    pub origin: usize,
+    pub origin: u8,
 }
 
 impl<'a> Data<'a> {
@@ -92,11 +92,11 @@ pub fn parse_input(
                 .expect("missing transfer value bytes"),
         );
 
-        input.origin = u16::from_ne_bytes(
+        input.origin = u8::from_ne_bytes(
             decoded_payloads[4..6]
                 .try_into()
                 .expect("missing origin bytes"),
-        ) as usize;
+        ) ;
 
         let encoded_message: &[u8] = &decoded_payloads[6..];
         let binding = transcoder.get_mut().unwrap();

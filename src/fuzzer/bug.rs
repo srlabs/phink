@@ -84,12 +84,12 @@ impl BugManager {
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.
-    pub fn are_invariants_passing(&self, origin: usize) -> Result<(), FailedInvariantTrace> {
+    pub fn are_invariants_passing(&self, origin: u8) -> Result<(), FailedInvariantTrace> {
         for invariant in &self.invariant_selectors {
             let invariant_call: FullContractResponse =
                 self.contract_bridge
                     .clone()
-                    .call(invariant.as_ref(), origin as u8, 0);
+                    .call(invariant.as_ref(), origin, 0);
             if invariant_call.result.is_err() {
                 return Err((*invariant, invariant_call));
             }
