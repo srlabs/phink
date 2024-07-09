@@ -31,11 +31,7 @@ pub trait FuzzerEngine {
         table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 
         for (response, message) in responses.iter().zip(&one_input.messages) {
-            let call_description = message.message_metadata.to_string()
-                + "\n Called by "
-                + one_input.origin.to_string().as_str()
-                + "\n payable: "
-                + message.is_payable.to_string().as_str();
+            let call_description = message.message_metadata.to_string();
 
             let debug = match response {
                 ContractResult {
@@ -43,9 +39,11 @@ pub trait FuzzerEngine {
                 } => format!(
                     " ⛽️ Gas required : {}\n\
                  🔥 Gas consumed : {}\n\
+                 🧑 Origin : {}\n\
                  💾 Storage deposit : {:?}{}",
                     response.gas_required,
                     response.gas_consumed,
+                    message.origin,
                     response.storage_deposit,
                     if message.is_payable {
                         format!(
