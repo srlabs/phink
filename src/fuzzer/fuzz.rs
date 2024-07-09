@@ -92,8 +92,7 @@ impl FuzzerEngine for Fuzzer {
         bug_manager: &mut BugManager,
         input: &[u8],
     ) {
-        let decoded_msgs: OneInput =
-            parse_input(input, transcoder_loader, client.max_messages_per_exec);
+        let decoded_msgs: OneInput = parse_input(input, transcoder_loader, client.max_messages_per_exec);
 
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
@@ -104,18 +103,24 @@ impl FuzzerEngine for Fuzzer {
 
         let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
         let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
-
-        check_invariants(
-            bug_manager,
-            &all_msg_responses,
-            &decoded_msgs,
-            transcoder_loader,
-        );
-
+ 
+        chain.execute_with(|| {
+            check_invariants(
+                bug_manager,
+                &all_msg_responses,
+                &decoded_msgs,
+                transcoder_loader,
+            )
+        });
+        // Pretty print all the calls of the current input
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
+        // We now fake the coverage
         coverage.redirect_coverage();
 
+        // If we are not in fuzzing mode, we save the coverage
+        // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
+        // Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
             println!("[🚧UPDATE] Adding to the coverage file...");
