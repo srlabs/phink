@@ -67,7 +67,7 @@ enum Commands {
         /// Number of cores to use for Ziggy
         #[clap(long, short, value_parser)]
         cores: Option<u8>,
-        /// Add Hongfuzz as a fuzzer... or not
+        /// Also use Hongfuzz as a fuzzer
         #[clap(long, short, value_parser, default_value = "false")]
         use_honggfuzz: bool,
         // Origin deploying and instantiating the contract
@@ -166,15 +166,7 @@ fn handle_ziggy_mode() -> io::Result<()> {
     if var("PHINK_START_FUZZING").is_ok() {
         println!("🏃Starting the fuzzer");
         execute_harness(&mut engine, FuzzMode(Some(3)), deployer_address)?; //todo: 3
-    } else if let Ok(seed_path) = var("PHINK_EXECUTE_THIS_SEED") {
-        println!("🌱 Executing one seed: {:?}", seed_path);
-        let data = fs::read(Path::new(&seed_path))?;
 
-        execute_harness(
-            &mut engine,
-            ExecuteOneInput(Box::from(data)),
-            deployer_address,
-        )?;
     }
 
     Ok(())
@@ -216,7 +208,7 @@ fn handle_cli_mode() -> io::Result<()> {
             deployer_address,
         } => {
             set_env_vars(&contract_path, &deployer_address);
-            start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Run)?
+            start_cargo_ziggy(&contract_path, ZiggyCommand::Run)?
         }
         Commands::Execute {
             seed_path,
@@ -230,7 +222,7 @@ fn handle_cli_mode() -> io::Result<()> {
             deployer_address,
         } => {
             set_env_vars(&contract_path, &deployer_address);
-            start_cargo_ziggy_not_fuzzing_process(&contract_path, ZiggyCommand::Cover)?
+            start_cargo_ziggy(&contract_path, ZiggyCommand::Cover)?
         }
         Commands::Coverage {
             contract_path,
@@ -258,18 +250,18 @@ fn handle_fuzz_command(
     let contract_dir = PathBuf::from(var("PHINK_CONTRACT_DIR").unwrap());
     let mut engine = InstrumenterEngine::new(contract_dir.clone());
 
-    start_cargo_ziggy_not_fuzzing_process(&contract_dir, ZiggyCommand::Build)?;
-    println!("`ZiggyCommand::Build` completed");
+    start_cargo_ziggy(&contract_dir, ZiggyCommand::Build)?;
+    println!("🏗️ ZiggyCommand::Build completed");
 
-    start_cargo_ziggy_fuzz_process(cores, use_honggfuzz)?;
-
-    if var("PHINK_START_FUZZING").is_ok() {
-        execute_harness(
-            &mut engine,
-            FuzzMode(max_messages_per_exec),
-            deployer_address,
-        )?;
-    }
+    start_cargo_ziggy_fuzz(cores, use_honggfuzz)?;
+    //
+    // if var("PHINK_START_FUZZING").is_ok() {
+    //     execute_harness(
+    //         &mut engine,
+    //         FuzzMode(max_messages_per_exec),
+    //         deployer_address,
+    //     )?;
+    // }
 
     Ok(())
 }
@@ -287,7 +279,7 @@ fn set_env_vars(contract_path: &Path, deployer_address: &Option<AccountId32>) {
     }
 }
 
-fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: bool) -> io::Result<()> {
+fn start_cargo_ziggy_fuzz(cores: u8, use_honggfuzz: bool) -> io::Result<()> {
     let mut command = Command::new("cargo");
     command
         .arg("ziggy")
@@ -319,7 +311,7 @@ fn start_cargo_ziggy_fuzz_process(cores: u8, use_honggfuzz: bool) -> io::Result<
     Ok(())
 }
 
-fn start_cargo_ziggy_not_fuzzing_process(
+fn start_cargo_ziggy(
     contract_dir: &Path,
     command: ZiggyCommand,
 ) -> io::Result<()> {
@@ -333,7 +325,7 @@ fn start_cargo_ziggy_not_fuzzing_process(
         .arg("ziggy")
         .arg(command_arg)
         .env("PHINK_CONTRACT_DIR", contract_dir)
-        .env("PHINK_FROM_ZIGGY", "true")
+        // .env("PHINK_FROM_ZIGGY", "true")
         .env("PHINK_START_FUZZING", "true")
         .env("AFL_LLVM_ALLOWLIST", &allowlist_path)
         .env("AFL_DEBUG", "1")
