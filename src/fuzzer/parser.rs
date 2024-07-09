@@ -89,20 +89,19 @@ pub fn parse_input(
         origin: 1,
     };
     for decoded_payloads in iterable {
-        input.origin = u8::from_ne_bytes(
-            decoded_payloads[1]
-                .try_into()
-                .expect("missing origin bytes"),
-        );
-
         let value_token: u32 = u32::from_ne_bytes(
-            decoded_payloads[2..5]
+            decoded_payloads[0..4]
                 .try_into()
                 .expect("missing transfer value bytes"),
         );
 
-        let encoded_message: &[u8] = &decoded_payloads[5..];
+        input.origin = u8::from_ne_bytes(
+            decoded_payloads[4]
+                .try_into()
+                .expect("missing origin bytes"),
+        ) ;
 
+        let encoded_message: &[u8] = &decoded_payloads[5..];
         let binding = transcoder.get_mut().unwrap();
         let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
 
