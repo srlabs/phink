@@ -48,7 +48,6 @@ impl Fuzzer {
         let mut dict_file = fs::File::create(DICT_FILE)?;
 
         write_dict_header(&mut dict_file)?;
-        write_default_dict_entries(&mut dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {
             write_corpus_file(i, selector)?;
@@ -103,6 +102,7 @@ impl FuzzerEngine for Fuzzer {
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
         let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
+
         let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
 
         chain.execute_with(|| {
@@ -170,11 +170,9 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
     writeln!(
         dict_file,
         "# Lines starting with '#' and empty lines are ignored."
-    )
-}
+    )?;
 
-fn write_default_dict_entries(dict_file: &mut fs::File) -> io::Result<()> {
-    writeln!(dict_file, "\"\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\\x2A\"")
+    writeln!(dict_file, "delimiter=\"\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\"")
 }
 
 fn write_corpus_file(index: usize, selector: &Selector) -> io::Result<()> {
@@ -206,11 +204,11 @@ fn execute_messages(
                 0
             };
 
-            let result: FullContractResponse = client.setup.clone().call(
-                &message.payload,
-                decoded_msgs.origin as u8,
-                transfer_value,
-            );
+            let result: FullContractResponse =
+                client
+                    .setup
+                    .clone()
+                    .call(&message.payload, decoded_msgs.origin, transfer_value);
 
             coverage.add_cov(&result.debug_message);
             all_msg_responses.push(result);

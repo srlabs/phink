@@ -3,6 +3,12 @@
 #[ink::contract]
 mod cross_message_bug {
 
+    #[derive(Debug, PartialEq, Eq)]
+    #[ink::scale_derive(Encode, Decode, TypeInfo)]
+    pub enum Error {
+    }
+    pub type Result<T> = core::result::Result<T, Error>;
+
     #[ink(storage)]
     pub struct CrossMessageBug {
         state: u8,
@@ -15,30 +21,35 @@ mod cross_message_bug {
         }
 
         #[ink(message)]
-        pub fn a(&mut self) {
+        pub fn a(&mut self) -> Result<()> {
             if self.state == 1 {
                 self.state = 2;
             } else {
                 self.state = 0;
             }
+            Ok(())
         }
 
         #[ink(message)]
-        pub fn b(&mut self) {
+        pub fn b(&mut self) -> Result<()>{
             self.state = 1;
+            Ok(())
         }
 
         #[ink(message)]
-        pub fn c(&mut self) {
+        pub fn c(&mut self) -> Result<()>{
             if self.state == 2 {
                 self.state = 3;
+            } else {
+                self.state = 0;
             }
-            self.state = 0;
+            Ok(())
         }
 
         #[ink(message)]
-        pub fn reset(&mut self) {
+        pub fn reset(&mut self) -> Result<()>{
             self.state = 0;
+            Ok(())
         }
 
     }
@@ -52,6 +63,7 @@ mod cross_message_bug {
         ///     3. C() is called
         /// reset() is never called
         #[ink(message)]
+        #[cfg(feature = "phink")]
         pub fn phink_assert_ultimate_crash(&self) {
             assert_ne!(self.state, 3);
         }
@@ -64,8 +76,15 @@ mod cross_message_bug {
 
         #[ink::test]
         fn default_works() {
-            let cross_message_bug = CrossMessageBug::default();
-            // assert_eq!(cross_message_bug.get(), false);
+            let mut cross_message_bug = CrossMessageBug::new();
+            assert_eq!(cross_message_bug.b(), Ok(()));
+            assert_eq!(cross_message_bug.state, 1);
+
+            assert_eq!(cross_message_bug.a(), Ok(()));
+            assert_eq!(cross_message_bug.state, 2);
+
+            assert_eq!(cross_message_bug.c(), Ok(()));
+            assert_eq!(cross_message_bug.state, 3)
         }
     }
 }
