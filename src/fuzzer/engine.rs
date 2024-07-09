@@ -31,7 +31,11 @@ pub trait FuzzerEngine {
         table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 
         for (response, message) in responses.iter().zip(&one_input.messages) {
-            let call_description = message.message_metadata.to_string();
+            let call_description = message.message_metadata.to_string()
+                + "\n Called by "
+                + one_input.origin.to_string().as_str()
+                + "\n payable: "
+                + message.is_payable.to_string().as_str();
 
             let debug = match response {
                 ContractResult {

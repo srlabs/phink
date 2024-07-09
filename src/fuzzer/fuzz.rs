@@ -92,7 +92,8 @@ impl FuzzerEngine for Fuzzer {
         bug_manager: &mut BugManager,
         input: &[u8],
     ) {
-        let decoded_msgs: OneInput = parse_input(input, transcoder_loader, client.max_messages_per_exec);
+        let decoded_msgs: OneInput =
+            parse_input(input, transcoder_loader, client.max_messages_per_exec);
 
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
@@ -103,7 +104,7 @@ impl FuzzerEngine for Fuzzer {
 
         let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
         let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
- 
+
         chain.execute_with(|| {
             check_invariants(
                 bug_manager,
