@@ -31,6 +31,7 @@ use crate::{
     fuzzer::report::CoverageTracker,
     FuzzingMode::FuzzMode,
 };
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 
 mod contract;
 mod fuzzer;
@@ -261,7 +262,7 @@ fn set_env_vars(contract_path: &Path, deployer_address: &Option<AccountId32>, ma
     unsafe {
         set_var("PHINK_CONTRACT_DIR", contract_path);
         set_var("PHINK_START_FUZZING", "true");
-        set_var("PHINK_MAX_MESSAGES_PER_EXEC", max_messages_per_exec.unwrap().to_string());
+        set_var("PHINK_MAX_MESSAGES_PER_EXEC", max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC).to_string());
         set_var(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
@@ -334,7 +335,7 @@ fn start_cargo_ziggy(
 
     let status = ziggy_child.wait()?;
     if !status.success() {
-        eprintln!("Command executed with failing error code");
+        eprintln!("`cargo ziggy` failed");
     }
 
     Ok(())
