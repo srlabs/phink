@@ -68,7 +68,10 @@ impl Coverage {
         let coverage_str = Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
-        println!("[🚧DEBUG TRACE] {:?}", coverage_lines);
+        #[cfg(not(fuzzing))]
+        {
+            println!("[🚧DEBUG TRACE] {:?}", coverage_lines);
+        }
         // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
         seq_macro::seq!(x in 0..=500 { //todo: fix the 500
             let target = format!("COV={}", x);

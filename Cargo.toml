@@ -14,9 +14,6 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
-[build-dependencies]
-llvm-tools = { version = "*" }
-
 [features]
 default = ["std"]
 std = [

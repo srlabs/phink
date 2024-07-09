@@ -137,6 +137,10 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 impl pallet_contracts::Config for Runtime {
+    /// This must be `true` in order to get proper coverage feedback
+    /// As a developper, feel free to change any `type` EXCEPT `UnsafeUnstableInterface`
+    type UnsafeUnstableInterface = ConstBool<true>;
+    ///
     type Time = Timestamp;
     type Randomness = Randomness;
     type Currency = Balances;
@@ -163,8 +167,6 @@ impl pallet_contracts::Config for Runtime {
     type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
     type MaxStorageKeyLen = ConstU32<128>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
-    /// This must be `true` in order to get proper coverage feedback
-    type UnsafeUnstableInterface = ConstBool<true>;
     type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
     type UploadOrigin = EnsureSigned<Self::AccountId>;
     type InstantiateOrigin = EnsureSigned<Self::AccountId>;

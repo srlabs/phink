@@ -18,7 +18,7 @@ use crate::{
 
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-pub type Test = Runtime;
+pub type Test = Runtime; // Alias to your own Runtime
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::RuntimeEvent,

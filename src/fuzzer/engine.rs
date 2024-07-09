@@ -1,10 +1,5 @@
 use std::sync::Mutex;
 
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::traits::{OnFinalize, OnInitialize};
-use pallet_contracts::ContractResult;
-use prettytable::{Cell, Row, Table};
-
 use crate::{
     contract::remote::FullContractResponse,
     contract::runtime::{
@@ -14,6 +9,11 @@ use crate::{
     fuzzer::fuzz::Fuzzer,
     fuzzer::parser::OneInput,
 };
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use pallet_contracts::ContractResult;
+use prettytable::{Cell, Row, Table};
+use sp_core::crypto::AccountId32;
 
 pub trait FuzzerEngine {
     fn fuzz(self);
@@ -37,13 +37,14 @@ pub trait FuzzerEngine {
                 ContractResult {
                     result: _result, ..
                 } => format!(
-                    " ⛽️ Gas required : {}\n\
-                 🔥 Gas consumed : {}\n\
-                 🧑 Origin : {}\n\
-                 💾 Storage deposit : {:?}{}",
+                    "⛽️ Gas required: {}\n\
+                 🔥 Gas consumed: {}\n\
+                 🧑 Origin: {}({})\n\
+                 💾 Storage deposit: {:?}{}",
                     response.gas_required,
                     response.gas_consumed,
                     message.origin,
+                    AccountId32::new([message.origin.try_into().unwrap(); 32]).to_string(),
                     response.storage_deposit,
                     if message.is_payable {
                         format!(
