@@ -17,7 +17,7 @@ use crate::{
 };
 
 pub type BalanceOf<T> =
-    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+<<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 pub type Test = Runtime; // Alias to your own Runtime
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type EventRecord = frame_system::EventRecord<
@@ -26,7 +26,7 @@ pub type EventRecord = frame_system::EventRecord<
 >;
 
 pub type FullContractResponse =
-    ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
+ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
 
 #[derive(Clone)]
 pub struct ContractBridge {
@@ -162,7 +162,7 @@ impl ContractBridge {
     fn storage() -> Storage {
         let storage = RuntimeGenesisConfig {
             balances: BalancesConfig {
-                balances: (0..5) // Lot of money for Alice, Bob ... Ferdie
+                balances: (0..u8::MAX) // Lot of money for Alice, Bob ... Ferdie
                     .map(|i| [i; 32].into())
                     .collect::<Vec<_>>()
                     .iter()
@@ -172,8 +172,8 @@ impl ContractBridge {
             },
             ..Default::default()
         }
-        .build_storage()
-        .unwrap();
+            .build_storage()
+            .unwrap();
         storage
     }
 }

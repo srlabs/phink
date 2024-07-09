@@ -5,7 +5,10 @@ use std::sync::Mutex;
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
                                         // Minimum size for the seed
-pub const MIN_SEED_LEN: usize = 0 + 4 + 2 + 4;
+pub const MIN_SEED_LEN: usize = 5;
+/// 4 covers index 4. (origin)
+/// 0..4 covers indices 0, 1, 2, and 3. (value)
+/// 5..starts from index 5 and goes to the end of the array.
 
 #[derive(Clone, Copy)]
 pub struct Data<'a> {
@@ -86,19 +89,20 @@ pub fn parse_input(
         origin: 1,
     };
     for decoded_payloads in iterable {
+        input.origin = u8::from_ne_bytes(
+            decoded_payloads[1]
+                .try_into()
+                .expect("missing origin bytes"),
+        );
+
         let value_token: u32 = u32::from_ne_bytes(
-            decoded_payloads[0..4]
+            decoded_payloads[2..5]
                 .try_into()
                 .expect("missing transfer value bytes"),
         );
 
-        input.origin = u8::from_ne_bytes(
-            decoded_payloads[4..6]
-                .try_into()
-                .expect("missing origin bytes"),
-        ) ;
+        let encoded_message: &[u8] = &decoded_payloads[5..];
 
-        let encoded_message: &[u8] = &decoded_payloads[6..];
         let binding = transcoder.get_mut().unwrap();
         let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
 
