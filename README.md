@@ -32,6 +32,7 @@ Below are some invariants created for the [dns](https://github.com/kevin-valerio
 impl DomainNameService {
     // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter 
     #[ink(message)]
+    #[cfg(feature = "phink")]
     pub fn phink_assert_hash42_cant_be_registered(&self) {
         for i in 0..self.domains.len() {
             if let Some(domain) = self.domains.get(i) {
@@ -43,6 +44,7 @@ impl DomainNameService {
 
     // This invariant ensures that nobody registed the forbidden number
     #[ink(message)]
+    #[cfg(feature = "phink")]
     pub fn phink_assert_dangerous_number(&self) {
         let FORBIDDEN_NUMBER = 69;
         assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
