@@ -75,7 +75,7 @@ enum Commands {
         #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
         // Maximimum number of ink! message executed per seed
-        #[clap(long, short, value_parser, default_value = "4")]
+        #[clap(long, short, value_parser)]
         max_messages_per_exec: Option<usize>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
