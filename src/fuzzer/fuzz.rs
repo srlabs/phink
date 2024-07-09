@@ -102,54 +102,20 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage: Coverage = Coverage::new(9); //todo
-        let mut all_msg_responses: Vec<FullContractResponse> = Vec::new();
+        let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
+        let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
 
-        chain.execute_with(|| {
-            for message in &decoded_msgs.messages {
-                let transfer_value = if message.is_payable {
-                    message.value_token
-                } else {
-                    0
-                };
+        check_invariants(
+            bug_manager,
+            &all_msg_responses,
+            &decoded_msgs,
+            transcoder_loader,
+        );
 
-                let result: FullContractResponse = client.setup.clone().call(
-                    &message.payload,
-                    decoded_msgs.origin as u8,
-                    transfer_value,
-                );
-
-                // For each call, we verify that it isn't trapped
-                if bug_manager.is_contract_trapped(&result) {
-                    bug_manager.display_trap(message.clone(), result.clone());
-                }
-                // For each group of call, we verify that invariants aren't broken
-                if let Err(invariant_tested) =
-                    bug_manager.are_invariants_passing(decoded_msgs.origin)
-                {
-                    bug_manager.display_invariant(
-                        all_msg_responses.clone(),
-                        decoded_msgs.clone(),
-                        invariant_tested,
-                        transcoder_loader,
-                    );
-                }
-
-                println!("aaa{:?}", result);
-                coverage.add_cov(&result.debug_message);
-                all_msg_responses.push(result);
-            }
-        });
-
-        // Pretty print all the calls of the current input
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
 
-        // We now fake the coverage
         coverage.redirect_coverage();
 
-        // If we are not in fuzzing mode, we save the coverage
-        // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
-        // Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
             println!("[🚧UPDATE] Adding to the coverage file...");

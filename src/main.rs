@@ -22,6 +22,7 @@ use sp_core::{
 
 use FuzzingMode::ExecuteOneInput;
 
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
@@ -31,7 +32,6 @@ use crate::{
     fuzzer::report::CoverageTracker,
     FuzzingMode::FuzzMode,
 };
-use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 
 mod contract;
 mod fuzzer;
@@ -163,13 +163,19 @@ fn handle_ziggy_mode() -> io::Result<()> {
         .ok()
         .and_then(|addr| AccountId32::from_string(&addr).ok());
 
-    let max_messages_per_exec = var("PHINK_MAX_MESSAGES_PER_EXEC").unwrap().parse::<usize>().unwrap();
-
+    let max_messages_per_exec = var("PHINK_MAX_MESSAGES_PER_EXEC")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
 
     let mut engine = InstrumenterEngine::new(path);
     if var("PHINK_START_FUZZING").is_ok() {
         println!("🏃Starting the fuzzer");
-        execute_harness(&mut engine, FuzzMode(Some(max_messages_per_exec)), deployer_address)?;
+        execute_harness(
+            &mut engine,
+            FuzzMode(Some(max_messages_per_exec)),
+            deployer_address,
+        )?;
     }
 
     Ok(())
@@ -258,11 +264,20 @@ fn handle_fuzz_command(
     start_cargo_ziggy_fuzz(cores, use_honggfuzz)?;
     Ok(())
 }
-fn set_env_vars(contract_path: &Path, deployer_address: &Option<AccountId32>, max_messages_per_exec: &Option<usize>) {
+fn set_env_vars(
+    contract_path: &Path,
+    deployer_address: &Option<AccountId32>,
+    max_messages_per_exec: &Option<usize>,
+) {
     unsafe {
         set_var("PHINK_CONTRACT_DIR", contract_path);
         set_var("PHINK_START_FUZZING", "true");
-        set_var("PHINK_MAX_MESSAGES_PER_EXEC", max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC).to_string());
+        set_var(
+            "PHINK_MAX_MESSAGES_PER_EXEC",
+            max_messages_per_exec
+                .unwrap_or(MAX_MESSAGES_PER_EXEC)
+                .to_string(),
+        );
         set_var(
             "PHINK_ACCOUNT_DEPLOYER",
             deployer_address
@@ -305,10 +320,7 @@ fn start_cargo_ziggy_fuzz(cores: u8, use_honggfuzz: bool) -> io::Result<()> {
     Ok(())
 }
 
-fn start_cargo_ziggy(
-    contract_dir: &Path,
-    command: ZiggyCommand,
-) -> io::Result<()> {
+fn start_cargo_ziggy(contract_dir: &Path, command: ZiggyCommand) -> io::Result<()> {
     let (command_arg, allowlist_path) = match command {
         ZiggyCommand::Run => ("run", String::new()),
         ZiggyCommand::Cover => ("cover", String::new()),
