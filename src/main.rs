@@ -32,6 +32,7 @@ use crate::{
     fuzzer::report::CoverageTracker,
     FuzzingMode::FuzzMode,
 };
+use crate::fuzzer::coverage::COVERAGE_PATH;
 
 mod contract;
 mod fuzzer;
@@ -217,6 +218,10 @@ fn handle_cli_mode() -> io::Result<()> {
             deployer_address,
         } => {
             set_env_vars(&contract_path, &deployer_address, &None);
+            match fs::remove_file(COVERAGE_PATH) {
+                Ok(_) => println!("🗑️ Removed coverage output at {}", COVERAGE_PATH),
+                Err(e) => println!("🚫 Failed to remove {}: {}", COVERAGE_PATH, e),
+            }
             start_cargo_ziggy(&contract_path, ZiggyCommand::Run)?
         }
         Commands::Execute {

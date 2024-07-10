@@ -1,6 +1,7 @@
 use std::{collections::HashSet, fs::File, fs::OpenOptions, hint::black_box, io::Read, io::Write};
 
 pub type CoverageTrace = Vec<u8>;
+pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
 
 #[derive(Clone)]
 pub struct Coverage {
@@ -32,8 +33,7 @@ impl Coverage {
     }
     pub fn save(&self) -> std::io::Result<()> {
         let mut existing_content = String::new();
-        let output_path = "./output/phink/traces.cov";
-        if let Ok(mut file) = File::open(output_path) {
+        if let Ok(mut file) = File::open(COVERAGE_PATH) {
             file.read_to_string(&mut existing_content)?;
         }
 
@@ -47,7 +47,7 @@ impl Coverage {
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
-            .open(output_path)?;
+            .open(COVERAGE_PATH)?;
 
         write!(file, "{}", trace_strings.join("\n"))?;
 
