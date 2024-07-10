@@ -96,8 +96,8 @@ enum Commands {
     },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
     Clean,
-    /// Generate a coverage, only of the harness. You won't have your contract coverage here.
-    /// It's mainly for debugging purposes inly
+    /// Generate a coverage report, only of the harness. You won't have your contract coverage here.
+    /// It's mainly for debugging purposes only
     HarnessCover {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
@@ -106,13 +106,13 @@ enum Commands {
         #[clap(long, short, value_parser)]
         deployer_address: Option<AccountId32>,
     },
-    /// Generate a coverage, for your smart-contract
+    /// Generate a coverage report for your smart-contract
     Coverage {
         /// Path where the contract is located. It must be the root directory of the contract
         #[clap(value_parser)]
         contract_path: PathBuf,
         /// Output directory for the coverage report
-        #[clap(value_parser, default_value = "coverage_report")]
+        #[clap(value_parser, default_value = "output/coverage_report")]
         report_path: PathBuf,
     },
     /// Execute one seed
