@@ -10,7 +10,7 @@ pub struct CoverageTracker {
 impl CoverageTracker {
     pub fn new(coverage_string: &str) -> Self {
         let hit_lines = coverage_string
-            .split(", ")
+            .split("\n")
             .filter_map(|s| s.strip_prefix("COV="))
             .filter_map(|s| s.parse().ok())
             .collect();

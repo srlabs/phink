@@ -54,7 +54,7 @@ impl ContractBridge {
     ) -> ContractBridge {
         let mut contract_addr: AccountIdOf<Test> = origin;
         println!(
-            "🛠️ Initializing contract address from the origin: {:?}",
+            "🛠️Initializing contract address from the origin: {:?}",
             contract_addr
         );
 

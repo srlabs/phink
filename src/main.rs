@@ -419,7 +419,7 @@ fn handle_execute_command(
 fn handle_coverage_command(contract_path: PathBuf, report_path: PathBuf) {
     //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
 
-    let mut file = File::open("./output/phink/traces.cov").unwrap();
+    let mut file = File::open(COVERAGE_PATH).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
 
