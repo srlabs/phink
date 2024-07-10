@@ -417,19 +417,27 @@ fn handle_execute_command(
 }
 
 fn handle_coverage_command(contract_path: PathBuf, report_path: PathBuf) {
-    //todo: if .cov doesn't exist, we execute the start_cargo_ziggy_not_fuzzing_process(contract_dir, ZiggyCommand::Run)
+    let mut file = match File::open(COVERAGE_PATH) {
+        Ok(file) => file,
+        Err(_) => {
+            println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");
+            return;
+        }
+    };
 
-    let mut file = File::open(COVERAGE_PATH).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
+    println!("📄 Successfully read coverage file.");
 
     let mut tracker = CoverageTracker::new(&contents);
 
     tracker
         .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
-        .expect("🙅Cannot process file"); //todo: should do it for every file
+        .expect("🙅 Cannot process file"); //todo: should do it for every file
 
     tracker
         .generate_report(report_path.to_str().unwrap())
-        .expect("🙅Cannot generate coverage report");
+        .expect("🙅 Cannot generate coverage report");
+    println!("📊 Coverage report generated at: {}", report_path.display());
+
 }

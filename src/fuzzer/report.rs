@@ -148,7 +148,7 @@ impl CoverageTracker {
         );
 
         html.push_str(&format!("<h1>Coverage for {}</h1><pre>", file_path));
-        html.push_str("<h3>This is a beta version of the code vizualizer. You can assume that, if a line is green, it has been executed. If the line represent a block (`if` for instance), that means that the `if` was passed.</h3>");
+        html.push_str("<h3>This is a beta version of the code vizualizer. <br>You can assume that, if a line is green, it has been executed. If the line represent a block (`if` for instance), that means that the `if` was passed.</h3>");
 
         for (i, line) in lines.iter().enumerate() {
             let line_class = if coverage[i] { "covered" } else { "uncovered" };
