@@ -37,14 +37,6 @@ pub struct InkFilesPath {
     pub specs_path: PathBuf,
 }
 
-pub trait ContractBuilder {
-    fn build(&self) -> Result<InkFilesPath, String>;
-}
-
-pub trait ContractForker {
-    fn fork(&self) -> Result<PathBuf, String>;
-}
-
 pub trait ContractInstrumenter {
     fn instrument(&mut self) -> Result<&mut Self, String>
     where
@@ -74,7 +66,7 @@ impl InstrumenterEngine {
     }
 
     fn prompt_user_confirmation() -> Result<bool, io::Error> {
-        print!("🗑️ Do you really want to remove these directories? (yes/no): ");
+        print!("🗑️ Do you really want to remove these directories? (NO/yes): ");
         io::stdout().flush()?;
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
@@ -142,6 +134,9 @@ impl InstrumenterEngine {
         })
     }
 }
+pub trait ContractBuilder {
+    fn build(&self) -> Result<InkFilesPath, String>;
+}
 
 impl ContractBuilder for InstrumenterEngine {
     fn build(&self) -> Result<InkFilesPath, String> {
@@ -170,7 +165,9 @@ impl ContractBuilder for InstrumenterEngine {
         }
     }
 }
-
+pub trait ContractForker {
+    fn fork(&self) -> Result<PathBuf, String>;
+}
 impl ContractForker for InstrumenterEngine {
     fn fork(&self) -> Result<PathBuf, String> {
         let random_string: String = rand::thread_rng()

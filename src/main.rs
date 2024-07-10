@@ -22,6 +22,7 @@ use sp_core::{
 
 use FuzzingMode::ExecuteOneInput;
 
+use crate::fuzzer::coverage::COVERAGE_PATH;
 use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use crate::{
     contract::remote::ContractBridge,
@@ -32,7 +33,6 @@ use crate::{
     fuzzer::report::CoverageTracker,
     FuzzingMode::FuzzMode,
 };
-use crate::fuzzer::coverage::COVERAGE_PATH;
 
 mod contract;
 mod fuzzer;
