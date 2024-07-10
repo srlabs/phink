@@ -214,7 +214,7 @@ impl ContractForker for InstrumenterEngine {
 impl ContractInstrumenter for InstrumenterEngine {
     fn instrument(&mut self) -> Result<&mut InstrumenterEngine, String> {
         let new_working_dir = self.fork()?;
-        let lib_rs = new_working_dir.join("lib.rs");
+        let lib_rs = new_working_dir.join("lib.rs"); //TODO: not only lib.rs but every file.rs
         let code = fs::read_to_string(&lib_rs)
             .map_err(|e| format!("🙅 Failed to read lib.rs: {:?}", e))?;
 
