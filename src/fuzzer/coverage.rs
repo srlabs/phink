@@ -5,14 +5,12 @@ pub type CoverageTrace = Vec<u8>;
 #[derive(Clone)]
 pub struct Coverage {
     branches: Vec<CoverageTrace>,
-    max_coverage: u32,
 }
 
 impl Coverage {
-    pub fn new(max_coverage: u32) -> Self {
+    pub fn new() -> Self {
         Coverage {
             branches: Vec::new(),
-            max_coverage,
         }
     }
 
@@ -20,7 +18,7 @@ impl Coverage {
         self.branches.push(coverage.clone());
     }
 
-    /// This function takes a `CoverageTrace` and remove all the coverage from the trace
+    /// This function takes a `CoverageTrace` and removes all the coverage from the trace
     /// 'COV=153 COV=154 panicked at lib.rs:157:24: index out of bounds' =>
     /// 'panicked at lib.rs:157:24: index out of bounds'
     pub fn remove_cov_from_trace(trace: CoverageTrace) -> Vec<u8> {
@@ -40,29 +38,24 @@ impl Coverage {
         }
 
         let mut trace_strings = Vec::new();
+
         for trace in &self.branches {
-            let trace_string = String::from_utf8_lossy(trace)
-                .replace("\n", ", ")
-                .to_string();
-            trace_strings.push(trace_string.trim().to_string());
+            let x = String::from_utf8_lossy(trace);
+            trace_strings.push(x);
         }
-        let joined_traces = trace_strings.join(", ");
 
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
             .open(output_path)?;
 
-        if existing_content.trim().is_empty() {
-            write!(file, "{}", joined_traces)?;
-        } else {
-            write!(file, ", {}", joined_traces)?;
-        }
+        write!(file, "{}", trace_strings.join("\n"))?;
 
         Ok(())
     }
 
-    /// This function create an artificial coverage to convince ziggy that a message is interesting or not.
+    /// This function create an artificial coverage to convince Ziggy that a message is interesting or not.
+    #[allow(unused_doc_comments)]
     pub fn redirect_coverage(&self) {
         let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
         let coverage_str = Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
@@ -70,10 +63,16 @@ impl Coverage {
 
         #[cfg(not(fuzzing))]
         {
-            println!("[🚧DEBUG TRACE] {:?}", coverage_lines);
+            println!(
+                "[🚧DEBUG TRACE] Coverage size of {} {:?}",
+                coverage_lines.len(),
+                coverage_lines
+            );
         }
-        // println!("[🚧MAX REACHABLE COVERAGE] : {:?}", &self.max_coverage);
-        seq_macro::seq!(x in 0..=500 { //todo: fix the 500
+
+        /// We assume that the instrumentation will never insert more than `2_000` artificial branches
+        /// This value should be big enough to handle most of smart-contract, even the biggest
+        seq_macro::seq!(x in 0..= 2_000 {
             let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
                 let _ = black_box(x + 1);
@@ -98,7 +97,6 @@ impl Coverage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::borrow::Cow;
 
     #[test]
     fn test_remove_cov_from_trace_simple() {

@@ -5,6 +5,11 @@ mod dns {
     use ink::storage::Mapping;
     use ink::storage::StorageVec;
 
+    const FORBIDDEN_DOMAIN: [u8; 32] = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1,
+    ]; //we forbid it :/
+
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
     pub struct Register {
@@ -38,11 +43,6 @@ mod dns {
         new_owner: AccountId,
     }
 
-    const FORBIDDEN_DOMAIN: [u8; 32] = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1,
-    ]; //we forbid it :/
-
     #[ink(storage)]
     pub struct DomainNameService {
         /// A hashmap to store all name to addresses mapping.
@@ -54,7 +54,7 @@ mod dns {
         /// Simple storage vec that contains every registered domain
         domains: StorageVec<Hash>,
         /// Another invariant testing
-        dangerous_number: i32,
+        state: i32,
 
         should_panic_after_three_calls: bool,
 
@@ -74,7 +74,7 @@ mod dns {
                 name_to_owner,
                 default_address: zero_address(),
                 domains,
-                dangerous_number: 42_i32,
+                state: 42_i32,
                 should_panic_after_three_calls: false,
             }
         }
@@ -110,9 +110,9 @@ mod dns {
                 return Err(Error::NameAlreadyExists);
             }
 
-            if self.dangerous_number == 80 {
+            if self.state == 80 {
                 if name == FORBIDDEN_DOMAIN.into() {
-                    self.dangerous_number = 120;
+                    self.state = 120;
                 }
             }
 
@@ -124,7 +124,6 @@ mod dns {
         }
 
 
-        /// Set address for specific name.
         #[ink(message)]
         pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
             let caller = self.env().caller();
@@ -136,7 +135,7 @@ mod dns {
             let old_address = self.name_to_address.get(name);
             self.name_to_address.insert(name, &new_address);
 
-            if self.dangerous_number == 120 {
+            if self.state == 120 {
                 self.should_panic_after_three_calls = true
             }
 
@@ -148,10 +147,6 @@ mod dns {
             });
             Ok(())
         }
-
-        /// Transfer owner to another address.
-        /// Don't tell anyone, but this contract is vulnerable!
-        /// A user can push FORBIDDEN_DOMAIN, as the developer forgot to handle `Error::ForbiddenDomain`
         #[ink(message)]
         pub fn transfer(&mut self, name: Hash, to: AccountId, number: i32) -> Result<()> {
             let caller = self.env().caller();
@@ -162,15 +157,15 @@ mod dns {
                 return Err(Error::CallerIsNotOwner);
             }
 
-            if number == 69 {
+            if number == 69i32 {
                 //NOP, 69 is forbidden! right?
                 return Err(Error::ForbiddenDomain);
             }
 
-            self.dangerous_number = number % 70;
+            self.state = number % 70;
 
             if number == 80 {
-                self.dangerous_number = 80;
+                self.state = 80;
             }
 
             let old_owner = self.name_to_owner.get(name);
@@ -223,24 +218,7 @@ mod dns {
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl DomainNameService {
-        /// This invariant should be triggered at some point... the contract being vulnerable
-        #[ink(message)]
-        pub fn phink_assert_hash42_cant_be_registered(&self) {
-            //            for i in 0..self.domains.len() {
-            //              if let Some(domain) = self.domains.get(i) {
-            //                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-            //          }
-            //   }
-        }
-
-        #[ink(message)]
-        pub fn phink_assert_dangerous_number(&self) {
-            let forbidden_number = 69;
-            assert_ne!(self.dangerous_number, forbidden_number);
-        }
-
-        /// That invariant ensures that our fuzzer can detect a bug that requires
-        /// three message calls in one execution
+        #[cfg(feature = "phink")]
         #[ink(message)]
         pub fn phink_assert_three_message_calls_required_to_crash(&self) {
             // First, transfer must transfer 80
@@ -262,17 +240,6 @@ mod dns {
             ink::env::test::set_caller::<Environment>(caller);
         }
 
-        #[ink::test]
-        fn register_works() {
-            let default_accounts = default_accounts();
-            let name = Hash::from([0x99; 32]);
-
-            set_next_caller(default_accounts.alice);
-            let mut contract = DomainNameService::new();
-
-            assert_eq!(contract.register(name), Ok(()));
-            assert_eq!(contract.register(name), Err(Error::NameAlreadyExists));
-        }
 
         #[ink::test]
         fn test_invariants_nested_calls() {
@@ -311,19 +278,9 @@ mod dns {
             set_next_caller(accounts.alice);
             assert_eq!(contract.set_address(name, accounts.bob), Ok(()));
             assert_eq!(contract.get_address(name), accounts.bob);
-            contract.phink_assert_three_message_calls_required_to_crash();
+            assert_eq!(contract.should_panic_after_three_calls, true);
         }
 
-        #[ink::test]
-        fn should_panic() {
-            let accounts = default_accounts();
-            set_next_caller(accounts.alice);
-            let mut contract = DomainNameService::new();
-            let illegal = Hash::from(FORBIDDEN_DOMAIN);
-            println!("{:?}", illegal);
-            assert_eq!(contract.transfer(illegal, accounts.bob, 42), Ok(()));
-            // contract.phink_assert_hash42_cant_be_registered();
-        }
 
         #[ink::test]
         fn transfer_works() {

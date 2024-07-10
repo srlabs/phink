@@ -26,7 +26,7 @@ pub trait FuzzerEngine {
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
-        println!("\n🌱 Executing new seed\n");
+        println!("\n🌱 Executing new seed");
         let mut table = Table::new();
         table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 

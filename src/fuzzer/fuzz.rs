@@ -101,7 +101,7 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage = Coverage::new(9); // TODO: Determine appropriate coverage size
+        let mut coverage = Coverage::new();
 
         let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
 
