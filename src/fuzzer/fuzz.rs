@@ -15,11 +15,11 @@ use crate::{
     },
     fuzzer::{
         bug::BugManager,
-        coverage::Coverage,
         engine::FuzzerEngine,
         parser::{parse_input, OneInput},
     },
 };
+use crate::cover::coverage::Coverage;
 
 pub const CORPUS_DIR: &str = "./output/phink/corpus";
 pub const DICT_FILE: &str = "./output/phink/selectors.dict";

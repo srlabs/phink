@@ -9,19 +9,18 @@ use std::{
     process::Command,
 };
 
+use crate::instrumenter::instrument::instrument::ContractCovUpdater;
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use syn::{parse_file, visit_mut::VisitMut};
 use walkdir::WalkDir;
 
-use crate::fuzzer::instrument::instrument::ContractCovUpdater;
-
 /// The objective of this `struct` is to assist Phink in instrumenting ink! smart contracts.
 /// In a fuzzing context, instrumenting a smart contract involves modifying the target (i.e., the WASM blob),
 /// for example, by adding additional code to branches to obtain a coverage map during the execution of the smart contract.
 /// By doing so, we can effectively generate a coverage map that will be provided to Ziggy
-/// or LibAFL, transforming Phink from a basic brute-forcing tool into a powerful coverage-guided fuzzer.
+/// transforming Phink from a basic brute-forcing tool into a powerful coverage-guided fuzzer.
 ///
 /// Phink opted for a Rust AST approach. For each code instruction on the smart-contract, Phink will
 /// automatically add a tracing code, which will then be fetched at the end of the input execution
@@ -51,7 +50,6 @@ impl InstrumenterEngine {
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
     }
-
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
@@ -227,7 +225,7 @@ impl ContractInstrumenter for InstrumenterEngine {
 mod instrument {
     use proc_macro2::Span;
     use rand::Rng;
-    use syn::{Expr, LitInt, parse_quote, Stmt, Token, visit_mut::VisitMut};
+    use syn::{parse_quote, visit_mut::VisitMut, Expr, LitInt, Stmt, Token};
 
     pub struct ContractCovUpdater;
 

@@ -1,8 +1,8 @@
-use std::{fs, io};
-use std::path::{Path, PathBuf};
-use std::io::Write;
 use crate::instrumenter::instrument;
-
+use crate::InstrumenterEngine;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
 pub trait Cleaner {
     fn clean() -> Result<(), io::Error>;
 }
