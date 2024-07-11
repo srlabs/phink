@@ -13,13 +13,13 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
 };
-
+use std::num::ParseIntError;
 use clap::Parser;
 use sp_core::{
     crypto::{AccountId32, Ss58Codec},
     hexdisplay::AsBytesRef,
 };
-
+use walkdir::WalkDir;
 use FuzzingMode::ExecuteOneInput;
 
 use crate::fuzzer::coverage::COVERAGE_PATH;
@@ -28,11 +28,11 @@ use crate::{
     contract::remote::ContractBridge,
     fuzzer::engine::FuzzerEngine,
     fuzzer::fuzz::Fuzzer,
-    fuzzer::instrument::{ContractBuilder, ContractInstrumenter, InstrumenterEngine},
     fuzzer::parser::MIN_SEED_LEN,
     fuzzer::report::CoverageTracker,
     FuzzingMode::FuzzMode,
 };
+use crate::contract::remote::{BalanceOf, Test};
 
 mod contract;
 mod fuzzer;
@@ -169,6 +169,8 @@ fn handle_ziggy_mode() -> io::Result<()> {
         .parse::<usize>()
         .unwrap();
 
+
+
     let mut engine = InstrumenterEngine::new(path);
     if var("PHINK_START_FUZZING").is_ok() {
         println!("🏃Starting the fuzzer");
@@ -218,10 +220,8 @@ fn handle_cli_mode() -> io::Result<()> {
             deployer_address,
         } => {
             set_env_vars(&contract_path, &deployer_address, &None);
-            match fs::remove_file(COVERAGE_PATH) {
-                Ok(_) => println!("🗑️ Removed coverage output at {}", COVERAGE_PATH),
-                Err(e) => println!("🚫 Failed to remove {}: {}", COVERAGE_PATH, e),
-            }
+            let _ = fs::remove_file(COVERAGE_PATH).map(|_| println!("🗑️ Removed coverage output at {}", COVERAGE_PATH));
+
             start_cargo_ziggy(&contract_path, ZiggyCommand::Run)?
         }
         Commands::Execute {
@@ -413,6 +413,7 @@ fn handle_execute_command(
         &mut engine,
         ExecuteOneInput(Box::from(data)),
         deployer_address,
+
     )
 }
 
@@ -430,14 +431,19 @@ fn handle_coverage_command(contract_path: PathBuf, report_path: PathBuf) {
     println!("📄 Successfully read coverage file.");
 
     let mut tracker = CoverageTracker::new(&contents);
+    for entry in WalkDir::new(contract_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+    {
 
-    tracker
-        .process_file(format!("{}{}", contract_path.display(), "/lib.rs").as_str())
-        .expect("🙅 Cannot process file"); //todo: should do it for every file
+        tracker
+            .process_file(entry.path().as_os_str().to_str().unwrap())
+            .expect("🙅 Cannot process file"); //todo: does that work ?
 
+    }
     tracker
         .generate_report(report_path.to_str().unwrap())
         .expect("🙅 Cannot generate coverage report");
     println!("📊 Coverage report generated at: {}", report_path.display());
-
 }

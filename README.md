@@ -17,7 +17,7 @@ cd phink/
 ## Usage
 
 ```bash
-cargo run -- instrument path/to/ink_contract
+cargo run -- instrumenter path/to/ink_contract
 cargo run -- fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
 ```
   

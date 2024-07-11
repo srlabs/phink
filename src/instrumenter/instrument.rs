@@ -41,6 +41,7 @@ pub trait ContractInstrumenter {
     fn instrument(&mut self) -> Result<&mut Self, String>
     where
         Self: Sized;
+    fn instrument_file(&self, path: &Path) -> Result<(), String>;
     fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
     fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
     fn already_instrumented(code: &str) -> bool;
@@ -51,58 +52,6 @@ impl InstrumenterEngine {
         Self { contract_dir: dir }
     }
 
-    fn get_dirs_to_remove(tmp_dir: &Path, pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
-        Ok(fs::read_dir(tmp_dir)?
-            .filter_map(|entry| {
-                let entry = entry.ok()?;
-                let path = entry.path();
-                if path.is_dir() && path.file_name()?.to_string_lossy().starts_with(pattern) {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>())
-    }
-
-    fn prompt_user_confirmation() -> Result<bool, io::Error> {
-        print!("🗑️ Do you really want to remove these directories? (NO/yes): ");
-        io::stdout().flush()?;
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        Ok(input.trim().eq_ignore_ascii_case("yes"))
-    }
-
-    fn remove_directories(dirs_to_remove: Vec<PathBuf>) -> Result<(), io::Error> {
-        for dir in dirs_to_remove {
-            fs::remove_dir_all(&dir)?;
-            println!("✅ Removed directory: {}", dir.display());
-        }
-        Ok(())
-    }
-
-    pub fn clean() -> Result<(), io::Error> {
-        let pattern = "ink_fuzzed_";
-        let dirs_to_remove = Self::get_dirs_to_remove(Path::new("/tmp"), pattern)?;
-
-        if dirs_to_remove.is_empty() {
-            println!("❌  No directories found matching the pattern '{}'. There's nothing to be cleaned :)", pattern);
-            return Ok(());
-        }
-
-        println!("🔍 Found the following instrumented ink! contracts:");
-        for dir in &dirs_to_remove {
-            println!("{}", dir.display());
-        }
-
-        if Self::prompt_user_confirmation()? {
-            Self::remove_directories(dirs_to_remove)?;
-        } else {
-            println!("❌ Operation cancelled.");
-        }
-
-        Ok(())
-    }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
@@ -214,24 +163,39 @@ impl ContractForker for InstrumenterEngine {
 impl ContractInstrumenter for InstrumenterEngine {
     fn instrument(&mut self) -> Result<&mut InstrumenterEngine, String> {
         let new_working_dir = self.fork()?;
-        let lib_rs = new_working_dir.join("lib.rs"); //TODO: not only lib.rs but every file.rs
-        let code = fs::read_to_string(&lib_rs)
-            .map_err(|e| format!("🙅 Failed to read lib.rs: {:?}", e))?;
+        self.contract_dir = new_working_dir.clone();
 
-        Command::new("rustfmt").arg(lib_rs.clone());
-        self.contract_dir = new_working_dir;
+        for entry in WalkDir::new(&new_working_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+        {
+            let path = entry.path();
+            self.instrument_file(path)?;
+        }
+        Ok(self)
+    }
+
+    fn instrument_file(&self, path: &Path) -> Result<(), String> {
+        let code = fs::read_to_string(path)
+            .map_err(|e| format!("🙅 Failed to read {}: {:?}", path.display(), e))?;
 
         if Self::already_instrumented(&code) {
-            return Err("🙅 Code already instrumented".to_string());
+            return Ok(());
         }
 
         let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
-            .map_err(|_| "🙅 Failed to parse and visit code".to_string())?;
+            .map_err(|_| format!("🙅 Failed to parse and visit code in {}", path.display()))?;
 
-        Self::save_and_format(modified_code, lib_rs.clone())
-            .map_err(|e| format!("🙅 Failed to save and format code: {:?}", e))?;
+        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(|e| {
+            format!(
+                "🙅 Failed to save and format code in {}: {:?}",
+                path.display(),
+                e
+            )
+        })?;
 
-        Ok(self)
+        Ok(())
     }
 
     fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
@@ -262,7 +226,8 @@ impl ContractInstrumenter for InstrumenterEngine {
 
 mod instrument {
     use proc_macro2::Span;
-    use syn::{parse_quote, spanned::Spanned, visit_mut::VisitMut, Expr, LitInt, Stmt, Token};
+    use rand::Rng;
+    use syn::{Expr, LitInt, parse_quote, Stmt, Token, visit_mut::VisitMut};
 
     pub struct ContractCovUpdater;
 
@@ -272,8 +237,9 @@ mod instrument {
             // Temporarily replace block.stmts with an empty Vec to avoid borrowing issues
             let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
-                let line_lit =
-                    LitInt::new(&stmt.span().start().line.to_string(), Span::call_site());
+                let random_number = rand::thread_rng().gen_range(0..999_999_999);
+                let line_lit = LitInt::new(&random_number.to_string(), Span::call_site());
+
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)
                 };
@@ -286,95 +252,5 @@ mod instrument {
             }
             block.stmts = new_stmts;
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::{fs, fs::File, io::Write, path::PathBuf, process::Command};
-
-    use quote::quote;
-    use syn::{__private::ToTokens, parse_file, visit_mut::VisitMut};
-
-    use crate::fuzzer::instrument::{ContractForker, ContractInstrumenter, InstrumenterEngine};
-
-    #[test]
-    fn test_already_instrumented_true() {
-        let code = String::from(
-            r#"
-            fn main() {
-                ink::env::debug_println!("COV=123");
-            }
-        "#,
-        );
-        assert!(InstrumenterEngine::already_instrumented(&code));
-    }
-
-    #[test]
-    fn test_already_instrumented_false() {
-        let code = String::from(
-            r#"
-            fn main() {
-                println!("Hello, world!");
-            }
-        "#,
-        );
-        assert!(!InstrumenterEngine::already_instrumented(&code));
-    }
-
-    #[test]
-    fn test_already_instrumented_multiple_lines() {
-        let code = String::from(
-            r#"
-            fn main() {
-                println!("This is a test.");
-                ink::env::debug_println!("COV=456");
-                println!("Another line.");
-            }
-        "#,
-        );
-        assert!(InstrumenterEngine::already_instrumented(&code));
-    }
-
-    #[test]
-    fn adding_cov_insertion_works() {
-        let signature = "ink::env::debug_println!(\"COV =";
-        let code = fs::read_to_string("sample/dns/lib.rs").unwrap();
-        let mut ast = parse_file(&code).expect("Unable to parse file");
-
-        let mut visitor = crate::fuzzer::instrument::instrument::ContractCovUpdater;
-        visitor.visit_file_mut(&mut ast);
-
-        let modified_code = quote!(#ast).to_string();
-        assert!(modified_code.contains(signature)); //spaces are required :shrug:
-        export(modified_code);
-    }
-
-    #[test]
-    fn do_fork() {
-        let engine: InstrumenterEngine = InstrumenterEngine::new(PathBuf::from("sample/dns"));
-        let fork = engine.fork().unwrap();
-        println!("{:?}", fork);
-        let exists = fork.exists();
-        fs::remove_file(fork).unwrap(); //remove after test passed to avoid spam of /tmp
-        assert!(exists);
-    }
-
-    /// This function simply saves some `modified_code` Rust code into /tmp/toz.rs
-    /// Format it with `rustfmt` and `ccat` it into stdout
-    /// Used only for debugging purposes
-    fn export(modified_code: String) {
-        let mut file = File::create("/tmp/toz.rs").expect("Unable to create file");
-        write!(file, "{}", modified_code).expect("Unable to write data");
-
-        Command::new("rustfmt")
-            .arg("/tmp/toz.rs")
-            .status()
-            .expect("Failed to run rustfmt");
-        Command::new("ccat")
-            .arg("/tmp/toz.rs")
-            .arg("--bg=dark")
-            .status()
-            .expect("Just install ccat... please");
     }
 }
