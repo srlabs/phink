@@ -9,6 +9,7 @@ use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 
+use crate::cli::config::Configuration;
 use crate::cli::ziggy::ZiggyConfig;
 use crate::{
     contract::{
@@ -36,20 +37,16 @@ pub enum FuzzingMode {
 
 #[derive(Clone)]
 pub struct Fuzzer {
-    setup: ContractBridge,
-    max_messages_per_exec: usize,
+    pub setup: ContractBridge,
+    pub fuzzing_config: Configuration,
 }
 
 impl Fuzzer {
     pub fn new(setup: ContractBridge) -> Self {
         Self {
             setup,
-            max_messages_per_exec: MAX_MESSAGES_PER_EXEC,
+            fuzzing_config: Default::default(),
         }
-    }
-
-    pub fn set_max_messages_per_exec(&mut self, max_messages_per_exec: Option<usize>) {
-        self.max_messages_per_exec = max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
     }
 
     pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> io::Result<()> {
@@ -60,6 +57,7 @@ impl Fuzzer {
             &finder.specs_path,
             config
                 .config
+                .clone()
                 .deployer_address
                 .unwrap_or(ContractBridge::DEFAULT_DEPLOYER),
         );
@@ -67,7 +65,7 @@ impl Fuzzer {
 
         match mode {
             Fuzz => {
-                fuzzer.set_max_messages_per_exec(config.config.max_messages_per_exec);
+                fuzzer.set_config(config.config);
                 fuzzer.fuzz();
             }
             ExecuteOneInput(seed_path) => {
@@ -104,6 +102,10 @@ impl Fuzzer {
                     })
             })
     }
+
+    fn set_config(&mut self, config: Configuration) {
+        self.fuzzing_config = config;
+    }
 }
 
 impl FuzzerEngine for Fuzzer {
@@ -116,6 +118,7 @@ impl FuzzerEngine for Fuzzer {
                 &mut transcoder_loader,
                 &mut invariant_manager.clone(),
                 data,
+                self.fuzzing_config,
             );
         });
     }
@@ -125,6 +128,7 @@ impl FuzzerEngine for Fuzzer {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
+        config: Configuration,
     ) {
         let decoded_msgs: OneInput =
             parse_input(input, transcoder_loader, client.max_messages_per_exec);

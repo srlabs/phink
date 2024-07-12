@@ -17,6 +17,8 @@ pub struct Configuration {
     pub max_messages_per_exec: Option<usize>,
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
+    /// Fuzz the origin
+    pub fuzz_origin: bool,
 }
 
 impl Default for Configuration {
@@ -27,6 +29,7 @@ impl Default for Configuration {
             deployer_address: ContractBridge::DEFAULT_DEPLOYER.into(),
             max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
+            fuzz_origin: false,
         }
     }
 }

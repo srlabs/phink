@@ -38,6 +38,10 @@ impl ZiggyConfig {
         }
     }
 
+    pub fn parse(config_str: String) -> Self {
+        serde_json::from_str(&config_str).expect("❌ Failed to parse config")
+    }
+
     /// This function execute `cargo ziggy + command + args`
     fn start(
         command: ZiggyCommand,

@@ -55,9 +55,9 @@ impl Instrumenter {
         let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
             .map_err(|e| {
                 format!(
-                    "🙅 It seems that your contract is not compiled into `target/ink`.\
+                    "🙅 It seems that your contract is not compiled into `target/ink`. \
              Please, ensure that your the WASM blob and the JSON specs are stored into \
-             '{}/target/ink/' (more infos: {})",
+             '{}target/ink/' (more infos: {})",
                     self.contract_dir.to_str().unwrap(),
                     e
                 )
@@ -168,7 +168,7 @@ impl ContractInstrumenter for Instrumenter {
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
             .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
-        //Don't instrument anything inside target
+        // Don't instrument anything inside target
         {
             let path = entry.path();
             self.instrument_file(path)?;
