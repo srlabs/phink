@@ -45,6 +45,7 @@ impl FullConfig {
     ) -> io::Result<()> {
         let command_arg = Self::command_to_arg(&command)?;
 
+        println!("AAAAAAAAAAAA {}", Path::new(Self::ALLOWLIST_PATH).display().to_string());
         let mut binding = Command::new("cargo");
         let mut command_builder = binding
             .arg("ziggy")
