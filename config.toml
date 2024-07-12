@@ -1,6 +1,16 @@
+###### Phink Configurqtion
+
 cores = 1
 max_messages_per_exec = 1
 report_path = "output/coverage"
 use_honggfuzz = false
 fuzz_origin = false
-deployer_address = 00000000000000000000000000000000
+
+
+#deployer_address = "5DJk1gegyQJk6BNs7LceZ1akt5e9fpm4gUYGzcfpKaLG9Mmb"
+#storage_deposit_limit = 10_000_000
+
+[default_gas_limit]
+ref_time = 100000000000
+proof_size = 3145728  # 3 * 1024 * 1024
+

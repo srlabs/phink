@@ -54,6 +54,7 @@ impl ZiggyConfig {
         let command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
+            .env("AFL_FORKSRV_INIT_TMOUT", "10000000")
             .env(
                 "AFL_LLVM_ALLOWLIST",
                 Path::new(Self::ALLOWLIST_PATH)
@@ -160,7 +161,7 @@ impl ZiggyConfig {
         let path = Path::new(Self::ALLOWLIST_PATH);
 
         if path.exists() {
-            println!("❗ Allowlist already exists... skipping");
+            println!("❗ AFL_LLVM_ALLOWLIST already exists... skipping");
             return Ok(());
         }
 
@@ -172,7 +173,7 @@ impl ZiggyConfig {
             writeln!(allowlist_file, "fun: {}", func)?;
         }
 
-        println!("✅ Allowlist created successfully");
+        println!("✅ AFL_LLVM_ALLOWLIST created successfully");
         Ok(())
     }
 }

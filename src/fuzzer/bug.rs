@@ -3,6 +3,7 @@ use sp_runtime::{DispatchError, ModuleError};
 use std::panic;
 use std::sync::Mutex;
 
+use crate::cli::config::Configuration;
 use crate::cover::coverage::Coverage;
 use crate::{
     contract::{
@@ -18,13 +19,19 @@ pub type FailedInvariantTrace = (Selector, FullContractResponse);
 pub struct BugManager {
     pub contract_bridge: ContractBridge,
     pub invariant_selectors: Vec<Selector>,
+    pub configuration: Configuration,
 }
 
 impl BugManager {
-    pub fn from(invariant_selectors: Vec<Selector>, contract_bridge: ContractBridge) -> Self {
+    pub fn from(
+        invariant_selectors: Vec<Selector>,
+        contract_bridge: ContractBridge,
+        configuration: Configuration,
+    ) -> Self {
         Self {
             contract_bridge,
             invariant_selectors,
+            configuration,
         }
     }
 
@@ -86,10 +93,12 @@ impl BugManager {
     /// This function aims to call every invariant function via `invariant_selectors`.
     pub fn are_invariants_passing(&self, origin: u8) -> Result<(), FailedInvariantTrace> {
         for invariant in &self.invariant_selectors {
-            let invariant_call: FullContractResponse =
-                self.contract_bridge
-                    .clone()
-                    .call(invariant.as_ref(), origin, 0);
+            let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
+                invariant.as_ref(),
+                origin,
+                0,
+                self.configuration.clone(),
+            );
             if invariant_call.result.is_err() {
                 return Err((*invariant, invariant_call));
             }

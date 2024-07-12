@@ -1,5 +1,6 @@
-use crate::contract::remote::ContractBridge;
+use crate::contract::remote::{BalanceOf, ContractBridge, Test};
 use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
+use frame_support::weights::Weight;
 use serde_derive::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 use std::fs;
@@ -18,7 +19,11 @@ pub struct Configuration {
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
     /// Fuzz the origin
-    pub fuzz_origin: bool,
+    pub fuzz_origin: bool, //todo: not implemented
+    /// The gas limit enforced when executing the constructor
+    pub default_gas_limit: Option<Weight>,
+    /// The maximum amount of balance that can be charged from the caller to pay for the storage consumed.
+    pub storage_deposit_limit: Option<BalanceOf<Test>>,
 }
 
 impl Default for Configuration {
@@ -30,6 +35,8 @@ impl Default for Configuration {
             max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
             fuzz_origin: false,
+            default_gas_limit: Option::from(ContractBridge::DEFAULT_GAS_LIMIT),
+            storage_deposit_limit: None,
         }
     }
 }

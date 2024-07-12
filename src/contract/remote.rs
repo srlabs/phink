@@ -1,20 +1,22 @@
 use std::path::Path;
 use std::{fs, path::PathBuf};
 
+use crate::{
+    cli::config::Configuration,
+    contract::payload,
+    contract::runtime::AccountId,
+    contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},
+};
 use frame_support::{
     __private::BasicExternalities, pallet_prelude::Weight, traits::fungible::Inspect,
 };
+use migration::v13;
 use pallet_contracts::{
-    Code, CollectEvents, Config, ContractResult, DebugInfo, Determinism, ExecReturnValue,
+    migration, Code, CollectEvents, Config, ContractResult, DebugInfo, Determinism, ExecReturnValue,
 };
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
-
-use crate::contract::runtime::AccountId;
-use crate::{
-    contract::payload,
-    contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},
-};
+use v13::ContractInfoOf;
 
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
@@ -37,23 +39,21 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
-    //TODO: make this configurable
     pub const DEFAULT_GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
     pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([0u8; 32]);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
-    ///
-    /// # Arguments
-    ///
-    /// * `wasm_bytes`: the bytes of the WASM contract
-    /// * `json_specs`: JSON specs of the contract, i.e. contract.json
-
     pub fn initialize_wasm(
         wasm_bytes: Vec<u8>,
         path_to_specs: &Path,
-        origin: AccountId,
+        config: Configuration,
     ) -> ContractBridge {
-        let mut contract_addr: AccountIdOf<Test> = origin;
+
+        let mut contract_addr: AccountIdOf<Test> = config
+            .deployer_address
+            .clone()
+            .unwrap_or(ContractBridge::DEFAULT_DEPLOYER);
+
         println!(
             "🛠️Initializing contract address from the origin: {:?}",
             contract_addr
@@ -67,13 +67,13 @@ impl ContractBridge {
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
                 println!("🔍 Uploaded the WASM bytes. Code hash: {:?}", code_hash);
 
-                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone()).expect(
+                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config).expect(
                     "🙅 Can't fetch the contract address because because of incorrect instantiation",
                 );
 
                 // We verify if the contract is correctly instantiated
                 assert!(
-                    pallet_contracts::migration::v13::ContractInfoOf::<Test>::contains_key(
+                    ContractInfoOf::<Test>::contains_key(
                         &contract_addr
                     )
                 );
@@ -102,14 +102,15 @@ impl ContractBridge {
         payload: &[u8],
         who: u8,
         transfer_value: BalanceOf<Test>,
+        config: Configuration,
     ) -> FullContractResponse {
         let acc = AccountId32::new([who.try_into().unwrap(); 32]);
         Contracts::bare_call(
             acc,
             self.contract_address,
             transfer_value,
-            Self::DEFAULT_GAS_LIMIT,
-            None,
+            config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
+            config.storage_deposit_limit,
             payload.to_owned(),
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
@@ -143,11 +144,12 @@ impl ContractBridge {
         json_specs: &str,
         code_hash: H256,
         who: AccountId,
+        config: Configuration,
     ) -> Option<AccountIdOf<Test>> {
         let instantiate = Contracts::bare_instantiate(
             who,
             0,
-            Self::DEFAULT_GAS_LIMIT,
+            config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
             None,
             Code::Existing(code_hash),
             Vec::from(payload::PayloadCrafter::get_constructor(json_specs)?),

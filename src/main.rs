@@ -2,11 +2,9 @@
 
 extern crate core;
 
+use std::{env::var, path::PathBuf};
+
 use clap::Parser;
-use std::{
-    env::{set_var, var},
-    path::PathBuf,
-};
 
 use crate::{
     cli::config::Configuration,
@@ -74,11 +72,7 @@ struct Contract {
 fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
-        println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
-        set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
-
-        let config: ZiggyConfig = ZiggyConfig::parse(config_str);
-        Fuzzer::execute_harness(Fuzz, config).unwrap();
+        Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str)).unwrap();
     } else {
         handle_cli();
     }

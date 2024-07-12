@@ -52,15 +52,8 @@ impl Fuzzer {
     pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> io::Result<()> {
         let finder = Instrumenter::new(config.contract_path).find().unwrap();
         let wasm = fs::read(&finder.wasm_path)?;
-        let setup = ContractBridge::initialize_wasm(
-            wasm,
-            &finder.specs_path,
-            config
-                .config
-                .clone()
-                .deployer_address
-                .unwrap_or(ContractBridge::DEFAULT_DEPLOYER),
-        );
+        let setup =
+            ContractBridge::initialize_wasm(wasm, &finder.specs_path, config.config.clone());
         let mut fuzzer = Fuzzer::new(setup);
 
         match mode {
@@ -197,7 +190,8 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
         .filter(|s| !invariants.contains(s))
         .collect();
 
-    let invariant_manager = BugManager::from(invariants, fuzzer.setup.clone());
+    let invariant_manager =
+        BugManager::from(invariants, fuzzer.setup.clone(), fuzzer.fuzzing_config);
 
     Fuzzer::build_corpus_and_dict(&selectors_without_invariants)
         .expect("🙅 Failed to create initial corpus");
@@ -250,11 +244,12 @@ fn execute_messages(
                 0
             };
 
-            let result: FullContractResponse =
-                client
-                    .setup
-                    .clone()
-                    .call(&message.payload, decoded_msgs.origin, transfer_value);
+            let result: FullContractResponse = client.setup.clone().call(
+                &message.payload,
+                decoded_msgs.origin,
+                transfer_value,
+                client.fuzzing_config.clone(),
+            );
 
             coverage.add_cov(&result.debug_message);
             all_msg_responses.push(result);

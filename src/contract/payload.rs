@@ -121,6 +121,7 @@ impl PayloadCrafter {
 
 #[cfg(test)]
 mod test {
+    use crate::cli::config::Configuration;
     use crate::fuzzer::parser::parse_input;
     use crate::{contract::payload::PayloadCrafter, contract::payload::Selector};
     use contract_transcode::ContractMessageTranscoder;
@@ -197,7 +198,12 @@ mod test {
             ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
         );
 
-        let msg = parse_input(encoded_bytes.as_bytes_ref(), &mut transcoder_loader).messages;
+        let msg = parse_input(
+            encoded_bytes.as_bytes_ref(),
+            &mut transcoder_loader,
+            Configuration::default(),
+        )
+        .messages;
         println!("{:?}", msg);
 
         for i in 0..msg.len() {
