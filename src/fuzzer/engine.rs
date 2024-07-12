@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use crate::cli::config::Configuration;
 use crate::{
     contract::remote::FullContractResponse,
     contract::runtime::{
@@ -24,7 +23,6 @@ pub trait FuzzerEngine {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
-        config: Configuration,
     );
 
     /// Pretty print the result of `OneInput`

@@ -118,7 +118,6 @@ impl FuzzerEngine for Fuzzer {
                 &mut transcoder_loader,
                 &mut invariant_manager.clone(),
                 data,
-                self.fuzzing_config,
             );
         });
     }
@@ -128,10 +127,9 @@ impl FuzzerEngine for Fuzzer {
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
         bug_manager: &mut BugManager,
         input: &[u8],
-        config: Configuration,
     ) {
         let decoded_msgs: OneInput =
-            parse_input(input, transcoder_loader, client.max_messages_per_exec);
+            parse_input(input, transcoder_loader, client.fuzzing_config.clone());
 
         if Self::should_stop_now(bug_manager, &decoded_msgs) {
             return;
@@ -142,7 +140,8 @@ impl FuzzerEngine for Fuzzer {
 
         let mut coverage = Coverage::new();
 
-        let all_msg_responses = execute_messages(&client, &decoded_msgs, &mut chain, &mut coverage);
+        let all_msg_responses =
+            execute_messages(&client.clone(), &decoded_msgs, &mut chain, &mut coverage);
 
         chain.execute_with(|| {
             check_invariants(

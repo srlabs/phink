@@ -1,4 +1,6 @@
+use crate::cli::config::Configuration;
 use crate::contract::remote::{BalanceOf, Test};
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use contract_transcode::{ContractMessageTranscoder, Value};
 use ink_metadata::{InkProject, Selector};
 use std::sync::Mutex;
@@ -76,8 +78,12 @@ fn is_message_payable(selector: &Selector, metadata: &InkProject) -> bool {
 pub fn parse_input(
     data: &[u8],
     transcoder: &mut Mutex<ContractMessageTranscoder>,
-    max_messages_per_exec: usize,
+    config: Configuration,
 ) -> OneInput {
+    let max_messages_per_exec = config
+        .max_messages_per_exec
+        .unwrap_or(MAX_MESSAGES_PER_EXEC);
+
     let iterable = Data {
         data,
         pointer: 0,

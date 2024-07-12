@@ -44,17 +44,17 @@ struct Cli {
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
     /// Starts the fuzzing process. Instrumentation required before!
-    Fuzz(ContractPath),
+    Fuzz(Contract),
     /// Instrument the ink! contract, and compile it with Phink features
-    Instrument(ContractPath),
+    Instrument(Contract),
     /// Run all the seeds
-    Run(ContractPath),
+    Run(Contract),
     /// Remove all the temporary files under /tmp/ink_fuzzed_*
     Clean,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here (mainly for debugging purposes only)
-    HarnessCover(ContractPath),
+    HarnessCover(Contract),
     /// Generate a coverage report for your smart-contract
-    Coverage(ContractPath),
+    Coverage(Contract),
     /// Execute one seed
     Execute {
         /// Seed to be executed
@@ -65,14 +65,14 @@ enum Commands {
 }
 
 #[derive(clap::Args, Debug)]
-struct ContractPath {
+struct Contract {
     /// Path where the contract is located. It must be the root directory of the contract
     #[clap(value_parser)]
     contract_path: PathBuf,
 }
 
 fn main() {
-    /// We execute `handle_cli()` first, then re-enter into `main()`
+    // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
         println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
         set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
@@ -89,22 +89,22 @@ fn handle_cli() {
     let config = Configuration::load_config(&cli.config);
 
     match cli.command {
-        Commands::Instrument(ContractPath) => {
-            let mut engine = Instrumenter::new(ContractPath.contract_path.clone());
+        Commands::Instrument(contract_path) => {
+            let mut engine = Instrumenter::new(contract_path.contract_path.clone());
             engine.instrument().unwrap().build().unwrap();
 
             println!(
                 "🤞 Contract {} has been instrumented and compiled!",
-                ContractPath.contract_path.display()
+                contract_path.contract_path.display()
             );
         }
-        Commands::Fuzz(ContractPath) => {
-            ZiggyConfig::new(config, ContractPath.contract_path)
+        Commands::Fuzz(contract_path) => {
+            ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_fuzz()
                 .unwrap();
         }
-        Commands::Run(ContractPath) => {
-            ZiggyConfig::new(config, ContractPath.contract_path)
+        Commands::Run(contract_path) => {
+            ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_run()
                 .unwrap();
         }
@@ -115,13 +115,13 @@ fn handle_cli() {
             let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
             Fuzzer::execute_harness(ExecuteOneInput(seed), ziggy).unwrap();
         }
-        Commands::HarnessCover(ContractPath) => {
-            ZiggyConfig::new(config, ContractPath.contract_path)
+        Commands::HarnessCover(contract_path) => {
+            ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_cover()
                 .unwrap();
         }
-        Commands::Coverage(ContractPath) => {
-            CoverageTracker::generate(ZiggyConfig::new(config, ContractPath.contract_path));
+        Commands::Coverage(contract_path) => {
+            CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path));
         }
         Commands::Clean => {
             Instrumenter::clean().unwrap();
