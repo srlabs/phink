@@ -50,7 +50,7 @@ enum Commands {
     Instrument,
     /// Run all the seeds
     Run,
-    /// Remove all the temporary files under `/tmp/ink_fuzzed_XXXX`
+    /// Remove all the temporary files under `/tmp/ink_fuzzed_*`
     Clean,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here (mainly for debugging purposes only)
     HarnessCover,

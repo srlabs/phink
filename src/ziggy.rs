@@ -94,6 +94,7 @@ impl Ziggy {
         if !self.config.use_honggfuzz {
             all_my_args.push("--no-honggfuzz".parse().unwrap());
         }
+        all_my_args.push("#".into());
 
         Self::start(ZiggyCommand::Fuzz, all_my_args)?;
         Ok(())
