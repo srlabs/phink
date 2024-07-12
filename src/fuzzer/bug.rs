@@ -53,8 +53,8 @@ impl BugManager {
             },
         );
 
-        panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
         //Artificially trigger a bug for AFL
+        panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
     }
 
     pub fn display_invariant(
