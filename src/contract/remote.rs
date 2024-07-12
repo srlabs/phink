@@ -38,7 +38,8 @@ pub struct ContractBridge {
 
 impl ContractBridge {
     //TODO: make this configurable
-    pub const GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+    pub const DEFAULT_GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+    pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([0u8; 32]);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink! contract
     ///
@@ -107,7 +108,7 @@ impl ContractBridge {
             acc,
             self.contract_address,
             transfer_value,
-            Self::GAS_LIMIT,
+            Self::DEFAULT_GAS_LIMIT,
             None,
             payload.to_owned(),
             DebugInfo::UnsafeDebug,
@@ -146,7 +147,7 @@ impl ContractBridge {
         let instantiate = Contracts::bare_instantiate(
             who,
             0,
-            Self::GAS_LIMIT,
+            Self::DEFAULT_GAS_LIMIT,
             None,
             Code::Existing(code_hash),
             Vec::from(payload::PayloadCrafter::get_constructor(json_specs)?),

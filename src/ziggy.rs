@@ -21,12 +21,12 @@ pub enum ZiggyCommand {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Ziggy {
+pub struct FullConfig {
     pub config: Configuration,
     pub contract_path: PathBuf,
 }
 
-impl Ziggy {
+impl FullConfig {
     pub const ALLOWLIST_PATH: &'static str = "./output/phink/allowlist.txt";
     pub const AFL_DEBUG: &'static str = "1";
 
@@ -116,7 +116,7 @@ impl Ziggy {
             ZiggyCommand::Fuzz,
             all_my_args,
             vec![(
-                "PHINK_START_FUZZING_WITH".into(),
+                "PHINK_START_FUZZING_WITH_CONFIG".into(),
                 serde_json::to_string(self).unwrap(),
             )],
         )?;

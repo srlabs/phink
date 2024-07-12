@@ -2,6 +2,8 @@ use serde_derive::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 use std::fs;
 use std::path::PathBuf;
+use crate::contract::remote::ContractBridge;
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {
@@ -22,17 +24,16 @@ impl Default for Configuration {
         Self {
             cores: Some(1),
             use_honggfuzz: false,
-            deployer_address: None,
-            max_messages_per_exec: Some(4),
+            deployer_address: ContractBridge::DEFAULT_DEPLOYER.into(),
+            max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
         }
     }
 }
 
 impl Configuration {
-    pub fn load_config(file_path: &PathBuf) -> Result<Self, dyn std::error::Error> {
-        let config_str = fs::read_to_string(file_path)?;
-        let config: Configuration = toml::from_str(&config_str)?;
-        Ok(config)
+    pub fn load_config(file_path: &PathBuf) -> Configuration {
+        let config_str = fs::read_to_string(file_path).expect("can't read config");
+        toml::from_str(&config_str).expect("can't parse config")
     }
 }

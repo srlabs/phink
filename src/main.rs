@@ -12,7 +12,10 @@ use std::{
     path::PathBuf,
 };
 
-use crate::ziggy::Ziggy;
+use crate::config::Configuration;
+use crate::fuzzer::fuzz::Fuzzer;
+use crate::fuzzer::fuzz::FuzzingMode::FuzzMode;
+use crate::ziggy::FullConfig;
 use crate::{
     fuzzer::engine::FuzzerEngine,
     instrumenter::cleaner::Cleaner,
@@ -38,7 +41,7 @@ struct Cli {
     #[clap(subcommand)]
     command: Commands,
 
-    #[clap(long, short, value_parser, default_value = "phink.toml")]
+    #[clap(long, short, value_parser, default_value = "config.toml")]
     config: PathBuf,
 }
 
@@ -86,27 +89,36 @@ enum Commands {
         contract_path: PathBuf,
     },
 }
- fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
-    set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
-
-    if var("PHINK_FROM_ZIGGY").is_ok() {
-        println!("{:?}", var("PHINK_FROM_ZIGGY"));
-        Ok(())
+fn main() {
+    // We execute `handle_cli_mode()` first, then re-enter into `main()`
+    if var("PHINK_START_FUZZING_WITH_CONFIG").is_ok() {
+        handle_ziggy();
     } else {
-        //We execute handle_cli_mode(), then re-enter the main() function to go the the above if
-        handle_cli_mode()
+        handle_cli_mode();
     }
 }
 
-fn handle_cli_mode() -> Result<(), dyn std::error::Error> {
+fn handle_ziggy() {
+    println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
+    set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+    println!("{:?}", var("PHINK_START_FUZZING_WITH_CONFIG"));
+
+    let config: FullConfig =
+        serde_json::from_str(var("PHINK_START_FUZZING_WITH_CONFIG").unwrap().as_str()).unwrap();
+
+    let mut instrumenter = Instrumenter::new(config.clone().contract_path);
+
+    Fuzzer::execute_harness(&mut instrumenter, FuzzMode(), config).unwrap();
+}
+
+fn handle_cli_mode() {
     let cli = Cli::parse();
-    let config = config::Configuration::load_config(&cli.config)?;
+    let config = Configuration::load_config(&cli.config);
 
     match cli.command {
         Commands::Instrument { contract_path } => {
             let mut engine = Instrumenter::new(contract_path.clone());
-            engine.instrument()?.build()?;
+            engine.instrument().unwrap().build().unwrap();
 
             println!(
                 "🤞 Contract {} has been instrumented, and is now compiled!",
@@ -114,8 +126,8 @@ fn handle_cli_mode() -> Result<(), dyn std::error::Error> {
             );
         }
         Commands::Fuzz { contract_path } => {
-            let ziggy: Ziggy = Ziggy::new(config, contract_path);
-            ziggy.ziggy_fuzz()?;
+            let ziggy: FullConfig = FullConfig::new(config, contract_path);
+            ziggy.ziggy_fuzz().unwrap();
         }
         Commands::Run { contract_path } => {
             todo!()
@@ -133,9 +145,7 @@ fn handle_cli_mode() -> Result<(), dyn std::error::Error> {
             todo!()
         }
         Commands::Clean => {
-            Instrumenter::clean()?;
+            Instrumenter::clean().unwrap();
         }
     }
-
-    Ok(())
 }

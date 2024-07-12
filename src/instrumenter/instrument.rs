@@ -47,8 +47,8 @@ pub trait ContractInstrumenter {
 }
 
 impl Instrumenter {
-    pub fn new(dir: PathBuf) -> Self {
-        Self { contract_dir: dir }
+    pub fn new(contract_dir: PathBuf) -> Self {
+        Self { contract_dir }
     }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {

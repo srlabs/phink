@@ -10,6 +10,7 @@ use frame_support::__private::BasicExternalities;
 use sp_core::crypto::AccountId32;
 use sp_core::hexdisplay::AsBytesRef;
 
+use crate::ziggy::FullConfig;
 use crate::{
     contract::{
         payload::{PayloadCrafter, Selector},
@@ -31,7 +32,7 @@ pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 
 
 pub enum FuzzingMode {
     ExecuteOneInput(PathBuf),
-    FuzzMode(Option<usize>),
+    FuzzMode(),
 }
 
 #[derive(Clone)]
@@ -52,22 +53,26 @@ impl Fuzzer {
         self.max_messages_per_exec = max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
     }
 
-    fn execute_harness(
+    pub fn execute_harness(
         engine: &mut Instrumenter,
         fuzzing_mode: FuzzingMode,
-        deployer_id: Option<AccountId32>,
+        config: FullConfig,
     ) -> io::Result<()> {
-        let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([0u8; 32]));
         let finder = engine.find().unwrap();
-
         let wasm = fs::read(&finder.wasm_path)?;
-        let setup =
-            ContractBridge::initialize_wasm(wasm, &finder.specs_path, contract_deployer_origin);
+        let setup = ContractBridge::initialize_wasm(
+            wasm,
+            &finder.specs_path,
+            config
+                .config
+                .deployer_address
+                .unwrap_or(ContractBridge::DEFAULT_DEPLOYER),
+        );
         let mut fuzzer = Fuzzer::new(setup);
 
         match fuzzing_mode {
-            FuzzMode(max_messages_per_exec) => {
-                fuzzer.set_max_messages_per_exec(max_messages_per_exec);
+            FuzzMode() => {
+                fuzzer.set_max_messages_per_exec(config.config.max_messages_per_exec);
                 fuzzer.fuzz();
             }
             ExecuteOneInput(seed_path) => {
