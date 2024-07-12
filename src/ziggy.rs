@@ -45,12 +45,12 @@ impl FullConfig {
     ) -> io::Result<()> {
         let command_arg = Self::command_to_arg(&command)?;
 
-        println!("AAAAAAAAAAAA {}", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str());
+        println!("AAAAAAAAAAAA {}", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str().unwrap());
         let mut binding = Command::new("cargo");
         let mut command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
-            .env("AFL_LLVM_ALLOWLIST", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str())
+            .env("AFL_LLVM_ALLOWLIST", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str().unwrap())
             .env("AFL_DEBUG", Self::AFL_DEBUG)
             .stdout(Stdio::piped());
 
