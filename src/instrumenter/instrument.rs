@@ -167,7 +167,8 @@ impl ContractInstrumenter for Instrumenter {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
-            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target")) //Don't instrument anything inside target
+            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
+        //Don't instrument anything inside target
         {
             let path = entry.path();
             self.instrument_file(path)?;

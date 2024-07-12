@@ -3,31 +3,27 @@
 extern crate core;
 
 use clap::Parser;
-use serde::Deserialize;
-use sp_core::{crypto::Ss58Codec, hexdisplay::AsBytesRef};
-use std::env::{set_var, var};
 use std::{
-    io::Read,
-    io::{BufRead, Write},
+    env::{set_var, var},
     path::PathBuf,
 };
 
-use crate::config::Configuration;
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::fuzz::FuzzingMode::FuzzMode;
-use crate::ziggy::FullConfig;
 use crate::{
-    fuzzer::engine::FuzzerEngine,
+    cli::config::Configuration,
+    cli::ziggy::ZiggyConfig,
+    cover::report::CoverageTracker,
+    fuzzer::fuzz::Fuzzer,
+    fuzzer::fuzz::FuzzingMode::ExecuteOneInput,
+    fuzzer::fuzz::FuzzingMode::Fuzz,
     instrumenter::cleaner::Cleaner,
     instrumenter::instrument::{ContractBuilder, ContractInstrumenter, Instrumenter},
 };
 
-mod config;
+mod cli;
 mod contract;
 mod cover;
 mod fuzzer;
 mod instrumenter;
-mod ziggy;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
@@ -89,26 +85,23 @@ enum Commands {
         contract_path: PathBuf,
     },
 }
+
 fn main() {
-    // We execute `handle_cli_mode()` first, then re-enter into `main()`
-    if var("PHINK_START_FUZZING_WITH_CONFIG").is_ok() {
-        handle_ziggy();
+    let config_var = var("PHINK_START_FUZZING_WITH_CONFIG");
+    // We execute handle_cli_mode() first, then re-enter into main()
+    if let Ok(config_str) = config_var {
+        let config: ZiggyConfig = serde_json::from_str(&config_str).unwrap();
+        handle_ziggy(config);
     } else {
         handle_cli_mode();
     }
 }
 
-fn handle_ziggy() {
+fn handle_ziggy(config: ZiggyConfig) {
     println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
     set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
-    println!("{:?}", var("PHINK_START_FUZZING_WITH_CONFIG"));
 
-    let config: FullConfig =
-        serde_json::from_str(var("PHINK_START_FUZZING_WITH_CONFIG").unwrap().as_str()).unwrap();
-
-    let mut instrumenter = Instrumenter::new(config.clone().contract_path);
-
-    Fuzzer::execute_harness(&mut instrumenter, FuzzMode(), config).unwrap();
+    Fuzzer::execute_harness(Fuzz, config).unwrap();
 }
 
 fn handle_cli_mode() {
@@ -126,23 +119,27 @@ fn handle_cli_mode() {
             );
         }
         Commands::Fuzz { contract_path } => {
-            let ziggy: FullConfig = FullConfig::new(config, contract_path);
+            let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
             ziggy.ziggy_fuzz().unwrap();
         }
         Commands::Run { contract_path } => {
-            todo!()
+            let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
+            ziggy.ziggy_run().unwrap();
         }
         Commands::Execute {
-            seed: seed_path,
+            seed,
             contract_path,
         } => {
-            todo!()
+            let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
+
+            Fuzzer::execute_harness(ExecuteOneInput(seed), ziggy).unwrap();
         }
         Commands::HarnessCover { contract_path } => {
-            todo!()
+            let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
+            ziggy.ziggy_cover().unwrap();
         }
         Commands::Coverage { contract_path } => {
-            todo!()
+            CoverageTracker::generate(ZiggyConfig::new(config, contract_path));
         }
         Commands::Clean => {
             Instrumenter::clean().unwrap();

@@ -1,8 +1,9 @@
+use crate::cli::ziggy::ZiggyConfig;
 use crate::cover::coverage::COVERAGE_PATH;
 use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {
@@ -171,7 +172,7 @@ impl CoverageTracker {
         Ok(())
     }
 
-    pub fn generate(contract_path: PathBuf, report_path: PathBuf) {
+    pub fn generate(config: ZiggyConfig) {
         let mut file = match File::open(COVERAGE_PATH) {
             Ok(file) => file,
             Err(_) => {
@@ -185,7 +186,7 @@ impl CoverageTracker {
         println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
-        for entry in WalkDir::new(contract_path)
+        for entry in WalkDir::new(config.contract_path)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
@@ -195,9 +196,12 @@ impl CoverageTracker {
                 .expect("🙅 Cannot process file"); //todo: does that work ?
         }
         tracker
-            .generate_report(report_path.to_str().unwrap())
+            .generate_report(config.config.report_path.clone().unwrap().to_str().unwrap())
             .expect("🙅 Cannot generate coverage report");
-        println!("📊 Coverage report generated at: {}", report_path.display());
+        println!(
+            "📊 Coverage report generated at: {}",
+            config.config.report_path.unwrap().display()
+        );
     }
 }
 

@@ -1,10 +1,5 @@
-use crate::config::Configuration;
-use crate::fuzzer::fuzz::DICT_FILE;
-use crate::fuzzer::parser::MIN_SEED_LEN;
-use serde_derive::{Deserialize, Serialize};
 use std::io::Write;
 use std::{
-    env::var,
     fs,
     fs::File,
     io,
@@ -12,6 +7,12 @@ use std::{
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
+
+use serde_derive::{Deserialize, Serialize};
+
+use crate::cli::config::Configuration;
+use crate::fuzzer::fuzz::DICT_FILE;
+use crate::fuzzer::parser::MIN_SEED_LEN;
 
 pub enum ZiggyCommand {
     Run,
@@ -21,12 +22,12 @@ pub enum ZiggyCommand {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FullConfig {
+pub struct ZiggyConfig {
     pub config: Configuration,
     pub contract_path: PathBuf,
 }
 
-impl FullConfig {
+impl ZiggyConfig {
     pub const ALLOWLIST_PATH: &'static str = "./output/phink/allowlist.txt";
     pub const AFL_DEBUG: &'static str = "1";
 
@@ -45,12 +46,18 @@ impl FullConfig {
     ) -> io::Result<()> {
         let command_arg = Self::command_to_arg(&command)?;
 
-        println!("AAAAAAAAAAAA {}", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str().unwrap());
         let mut binding = Command::new("cargo");
-        let mut command_builder = binding
+        let command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
-            .env("AFL_LLVM_ALLOWLIST", fs::canonicalize(Path::new(Self::ALLOWLIST_PATH)).unwrap().to_str().unwrap())
+            .env(
+                "AFL_LLVM_ALLOWLIST",
+                Path::new(Self::ALLOWLIST_PATH)
+                    .canonicalize()
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+            )
             .env("AFL_DEBUG", Self::AFL_DEBUG)
             .stdout(Stdio::piped());
 
@@ -93,25 +100,49 @@ impl FullConfig {
 
     pub fn ziggy_fuzz(&self) -> io::Result<()> {
         Self::start(ZiggyCommand::Build, vec![], vec![])?;
-        println!("🏗️ ZiggyCommand::Build completed");
+        println!("🏗️ Ziggy Build completed");
 
-        let mut all_my_args = Vec::new();
+        let mut fuzzing_args = Vec::new();
 
         let jobs = format!("--jobs={}", self.config.cores.unwrap_or_default());
         let dict = format!("--dict={}", DICT_FILE);
         let minlength = format!("--minlength={}", MIN_SEED_LEN);
 
-        all_my_args.push(jobs);
-        all_my_args.push(dict);
-        all_my_args.push(minlength);
+        fuzzing_args.push(jobs);
+        fuzzing_args.push(dict);
+        fuzzing_args.push(minlength);
 
         if !self.config.use_honggfuzz {
-            all_my_args.push("--no-honggfuzz".parse().unwrap());
+            fuzzing_args.push("--no-honggfuzz".parse().unwrap());
         }
 
         Self::start(
             ZiggyCommand::Fuzz,
-            all_my_args,
+            fuzzing_args,
+            vec![(
+                "PHINK_START_FUZZING_WITH_CONFIG".into(),
+                serde_json::to_string(self).unwrap(),
+            )],
+        )?;
+        Ok(())
+    }
+
+    pub fn ziggy_cover(&self) -> io::Result<()> {
+        Self::start(
+            ZiggyCommand::Cover,
+            vec![],
+            vec![(
+                "PHINK_START_FUZZING_WITH_CONFIG".into(),
+                serde_json::to_string(self).unwrap(),
+            )],
+        )?;
+        Ok(())
+    }
+
+    pub fn ziggy_run(&self) -> io::Result<()> {
+        Self::start(
+            ZiggyCommand::Run,
+            vec![],
             vec![(
                 "PHINK_START_FUZZING_WITH_CONFIG".into(),
                 serde_json::to_string(self).unwrap(),

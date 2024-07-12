@@ -7,17 +7,16 @@ use std::{
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
-use sp_core::crypto::AccountId32;
 use sp_core::hexdisplay::AsBytesRef;
 
-use crate::ziggy::FullConfig;
+use crate::cli::ziggy::ZiggyConfig;
 use crate::{
     contract::{
         payload::{PayloadCrafter, Selector},
         remote::{ContractBridge, FullContractResponse},
     },
     cover::coverage::Coverage,
-    fuzzer::fuzz::FuzzingMode::{ExecuteOneInput, FuzzMode},
+    fuzzer::fuzz::FuzzingMode::{ExecuteOneInput, Fuzz},
     fuzzer::{
         bug::BugManager,
         engine::FuzzerEngine,
@@ -32,7 +31,7 @@ pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 
 
 pub enum FuzzingMode {
     ExecuteOneInput(PathBuf),
-    FuzzMode(),
+    Fuzz,
 }
 
 #[derive(Clone)]
@@ -53,12 +52,8 @@ impl Fuzzer {
         self.max_messages_per_exec = max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
     }
 
-    pub fn execute_harness(
-        engine: &mut Instrumenter,
-        fuzzing_mode: FuzzingMode,
-        config: FullConfig,
-    ) -> io::Result<()> {
-        let finder = engine.find().unwrap();
+    pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> io::Result<()> {
+        let finder = Instrumenter::new(config.contract_path).find().unwrap();
         let wasm = fs::read(&finder.wasm_path)?;
         let setup = ContractBridge::initialize_wasm(
             wasm,
@@ -70,8 +65,8 @@ impl Fuzzer {
         );
         let mut fuzzer = Fuzzer::new(setup);
 
-        match fuzzing_mode {
-            FuzzMode() => {
+        match mode {
+            Fuzz => {
                 fuzzer.set_max_messages_per_exec(config.config.max_messages_per_exec);
                 fuzzer.fuzz();
             }

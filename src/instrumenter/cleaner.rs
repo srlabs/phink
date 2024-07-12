@@ -1,4 +1,3 @@
-use crate::instrumenter::instrument;
 use crate::Instrumenter;
 use std::io::Write;
 use std::path::{Path, PathBuf};

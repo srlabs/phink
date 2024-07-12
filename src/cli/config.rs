@@ -1,9 +1,9 @@
+use crate::contract::remote::ContractBridge;
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use serde_derive::{Deserialize, Serialize};
 use sp_core::crypto::AccountId32;
 use std::fs;
 use std::path::PathBuf;
-use crate::contract::remote::ContractBridge;
-use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {
