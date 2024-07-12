@@ -167,6 +167,7 @@ impl ContractInstrumenter for Instrumenter {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target")) //Don't instrument anything inside target
         {
             let path = entry.path();
             self.instrument_file(path)?;
@@ -198,7 +199,7 @@ impl ContractInstrumenter for Instrumenter {
 
     fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
         let mut ast = parse_file(code).expect(
-            "⚠️ This is most likely that your ink! contract\
+            "⚠️ This is most likely that your ink! contract \
         contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
         );
         visitor.visit_file_mut(&mut ast);
