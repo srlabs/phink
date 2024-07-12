@@ -37,7 +37,7 @@ impl FullConfig {
         }
     }
 
-    /// This function execute cargo ziggy + command + args
+    /// This function execute `cargo ziggy + command + args`
     fn start(
         command: ZiggyCommand,
         args: Vec<String>,
@@ -49,7 +49,7 @@ impl FullConfig {
         let mut command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
-            .env("AFL_LLVM_ALLOWLIST", Self::ALLOWLIST_PATH)
+            .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
             .env("AFL_DEBUG", Self::AFL_DEBUG)
             .stdout(Stdio::piped());
 
@@ -92,7 +92,6 @@ impl FullConfig {
 
     pub fn ziggy_fuzz(&self) -> io::Result<()> {
         Self::start(ZiggyCommand::Build, vec![], vec![])?;
-
         println!("🏗️ ZiggyCommand::Build completed");
 
         let mut all_my_args = Vec::new();
@@ -108,9 +107,6 @@ impl FullConfig {
         if !self.config.use_honggfuzz {
             all_my_args.push("--no-honggfuzz".parse().unwrap());
         }
-        all_my_args.push("#".into());
-
-        println!("xxxxxx  :   {}", serde_json::to_string(self).unwrap());
 
         Self::start(
             ZiggyCommand::Fuzz,
