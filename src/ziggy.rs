@@ -49,7 +49,7 @@ impl FullConfig {
         let mut command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
-            .env("AFL_LLVM_ALLOWLIST", "./output/phink/allowlist.txt")
+            .env("AFL_LLVM_ALLOWLIST", Path::new(Self::ALLOWLIST_PATH).display().to_string())
             .env("AFL_DEBUG", Self::AFL_DEBUG)
             .stdout(Stdio::piped());
 
