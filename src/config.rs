@@ -5,8 +5,6 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {
-    /// Path where the contract is located. It must be the root directory of the contract
-    pub contract_path: PathBuf,
     /// Number of cores to use for Ziggy
     pub cores: Option<u8>,
     /// Also use Hongfuzz as a fuzzer
@@ -22,7 +20,6 @@ pub struct Configuration {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            contract_path: Default::default(),
             cores: Some(1),
             use_honggfuzz: false,
             deployer_address: None,

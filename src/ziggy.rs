@@ -1,6 +1,7 @@
 use crate::config::Configuration;
 use crate::fuzzer::fuzz::DICT_FILE;
 use crate::fuzzer::parser::MIN_SEED_LEN;
+use serde_derive::{Deserialize, Serialize};
 use std::io::Write;
 use std::{
     env::var,
@@ -19,21 +20,29 @@ pub enum ZiggyCommand {
     Fuzz,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ziggy {
     pub config: Configuration,
+    pub contract_path: PathBuf,
 }
 
 impl Ziggy {
     pub const ALLOWLIST_PATH: &'static str = "./output/phink/allowlist.txt";
     pub const AFL_DEBUG: &'static str = "1";
 
-    pub fn new(config: Configuration) -> Self {
-        Self { config }
+    pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
+        Self {
+            config,
+            contract_path,
+        }
     }
 
     /// This function execute cargo ziggy + command + args
-    fn start(command: ZiggyCommand, args: Vec<String>) -> io::Result<()> {
+    fn start(
+        command: ZiggyCommand,
+        args: Vec<String>,
+        env: Vec<(String, String)>,
+    ) -> io::Result<()> {
         let command_arg = Self::command_to_arg(&command)?;
 
         let mut binding = Command::new("cargo");
@@ -46,6 +55,11 @@ impl Ziggy {
 
         // If there are additional arguments, pass them to the command
         command_builder.args(args.iter());
+
+        // If there is any env, pass them
+        for (key, value) in env {
+            command_builder.env(key, value);
+        }
 
         let mut ziggy_child = command_builder.spawn()?;
 
@@ -77,7 +91,7 @@ impl Ziggy {
     }
 
     pub fn ziggy_fuzz(&self) -> io::Result<()> {
-        Self::start(ZiggyCommand::Build, vec![])?;
+        Self::start(ZiggyCommand::Build, vec![], vec![])?;
 
         println!("🏗️ ZiggyCommand::Build completed");
 
@@ -96,12 +110,21 @@ impl Ziggy {
         }
         all_my_args.push("#".into());
 
-        Self::start(ZiggyCommand::Fuzz, all_my_args)?;
+        println!("xxxxxx  :   {}", serde_json::to_string(self).unwrap());
+
+        Self::start(
+            ZiggyCommand::Fuzz,
+            all_my_args,
+            vec![(
+                "PHINK_START_FUZZING_WITH".into(),
+                serde_json::to_string(self).unwrap(),
+            )],
+        )?;
         Ok(())
     }
 
     /// Builds the LLVM allowlist if it doesn't already exist.
-     fn build_llvm_allowlist() -> Result<(), io::Error> {
+    fn build_llvm_allowlist() -> Result<(), io::Error> {
         let path = Path::new(Self::ALLOWLIST_PATH);
 
         if path.exists() {

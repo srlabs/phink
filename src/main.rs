@@ -2,15 +2,15 @@
 
 extern crate core;
 
+use clap::Parser;
+use serde::Deserialize;
+use sp_core::{crypto::Ss58Codec, hexdisplay::AsBytesRef};
+use std::env::{set_var, var};
 use std::{
     io::Read,
     io::{BufRead, Write},
     path::PathBuf,
 };
-
-use clap::Parser;
-use serde::Deserialize;
-use sp_core::{crypto::Ss58Codec, hexdisplay::AsBytesRef};
 
 use crate::ziggy::Ziggy;
 use crate::{
@@ -45,54 +45,92 @@ struct Cli {
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
     /// Starts the fuzzing process. Instrumentation required before!
-    Fuzz,
+    Fuzz {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Instrument the ink! contract, and compile it with Phink features
-    Instrument,
+    Instrument {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Run all the seeds
-    Run,
+    Run {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Remove all the temporary files under `/tmp/ink_fuzzed_*`
     Clean,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here (mainly for debugging purposes only)
-    HarnessCover,
+    HarnessCover {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Generate a coverage report for your smart-contract
-    Coverage,
+    Coverage {
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
+    },
     /// Execute one seed
     Execute {
         /// Path to the file containing the input seed
         #[clap(value_parser)]
         seed: PathBuf,
+        /// Path where the contract is located. It must be the root directory of the contract
+        #[clap(value_parser)]
+        contract_path: PathBuf,
     },
 }
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+ fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
+
+    set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
+
+    if var("PHINK_FROM_ZIGGY").is_ok() {
+        println!("{:?}", var("PHINK_FROM_ZIGGY"));
+        Ok(())
+    } else {
+        //We execute handle_cli_mode(), then re-enter the main() function to go the the above if
+        handle_cli_mode()
+    }
+}
+
+fn handle_cli_mode() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let config = config::Configuration::load_config(&cli.config)?;
 
-    // Only one env variable needed : config file
-
     match cli.command {
-        Commands::Instrument => {
-            let mut engine = Instrumenter::new(config.contract_path.clone());
+        Commands::Instrument { contract_path } => {
+            let mut engine = Instrumenter::new(contract_path.clone());
             engine.instrument()?.build()?;
 
             println!(
                 "🤞 Contract {} has been instrumented, and is now compiled!",
-                config.contract_path.display()
+                contract_path.display()
             );
         }
-        Commands::Fuzz => {
-            let ziggy: Ziggy = Ziggy::new(config);
+        Commands::Fuzz { contract_path } => {
+            let ziggy: Ziggy = Ziggy::new(config, contract_path);
             ziggy.ziggy_fuzz()?;
         }
-        Commands::Run => {
+        Commands::Run { contract_path } => {
             todo!()
         }
-        Commands::Execute { seed: seed_path } => {
+        Commands::Execute {
+            seed: seed_path,
+            contract_path,
+        } => {
             todo!()
         }
-        Commands::HarnessCover => {
+        Commands::HarnessCover { contract_path } => {
             todo!()
         }
-        Commands::Coverage => {
+        Commands::Coverage { contract_path } => {
             todo!()
         }
         Commands::Clean => {

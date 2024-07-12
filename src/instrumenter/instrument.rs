@@ -86,7 +86,7 @@ pub trait ContractBuilder {
 }
 
 impl ContractBuilder for Instrumenter {
-   fn build(&self) -> Result<InkFilesPath, String> {
+    fn build(&self) -> Result<InkFilesPath, String> {
         let status = Command::new("cargo")
             .current_dir(&self.contract_dir)
             .args(["contract", "build", "--features=phink"])

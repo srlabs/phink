@@ -78,7 +78,6 @@ impl Fuzzer {
         Ok(())
     }
 
-
     fn build_corpus_and_dict(selectors: &[Selector]) -> io::Result<()> {
         fs::create_dir_all(CORPUS_DIR)?;
         let mut dict_file = fs::File::create(DICT_FILE)?;
