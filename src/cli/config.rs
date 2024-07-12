@@ -36,7 +36,12 @@ impl Default for Configuration {
 
 impl Configuration {
     pub fn load_config(file_path: &PathBuf) -> Configuration {
-        let config_str = fs::read_to_string(file_path).expect("can't read config");
-        toml::from_str(&config_str).expect("can't parse config")
+        let config_str = fs::read_to_string(file_path).unwrap_or_else(|err| {
+            panic!("🚫 Can't read config: {}", err);
+        });
+
+        toml::from_str(&config_str).unwrap_or_else(|err| {
+            panic!("❌ Can't parse config: {}", err);
+        })
     }
 }

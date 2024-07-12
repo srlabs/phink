@@ -151,7 +151,7 @@ impl FuzzerEngine for Fuzzer {
                 transcoder_loader,
             )
         });
-        
+
         // Pretty print all the calls of the current input
         #[cfg(not(fuzzing))]
         <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
