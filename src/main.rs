@@ -38,7 +38,7 @@ struct Cli {
     #[clap(subcommand)]
     command: Commands,
 
-    #[clap(long, short, value_parser, default_value = "config.toml")]
+    #[clap(long, short, value_parser, default_value = "phink.toml")]
     config: PathBuf,
 }
 
@@ -88,7 +88,6 @@ enum Commands {
 }
  fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("ℹ️ Setting AFL_FORKSRV_INIT_TMOUT to 10000000");
-
     set_var("AFL_FORKSRV_INIT_TMOUT", "10000000");
 
     if var("PHINK_FROM_ZIGGY").is_ok() {
@@ -100,7 +99,7 @@ enum Commands {
     }
 }
 
-fn handle_cli_mode() -> Result<(), Box<dyn std::error::Error>> {
+fn handle_cli_mode() -> Result<(), dyn std::error::Error> {
     let cli = Cli::parse();
     let config = config::Configuration::load_config(&cli.config)?;
 

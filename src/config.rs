@@ -30,7 +30,7 @@ impl Default for Configuration {
 }
 
 impl Configuration {
-    pub fn load_config(file_path: &PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load_config(file_path: &PathBuf) -> Result<Self, dyn std::error::Error> {
         let config_str = fs::read_to_string(file_path)?;
         let config: Configuration = toml::from_str(&config_str)?;
         Ok(config)
