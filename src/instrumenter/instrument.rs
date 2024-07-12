@@ -26,7 +26,7 @@ use walkdir::WalkDir;
 /// automatically add a tracing code, which will then be fetched at the end of the input execution
 /// in order to get coverage.
 #[derive(Default, Clone)]
-pub struct InstrumenterEngine {
+pub struct Instrumenter {
     pub contract_dir: PathBuf,
 }
 
@@ -46,7 +46,7 @@ pub trait ContractInstrumenter {
     fn already_instrumented(code: &str) -> bool;
 }
 
-impl InstrumenterEngine {
+impl Instrumenter {
     pub fn new(dir: PathBuf) -> Self {
         Self { contract_dir: dir }
     }
@@ -85,8 +85,8 @@ pub trait ContractBuilder {
     fn build(&self) -> Result<InkFilesPath, String>;
 }
 
-impl ContractBuilder for InstrumenterEngine {
-    fn build(&self) -> Result<InkFilesPath, String> {
+impl ContractBuilder for Instrumenter {
+   fn build(&self) -> Result<InkFilesPath, String> {
         let status = Command::new("cargo")
             .current_dir(&self.contract_dir)
             .args(["contract", "build", "--features=phink"])
@@ -115,7 +115,7 @@ impl ContractBuilder for InstrumenterEngine {
 pub trait ContractForker {
     fn fork(&self) -> Result<PathBuf, String>;
 }
-impl ContractForker for InstrumenterEngine {
+impl ContractForker for Instrumenter {
     fn fork(&self) -> Result<PathBuf, String> {
         let random_string: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
@@ -158,8 +158,8 @@ impl ContractForker for InstrumenterEngine {
     }
 }
 
-impl ContractInstrumenter for InstrumenterEngine {
-    fn instrument(&mut self) -> Result<&mut InstrumenterEngine, String> {
+impl ContractInstrumenter for Instrumenter {
+    fn instrument(&mut self) -> Result<&mut Instrumenter, String> {
         let new_working_dir = self.fork()?;
         self.contract_dir = new_working_dir.clone();
 

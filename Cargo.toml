@@ -52,6 +52,8 @@ pallet-insecure-randomness-collective-flip = { git = "https://github.com/parityt
 ziggy = { version = "1.1.0", default-features = false }
 hex = { version = "0.4.3" }
 serde = { version = "1.0.197", features = ["derive"] }
+toml = { version = "0.8.14" }
+serde_derive = { version = "1.0" }
 serde_json = { version = "1.0.115" }
 ink_env = { version = "5.0.0" }
 paste = { version = "1.0.14" }

@@ -7,23 +7,32 @@ use std::{
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
+use sp_core::crypto::AccountId32;
+use sp_core::hexdisplay::AsBytesRef;
 
 use crate::{
     contract::{
         payload::{PayloadCrafter, Selector},
         remote::{ContractBridge, FullContractResponse},
     },
+    cover::coverage::Coverage,
+    fuzzer::fuzz::FuzzingMode::{ExecuteOneInput, FuzzMode},
     fuzzer::{
         bug::BugManager,
         engine::FuzzerEngine,
         parser::{parse_input, OneInput},
     },
+    instrumenter::instrument::Instrumenter,
 };
-use crate::cover::coverage::Coverage;
 
 pub const CORPUS_DIR: &str = "./output/phink/corpus";
 pub const DICT_FILE: &str = "./output/phink/selectors.dict";
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages.
+
+pub enum FuzzingMode {
+    ExecuteOneInput(PathBuf),
+    FuzzMode(Option<usize>),
+}
 
 #[derive(Clone)]
 pub struct Fuzzer {
@@ -42,6 +51,33 @@ impl Fuzzer {
     pub fn set_max_messages_per_exec(&mut self, max_messages_per_exec: Option<usize>) {
         self.max_messages_per_exec = max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
     }
+
+    fn execute_harness(
+        engine: &mut Instrumenter,
+        fuzzing_mode: FuzzingMode,
+        deployer_id: Option<AccountId32>,
+    ) -> io::Result<()> {
+        let contract_deployer_origin = deployer_id.unwrap_or_else(|| AccountId32::new([0u8; 32]));
+        let finder = engine.find().unwrap();
+
+        let wasm = fs::read(&finder.wasm_path)?;
+        let setup =
+            ContractBridge::initialize_wasm(wasm, &finder.specs_path, contract_deployer_origin);
+        let mut fuzzer = Fuzzer::new(setup);
+
+        match fuzzing_mode {
+            FuzzMode(max_messages_per_exec) => {
+                fuzzer.set_max_messages_per_exec(max_messages_per_exec);
+                fuzzer.fuzz();
+            }
+            ExecuteOneInput(seed_path) => {
+                fuzzer.exec_seed(seed_path);
+            }
+        }
+
+        Ok(())
+    }
+
 
     fn build_corpus_and_dict(selectors: &[Selector]) -> io::Result<()> {
         fs::create_dir_all(CORPUS_DIR)?;
@@ -129,9 +165,15 @@ impl FuzzerEngine for Fuzzer {
         }
     }
 
-    fn exec_seed(self, seed: &[u8]) {
+    fn exec_seed(self, seed: PathBuf) {
         let (mut transcoder_loader, mut invariant_manager) = init_fuzzer(self.clone());
-        Self::harness(self, &mut transcoder_loader, &mut invariant_manager, seed);
+        let data = fs::read(seed).unwrap();
+        Self::harness(
+            self,
+            &mut transcoder_loader,
+            &mut invariant_manager,
+            data.as_bytes_ref(),
+        );
     }
 }
 
@@ -242,8 +284,9 @@ fn check_invariants(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::Path;
+
+    use super::*;
 
     #[test]
     fn test_parse_input() {

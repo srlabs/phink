@@ -3,6 +3,7 @@ use sp_runtime::{DispatchError, ModuleError};
 use std::panic;
 use std::sync::Mutex;
 
+use crate::cover::coverage::Coverage;
 use crate::{
     contract::{
         payload::Selector,
@@ -10,7 +11,6 @@ use crate::{
     },
     fuzzer::{engine::FuzzerEngine, fuzz::Fuzzer, parser::Message, parser::OneInput},
 };
-use crate::cover::coverage::Coverage;
 
 pub type FailedInvariantTrace = (Selector, FullContractResponse);
 

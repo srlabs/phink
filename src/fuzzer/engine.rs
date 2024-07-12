@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 use crate::{
@@ -85,5 +86,5 @@ pub trait FuzzerEngine {
             .unwrap();
         }
     }
-    fn exec_seed(self, seed: &[u8]);
+    fn exec_seed(self, seed: PathBuf);
 }

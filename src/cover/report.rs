@@ -1,6 +1,9 @@
+use crate::cover::coverage::COVERAGE_PATH;
 use std::collections::{HashMap, HashSet};
-use std::fs::{self};
-use std::path::Path;
+use std::fs::{self, File};
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 pub struct CoverageTracker {
     coverage: HashMap<String, Vec<bool>>,
@@ -166,6 +169,35 @@ impl CoverageTracker {
         fs::write(output_path, html)?;
 
         Ok(())
+    }
+
+    pub fn generate(contract_path: PathBuf, report_path: PathBuf) {
+        let mut file = match File::open(COVERAGE_PATH) {
+            Ok(file) => file,
+            Err(_) => {
+                println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");
+                return;
+            }
+        };
+
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        println!("📄 Successfully read coverage file.");
+
+        let mut tracker = CoverageTracker::new(&contents);
+        for entry in WalkDir::new(contract_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+        {
+            tracker
+                .process_file(entry.path().as_os_str().to_str().unwrap())
+                .expect("🙅 Cannot process file"); //todo: does that work ?
+        }
+        tracker
+            .generate_report(report_path.to_str().unwrap())
+            .expect("🙅 Cannot generate coverage report");
+        println!("📊 Coverage report generated at: {}", report_path.display());
     }
 }
 

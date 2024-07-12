@@ -1,5 +1,5 @@
 use crate::instrumenter::instrument;
-use crate::InstrumenterEngine;
+use crate::Instrumenter;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -7,7 +7,7 @@ pub trait Cleaner {
     fn clean() -> Result<(), io::Error>;
 }
 
-impl Cleaner for InstrumenterEngine {
+impl Cleaner for Instrumenter {
     fn clean() -> Result<(), io::Error> {
         let pattern = "ink_fuzzed_";
         let dirs_to_remove = Self::get_dirs_to_remove(Path::new("/tmp"), pattern)?;
@@ -32,7 +32,7 @@ impl Cleaner for InstrumenterEngine {
     }
 }
 
-impl InstrumenterEngine {
+impl Instrumenter {
     fn get_dirs_to_remove(tmp_dir: &Path, pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
         Ok(fs::read_dir(tmp_dir)?
             .filter_map(|entry| {

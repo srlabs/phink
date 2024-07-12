@@ -1,2 +1,2 @@
-pub mod report;
 pub mod coverage;
+pub mod report;
