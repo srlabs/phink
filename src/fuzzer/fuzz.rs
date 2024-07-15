@@ -177,7 +177,7 @@ impl FuzzerEngine for Fuzzer {
 fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager) {
     let transcoder_loader = Mutex::new(
         ContractMessageTranscoder::load(Path::new(&fuzzer.setup.path_to_specs))
-            .expect("Failed to load ContractMessageTranscoder"),
+            .expect("🙅 Failed to load `ContractMessageTranscoder`"),
     );
 
     let specs = &fuzzer.setup.json_specs;
@@ -265,11 +265,12 @@ fn check_invariants(
     decoded_msgs: &OneInput,
     transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
 ) {
-    for result in all_msg_responses {
-        if bug_manager.is_contract_trapped(result) {
-            bug_manager.display_trap(decoded_msgs.messages[0].clone(), result.clone());
-        }
-    }
+    all_msg_responses
+        .iter()
+        .filter(|response| bug_manager.is_contract_trapped(response))
+        .for_each(|response| {
+            bug_manager.display_trap(decoded_msgs.messages[0].clone(), response.clone());
+        });
 
     if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
         bug_manager.display_invariant(
