@@ -45,7 +45,7 @@ impl CoverageTracker {
             if trimmed.contains('}') {
                 if let Some(start) = block_stack.pop() {
                     if file_coverage[start] {
-                        // If the start of the block is covered, cover everything up to this line
+                        // If the start of the block is covered, cover everything up to this line 
                         for j in start..=i {
                             file_coverage[j] = true;
                         }
