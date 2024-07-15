@@ -20,8 +20,6 @@ use sp_runtime::{
 use std::panic;
 use std::sync::Mutex;
 
-pub type FailedInvariantTrace = (Selector, FullContractResponse);
-
 #[derive(Clone)]
 pub struct BugManager {
     pub contract_bridge: ContractBridge,
@@ -76,14 +74,14 @@ impl BugManager {
         &self,
         responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
-        invariant_tested: FailedInvariantTrace,
+        invariant_tested: Selector,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
         println!("\n🤯 An invariant got caught! Let's dive into it");
 
         // Convert the array to a slice and then take a mutable reference to the
         // slice
-        let mut invariant_slice: &[u8] = &invariant_tested.0;
+        let mut invariant_slice: &[u8] = &invariant_tested;
 
         let hex = transcoder_loader
             .get_mut()
@@ -104,7 +102,7 @@ impl BugManager {
     pub fn are_invariants_passing(
         &self,
         origin: Origin,
-    ) -> Result<(), FailedInvariantTrace> {
+    ) -> Result<(), Selector> {
         for invariant in &self.invariant_selectors {
             let invariant_call: FullContractResponse =
                 self.contract_bridge.clone().call(
@@ -114,7 +112,7 @@ impl BugManager {
                     self.configuration.clone(),
                 );
             if invariant_call.result.is_err() {
-                return Err((*invariant, invariant_call));
+                return Err(*invariant)
             }
         }
         Ok(())

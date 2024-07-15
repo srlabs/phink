@@ -1,4 +1,3 @@
-use serde::ser::Error;
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -41,15 +40,7 @@ impl PayloadCrafter {
         let mut selectors: Vec<Selector> = Vec::new();
         for entry in spec.constructors.iter().chain(spec.messages.iter()) {
             let bytes: Vec<u8> =
-                hex::decode(entry.selector.trim_start_matches("0x"))
-                    .unwrap()
-                    .try_into()
-                    .map_err(|_| {
-                        serde_json::Error::custom(
-                            "🙅 Selector is not a valid 4-byte array",
-                        )
-                    })
-                    .unwrap();
+                hex::decode(entry.selector.trim_start_matches("0x")).unwrap();
             selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
         }
         selectors
