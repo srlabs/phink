@@ -1,8 +1,11 @@
-Cargo.lock
 .DS_Store
 target
-sample/flipper/target
 sample/.DS_Store
 */.DS_Store
 .idea/
 output/
+.vscode
+debug/
+target/
+Cargo.lock
+**/*.rs.bk
