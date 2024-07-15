@@ -73,7 +73,7 @@ enum Commands {
     Coverage(Contract),
     /// Execute one seed
     Execute {
-        /// Seed to be executed
+        /// Seed to be run
         seed: PathBuf,
         /// Path where the contract is located. It must be the root directory
         /// of the contract
@@ -104,42 +104,44 @@ fn handle_cli() {
 
     match cli.command {
         Commands::Instrument(contract_path) => {
-            let mut engine =
-                Instrumenter::new(contract_path.contract_path.clone());
+            let mut engine = Instrumenter::new(contract_path.contract_path.clone());
             engine.instrument().unwrap().build().unwrap();
 
             println!(
                 "🤞 Contract {} has been instrumented and compiled!",
                 contract_path.contract_path.display()
             );
-        },
+        }
         Commands::Fuzz(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_fuzz()
                 .unwrap();
-        },
+        }
         Commands::Run(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_run()
                 .unwrap();
-        },
-        Commands::Execute { seed, contract_path } => {
+        }
+        Commands::Execute {
+            seed,
+            contract_path,
+        } => {
             let ziggy: ZiggyConfig = ZiggyConfig::new(config, contract_path);
             Fuzzer::execute_harness(ExecuteOneInput(seed), ziggy).unwrap();
-        },
+        }
         Commands::HarnessCover(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)
                 .ziggy_cover()
                 .unwrap();
-        },
+        }
         Commands::Coverage(contract_path) => {
             CoverageTracker::generate(ZiggyConfig::new(
                 config,
                 contract_path.contract_path,
             ));
-        },
+        }
         Commands::Clean => {
             Instrumenter::clean().unwrap();
-        },
+        }
     }
 }

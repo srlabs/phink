@@ -79,10 +79,9 @@ impl Configuration {
             panic!("🚫 Can't read config: {}", err);
         });
 
-        let config: Configuration =
-            toml::from_str(&config_str).unwrap_or_else(|err| {
-                panic!("❌ Can't parse config: {}", err);
-            });
+        let config: Configuration = toml::from_str(&config_str).unwrap_or_else(|err| {
+            panic!("❌ Can't parse config: {}", err);
+        });
 
         if config.storage_deposit_limit.is_some()
             && Option::is_none(&Self::parse_storage_deposit(&config))
@@ -93,9 +92,7 @@ impl Configuration {
         config
     }
 
-    pub fn parse_storage_deposit(
-        config: &Configuration,
-    ) -> Option<BalanceOf<Runtime>> {
+    pub fn parse_storage_deposit(config: &Configuration) -> Option<BalanceOf<Runtime>> {
         // Currently, TOML & Serde don't handle parsing `u128` 🤡
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)

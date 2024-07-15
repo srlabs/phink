@@ -15,8 +15,7 @@ pub trait Cleaner {
 impl Cleaner for Instrumenter {
     fn clean() -> Result<(), io::Error> {
         let pattern = "ink_fuzzed_";
-        let dirs_to_remove =
-            Self::get_dirs_to_remove(Path::new("/tmp"), pattern)?;
+        let dirs_to_remove = Self::get_dirs_to_remove(Path::new("/tmp"), pattern)?;
 
         if dirs_to_remove.is_empty() {
             println!("❌  No directories found matching the pattern '{}'. There's nothing to be cleaned :)", pattern);
@@ -66,9 +65,7 @@ impl Instrumenter {
         Ok(input.trim().eq_ignore_ascii_case("yes"))
     }
 
-    fn remove_directories(
-        dirs_to_remove: Vec<PathBuf>,
-    ) -> Result<(), io::Error> {
+    fn remove_directories(dirs_to_remove: Vec<PathBuf>) -> Result<(), io::Error> {
         for dir in dirs_to_remove {
             fs::remove_dir_all(&dir)?;
             println!("✅ Removed directory: {}", dir.display());

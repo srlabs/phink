@@ -53,8 +53,8 @@ impl PayloadCrafter {
     /// # Arguments
     /// * `json_data`: The JSON specs of the smart-contract
     pub fn extract_invariants(json_data: &str) -> Option<Vec<Selector>> {
-        let data: Value = serde_json::from_str(json_data)
-            .expect("JSON was not well-formatted");
+        let data: Value =
+            serde_json::from_str(json_data).expect("JSON was not well-formatted");
 
         Some(
             data["spec"]["messages"]
@@ -90,17 +90,13 @@ impl PayloadCrafter {
         // If there is exactly one constructor, return its selector if
         // available.
         if constructors.len() == 1 {
-            return Self::get_selector_bytes(
-                constructors[0]["selector"].as_str()?,
-            );
+            return Self::get_selector_bytes(constructors[0]["selector"].as_str()?);
         }
 
         // Otherwise, look for a constructor without arguments.
         for constructor in constructors {
             if constructor["args"].as_array().map_or(false, Vec::is_empty) {
-                return Self::get_selector_bytes(
-                    constructor["selector"].as_str()?,
-                );
+                return Self::get_selector_bytes(constructor["selector"].as_str()?);
             }
         }
 
@@ -110,17 +106,18 @@ impl PayloadCrafter {
 
     /// Decode `encoded` to a proper `Selector`
     fn decode_selector(encoded: &str) -> Selector {
-        let bytes: Vec<u8> =
-            hex::decode(encoded.trim_start_matches("0x")).unwrap();
-        <[u8; 4]>::try_from(bytes)
-            .expect("Selector is not a valid 4-byte array")
+        let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
+        <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
     }
 
     /// Helper function to decode a hexadecimal string selector into a byte
     /// array of length 4. Returns `None` if the decoding or conversion
     /// fails.
     fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
-        hex::decode(selector_str.trim_start_matches("0x")).ok()?.try_into().ok()
+        hex::decode(selector_str.trim_start_matches("0x"))
+            .ok()?
+            .try_into()
+            .ok()
     }
 }
 
@@ -144,8 +141,7 @@ mod test {
 
     #[test]
     fn fetch_good_invariants() {
-        let specs =
-            fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_invariants(&specs)
             .unwrap()
             .iter()
@@ -158,8 +154,7 @@ mod test {
 
     #[test]
     fn fetch_correct_selectors() {
-        let specs =
-            fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_all(&specs)
             .iter()
             .map(|x| hex::encode(x) + " ")
@@ -174,10 +169,8 @@ mod test {
 
     #[test]
     fn fetch_correct_dns_constructor() {
-        let dns_spec =
-            fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-        let ctor: Selector =
-            PayloadCrafter::get_constructor(&dns_spec).unwrap();
+        let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
+        let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
 
         // DNS default selectors
         assert_eq!(hex::encode(ctor), "9bae9d5e");
@@ -186,8 +179,7 @@ mod test {
     #[test]
     fn encode_works_good() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-        let transcoder =
-            ContractMessageTranscoder::load(metadata_path).unwrap();
+        let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
         let constructor = "set_address";
         let args = [
             // name: Hash, new_address: AccountId
@@ -233,8 +225,8 @@ mod test {
         }
 
         let hash_two: [u8; 32] = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 2,
         ];
 
         println!("{:?}", hex::encode(hash_two.encode()));
@@ -243,8 +235,7 @@ mod test {
     #[test]
     fn decode_works_good() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-        let transcoder =
-            ContractMessageTranscoder::load(metadata_path).unwrap();
+        let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
 
         let encoded_bytes = hex::decode(
             "229b553f9400000000000000000027272727272727272700002727272727272727272727",

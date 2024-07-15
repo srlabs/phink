@@ -17,7 +17,7 @@ use std::{
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {
-    coverage:  HashMap<String, Vec<bool>>,
+    coverage: HashMap<String, Vec<bool>>,
     hit_lines: HashSet<usize>,
 }
 
@@ -29,7 +29,10 @@ impl CoverageTracker {
             .filter_map(|s| s.parse().ok())
             .collect();
 
-        CoverageTracker { coverage: HashMap::new(), hit_lines }
+        CoverageTracker {
+            coverage: HashMap::new(),
+            hit_lines,
+        }
     }
 
     pub fn process_file(&mut self, file_path: &str) -> std::io::Result<()> {
@@ -53,9 +56,7 @@ impl CoverageTracker {
                     if file_coverage[start] {
                         // If the start of the block is covered, cover
                         // everything up to this line
-                        for item in
-                            file_coverage.iter_mut().take(i + 1).skip(start)
-                        {
+                        for item in file_coverage.iter_mut().take(i + 1).skip(start) {
                             *item = true;
                         }
                     }
@@ -131,8 +132,7 @@ impl CoverageTracker {
         );
 
         for (file_path, coverage) in &self.coverage {
-            let file_name =
-                Path::new(file_path).file_name().unwrap().to_str().unwrap();
+            let file_name = Path::new(file_path).file_name().unwrap().to_str().unwrap();
             let report_path = format!("{}/{}.html", output_dir, file_name);
 
             self.generate_file_report(file_path, coverage, &report_path)?;
@@ -196,7 +196,7 @@ impl CoverageTracker {
             Err(_) => {
                 println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");
                 return;
-            },
+            }
         };
 
         let mut contents = String::new();
@@ -208,18 +208,14 @@ impl CoverageTracker {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
-            .filter(|e| {
-                !e.path().components().any(|c| c.as_os_str() == "target")
-            })
+            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
         {
             tracker
                 .process_file(entry.path().as_os_str().to_str().unwrap())
                 .expect("🙅 Cannot process file");
         }
         tracker
-            .generate_report(
-                config.config.report_path.clone().unwrap().to_str().unwrap(),
-            )
+            .generate_report(config.config.report_path.clone().unwrap().to_str().unwrap())
             .expect("🙅 Cannot generate coverage report");
         println!(
             "📊 Coverage report generated at: {}",
@@ -271,8 +267,9 @@ mod tests {
         let mut file_coverage = vec![false; test_lines.len()];
 
         for (i, line) in test_lines.iter().enumerate() {
-            if let Some(cov_num) =
-                line.trim().strip_prefix("ink::env::debug_println!(\"COV=\", ")
+            if let Some(cov_num) = line
+                .trim()
+                .strip_prefix("ink::env::debug_println!(\"COV=\", ")
             {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {

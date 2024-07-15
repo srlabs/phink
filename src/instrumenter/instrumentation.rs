@@ -45,7 +45,7 @@ pub struct Instrumenter {
 
 #[derive(Debug)]
 pub struct InkFilesPath {
-    pub wasm_path:  PathBuf,
+    pub wasm_path: PathBuf,
     pub specs_path: PathBuf,
 }
 
@@ -54,14 +54,8 @@ pub trait ContractInstrumenter {
     where
         Self: Sized;
     fn instrument_file(&self, path: &Path) -> Result<(), String>;
-    fn parse_and_visit(
-        code: &str,
-        visitor: impl VisitMut,
-    ) -> Result<String, ()>;
-    fn save_and_format(
-        source_code: String,
-        lib_rs: PathBuf,
-    ) -> Result<(), io::Error>;
+    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
     fn already_instrumented(code: &str) -> bool;
 }
 
@@ -94,11 +88,13 @@ impl Instrumenter {
             .next()
             .ok_or("🙅 No .wasm file found in target directory")?;
 
-        let specs_path = PathBuf::from(
-            wasm_path.to_str().unwrap().replace(".wasm", ".json"),
-        );
+        let specs_path =
+            PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
-        Ok(InkFilesPath { wasm_path, specs_path })
+        Ok(InkFilesPath {
+            wasm_path,
+            specs_path,
+        })
     }
 }
 pub trait ContractBuilder {
@@ -143,8 +139,7 @@ impl ContractForker for Instrumenter {
             .map(char::from)
             .collect();
 
-        let new_dir =
-            Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
+        let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
         println!("🏗️ Creating new directory: {:?}", new_dir);
         fs::create_dir_all(&new_dir)
             .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
@@ -152,8 +147,7 @@ impl ContractForker for Instrumenter {
         println!("📁 Starting to copy files from {:?}", self.contract_dir);
 
         for entry in WalkDir::new(&self.contract_dir) {
-            let entry =
-                entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
+            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
@@ -163,15 +157,10 @@ impl ContractForker for Instrumenter {
 
             if entry.path().is_dir() {
                 println!("📂 Creating subdirectory: {:?}", target_path);
-                fs::create_dir_all(&target_path).map_err(|e| {
-                    format!("🙅 Failed to create subdirectory: {}", e)
-                })?;
+                fs::create_dir_all(&target_path)
+                    .map_err(|e| format!("🙅 Failed to create subdirectory: {}", e))?;
             } else {
-                println!(
-                    "📄 Copying file: {:?} -> {:?}",
-                    entry.path(),
-                    target_path
-                );
+                println!("📄 Copying file: {:?} -> {:?}", entry.path(), target_path);
                 copy(entry.path(), &target_path)
                     .map_err(|e| format!("🙅 Failed to copy file: {}", e))?;
             }
@@ -194,9 +183,7 @@ impl ContractInstrumenter for Instrumenter {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
-            .filter(|e| {
-                !e.path().components().any(|c| c.as_os_str() == "target")
-            })
+            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
         // Don't instrument anything inside target
         {
             let path = entry.path();
@@ -206,39 +193,30 @@ impl ContractInstrumenter for Instrumenter {
     }
 
     fn instrument_file(&self, path: &Path) -> Result<(), String> {
-        let code = fs::read_to_string(path).map_err(|e| {
-            format!("🙅 Failed to read {}: {:?}", path.display(), e)
-        })?;
+        let code = fs::read_to_string(path)
+            .map_err(|e| format!("🙅 Failed to read {}: {:?}", path.display(), e))?;
 
         if Self::already_instrumented(&code) {
             return Ok(());
         }
 
-        let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
-            .map_err(|_| {
-                format!(
-                    "🙅 Failed to parse and visit code in {}",
-                    path.display()
-                )
+        let modified_code =
+            Self::parse_and_visit(&code, ContractCovUpdater).map_err(|_| {
+                format!("🙅 Failed to parse and visit code in {}", path.display())
             })?;
 
-        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(
-            |e| {
-                format!(
-                    "🙅 Failed to save and format code in {}: {:?}",
-                    path.display(),
-                    e
-                )
-            },
-        )?;
+        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(|e| {
+            format!(
+                "🙅 Failed to save and format code in {}: {:?}",
+                path.display(),
+                e
+            )
+        })?;
 
         Ok(())
     }
 
-    fn parse_and_visit(
-        code: &str,
-        mut visitor: impl VisitMut,
-    ) -> Result<String, ()> {
+    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
         let mut ast = parse_file(code).expect(
             "⚠️ This is most likely that your ink! contract \
         contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
@@ -247,14 +225,15 @@ impl ContractInstrumenter for Instrumenter {
         Ok(quote!(#ast).to_string())
     }
 
-    fn save_and_format(
-        source_code: String,
-        lib_rs: PathBuf,
-    ) -> Result<(), io::Error> {
-        let mut file = File::create(lib_rs.clone())?;
+    fn save_and_format(source_code: String, rust_file: PathBuf) -> Result<(), io::Error> {
+        let mut file = File::create(rust_file.clone())?;
         file.write_all(source_code.as_bytes())?;
         file.flush()?;
-        Command::new("rustfmt").arg(lib_rs).status()?;
+        println!("🛠️ Formatting {:?} with rustfmt...", rust_file.display());
+        Command::new("rustfmt")
+            .arg(rust_file)
+            .arg("--edition=2021")
+            .status()?;
         Ok(())
     }
 
@@ -263,22 +242,19 @@ impl ContractInstrumenter for Instrumenter {
     /// `ink::env::debug_println!("COV=abc")` where `abc` can be any number. If
     /// this pattern is found, it means the code is instrumented.
     fn already_instrumented(code: &str) -> bool {
-        let re =
-            Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
+        let re = Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
         re.is_match(code)
     }
 }
 
 mod instrument {
     use proc_macro2::Span;
-    use quote::ToTokens;
     use rand::Rng;
     use syn::{
         parse_quote,
         visit_mut::VisitMut,
         Expr,
         LitInt,
-        Meta,
         Stmt,
         Token,
     };
@@ -292,10 +268,8 @@ mod instrument {
             // borrowing issues
             let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
-                let random_number =
-                    rand::thread_rng().gen_range(0..999_999_999);
-                let line_lit =
-                    LitInt::new(&random_number.to_string(), Span::call_site());
+                let random_number = rand::thread_rng().gen_range(0..999_999_999);
+                let line_lit = LitInt::new(&random_number.to_string(), Span::call_site());
 
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)

@@ -21,7 +21,9 @@ pub struct Coverage {
 
 impl Coverage {
     pub fn new() -> Self {
-        Coverage { branches: Vec::new() }
+        Coverage {
+            branches: Vec::new(),
+        }
     }
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
@@ -53,8 +55,10 @@ impl Coverage {
             trace_strings.push(x);
         }
 
-        let mut file =
-            OpenOptions::new().append(true).create(true).open(COVERAGE_PATH)?;
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(COVERAGE_PATH)?;
 
         write!(file, "{}", trace_strings.join("\n"))?;
 
@@ -66,10 +70,8 @@ impl Coverage {
     #[allow(unused_doc_comments)]
     #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self) {
-        let flatten_cov: Vec<u8> =
-            self.branches.clone().into_iter().flatten().collect();
-        let coverage_str =
-            Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
+        let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
+        let coverage_str = Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         #[cfg(not(fuzzing))]

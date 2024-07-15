@@ -115,10 +115,16 @@ pub fn parse_input(
     transcoder: &mut Mutex<ContractMessageTranscoder>,
     config: Configuration,
 ) -> OneInput {
-    let max_messages_per_exec =
-        config.max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
+    let max_messages_per_exec = config
+        .max_messages_per_exec
+        .unwrap_or(MAX_MESSAGES_PER_EXEC);
 
-    let iterable = Data { data, pointer: 0, size: 0, max_messages_per_exec };
+    let iterable = Data {
+        data,
+        pointer: 0,
+        size: 0,
+        max_messages_per_exec,
+    };
 
     let mut input = OneInput {
         messages: vec![],
@@ -139,13 +145,12 @@ pub fn parse_input(
             EnableOriginFuzzing => {
                 input.origin = Origin(decoded_payloads[4]);
                 encoded_message = &decoded_payloads[5..];
-            },
+            }
             DisableOriginFuzzing => encoded_message = &decoded_payloads[4..],
         }
 
         let binding = transcoder.get_mut().unwrap();
-        let decoded_msg =
-            binding.decode_contract_message(&mut &*encoded_message);
+        let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
             Ok(_) => {
@@ -154,10 +159,8 @@ pub fn parse_input(
                 {
                     let is_payable: bool = is_message_payable(
                         &Selector::from(
-                            <&[u8] as TryInto<[u8; 4]>>::try_into(
-                                &encoded_message[0..4],
-                            )
-                            .unwrap(),
+                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4])
+                                .unwrap(),
                         ),
                         transcoder.get_mut().unwrap().metadata(),
                     );
@@ -170,10 +173,10 @@ pub fn parse_input(
                         origin: input.origin,
                     });
                 }
-            },
+            }
             Err(_) => {
                 continue;
-            },
+            }
         }
     }
     input

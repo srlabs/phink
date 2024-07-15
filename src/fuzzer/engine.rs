@@ -48,15 +48,14 @@ pub trait FuzzerEngine {
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
         println!("\n🌱 Executing new seed");
         let mut table = Table::new();
-        table.add_row(Row::new(vec![
-            Cell::new("Message"),
-            Cell::new("Details"),
-        ]));
+        table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
 
         for (response, message) in responses.iter().zip(&one_input.messages) {
             let call_description = message.message_metadata.to_string();
 
-            let ContractResult { result: _result, .. } = response;
+            let ContractResult {
+                result: _result, ..
+            } = response;
 
             let debug = format!(
                 "⛽️ Gas required: {}\n\
@@ -70,9 +69,9 @@ pub trait FuzzerEngine {
                 response.storage_deposit,
                 if message.is_payable {
                     format!(
-                            "\n💸 Message was payable and {} units were transferred",
-                            message.value_token
-                        )
+                        "\n💸 Message was payable and {} units were transferred",
+                        message.value_token
+                    )
                 } else {
                     String::new()
                 }
@@ -96,13 +95,9 @@ pub trait FuzzerEngine {
         )
         .unwrap();
         if lapse > 0 {
-            <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(
-                block,
-            );
+            <AllPalletsWithSystem as OnFinalize<BlockNumber>>::on_finalize(block);
             block = block.saturating_add(lapse);
-            <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(
-                block,
-            );
+            <AllPalletsWithSystem as OnInitialize<BlockNumber>>::on_initialize(block);
             Timestamp::set(
                 RuntimeOrigin::none(),
                 SLOT_DURATION.saturating_mul(block as u64),

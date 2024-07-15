@@ -42,18 +42,18 @@ impl BugManager {
         contract_bridge: ContractBridge,
         configuration: Configuration,
     ) -> Self {
-        Self { contract_bridge, invariant_selectors, configuration }
+        Self {
+            contract_bridge,
+            invariant_selectors,
+            configuration,
+        }
     }
 
     pub fn contains_selector(&self, selector: &Selector) -> bool {
         self.invariant_selectors.contains(selector)
     }
 
-    pub fn display_trap(
-        &self,
-        message: Message,
-        response: FullContractResponse,
-    ) {
+    pub fn display_trap(&self, message: Message, response: FullContractResponse) {
         // We print the details only when we don't fuzz, so when we run a seed
         // for instance, otherwise this will pollute the AFL logs
         #[cfg(not(fuzzing))]
@@ -68,9 +68,7 @@ impl BugManager {
                 .replace("\n", " ")
             );
 
-            println!(
-                "🎉 Find below the trace that caused that trapped contract"
-            );
+            println!("🎉 Find below the trace that caused that trapped contract");
 
             <Fuzzer as FuzzerEngine>::pretty_print(
                 vec![response],
@@ -116,18 +114,14 @@ impl BugManager {
 
     /// This function aims to call every invariant function via
     /// `invariant_selectors`.
-    pub fn are_invariants_passing(
-        &self,
-        origin: Origin,
-    ) -> Result<(), Selector> {
+    pub fn are_invariants_passing(&self, origin: Origin) -> Result<(), Selector> {
         for invariant in &self.invariant_selectors {
-            let invariant_call: FullContractResponse =
-                self.contract_bridge.clone().call(
-                    invariant.as_ref(),
-                    origin.into(),
-                    0,
-                    self.configuration.clone(),
-                );
+            let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
+                invariant.as_ref(),
+                origin.into(),
+                0,
+                self.configuration.clone(),
+            );
             if invariant_call.result.is_err() {
                 return Err(*invariant)
             }
@@ -135,10 +129,7 @@ impl BugManager {
         Ok(())
     }
 
-    pub fn is_contract_trapped(
-        &self,
-        contract_response: &FullContractResponse,
-    ) -> bool {
+    pub fn is_contract_trapped(&self, contract_response: &FullContractResponse) -> bool {
         if let Err(DispatchError::Module(ModuleError { message, .. })) =
             contract_response.result
         {

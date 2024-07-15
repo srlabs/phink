@@ -45,9 +45,8 @@ use crate::{
     },
 };
 
-pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<
-    <T as frame_system::Config>::AccountId,
->>::Balance;
+pub type BalanceOf<T> =
+    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type EventRecord = frame_system::EventRecord<
@@ -165,10 +164,10 @@ impl ContractBridge {
                     upload_info.code_hash
                 );
                 upload_info.code_hash
-            },
+            }
             Err(e) => {
                 panic!("❌ Upload failed for: {:?} with error: {:?}", who, e);
-            },
+            }
         }
     }
 
