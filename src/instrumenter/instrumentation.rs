@@ -271,12 +271,14 @@ impl ContractInstrumenter for Instrumenter {
 
 mod instrument {
     use proc_macro2::Span;
+    use quote::ToTokens;
     use rand::Rng;
     use syn::{
         parse_quote,
         visit_mut::VisitMut,
         Expr,
         LitInt,
+        Meta,
         Stmt,
         Token,
     };

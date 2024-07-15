@@ -28,9 +28,13 @@ std = [
 ink-as-dependency = []
 e2e-tests = []
 
+phink = []
+
 [workspace]
 members = [
     "accumulator",
     "adder",
     "subber",
 ]
+
+

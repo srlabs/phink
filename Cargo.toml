@@ -43,7 +43,7 @@ anyhow = { version = "1.0.81" }
 strsim = { version = "0.11.1" }
 tracing = { version = "0.1.40" }
 clap = { version = "4.5.4", features = ["derive"] }
-syn = { version = "2.0.60", features = ["parsing", "full", "visit-mut"] }
+syn = { version = "2.0.71", features = ["parsing", "full", "visit-mut"] }
 quote = { version = "1.0.36" }
 proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
 rand = { version = "0.8" }
