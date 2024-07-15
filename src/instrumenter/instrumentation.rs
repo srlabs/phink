@@ -229,7 +229,7 @@ impl ContractInstrumenter for Instrumenter {
         let mut file = File::create(rust_file.clone())?;
         file.write_all(source_code.as_bytes())?;
         file.flush()?;
-        println!("🛠️ Formatting {:?} with rustfmt...", rust_file.display());
+        println!("🛠️ Formatting {} with rustfmt...", rust_file.display());
         Command::new("rustfmt")
             .arg(rust_file)
             .arg("--edition=2021")
