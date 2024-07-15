@@ -3,10 +3,12 @@ use crate::{
         DisableOriginFuzzing,
         EnableOriginFuzzing,
     },
-    contract::remote::{
-        BalanceOf,
-        ContractBridge,
-        Test,
+    contract::{
+        remote::{
+            BalanceOf,
+            ContractBridge,
+        },
+        runtime::Runtime,
     },
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
 };
@@ -40,7 +42,7 @@ pub struct Configuration {
     pub default_gas_limit: Option<Weight>,
     /// The maximum amount of balance that can be charged from the caller to
     /// pay for the storage consumed.
-    pub storage_deposit_limit: Option<BalanceOf<Test>>,
+    pub storage_deposit_limit: Option<String>,
 }
 
 impl Default for Configuration {
@@ -77,8 +79,29 @@ impl Configuration {
             panic!("🚫 Can't read config: {}", err);
         });
 
-        toml::from_str(&config_str).unwrap_or_else(|err| {
-            panic!("❌ Can't parse config: {}", err);
-        })
+        let config: Configuration =
+            toml::from_str(&config_str).unwrap_or_else(|err| {
+                panic!("❌ Can't parse config: {}", err);
+            });
+
+        if config.storage_deposit_limit.is_some()
+            && Option::is_none(&Self::parse_storage_deposit(&config))
+        {
+            panic!("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file");
+        }
+
+        config
+    }
+
+    pub fn parse_storage_deposit(
+        config: &Configuration,
+    ) -> Option<BalanceOf<Runtime>> {
+        // Currently, TOML & Serde don't handle parsing `u128` 🤡
+        // So we need to parse it as a `string`... to then revert it to `u128`
+        // (which is `BalanceOf<T>`)
+        config
+            .storage_deposit_limit
+            .clone()
+            .and_then(|s| s.parse::<u128>().ok())
     }
 }

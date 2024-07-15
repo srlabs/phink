@@ -3,9 +3,9 @@ use crate::{
         Configuration,
         OriginFuzzingOption,
     },
-    contract::remote::{
-        BalanceOf,
-        Test,
+    contract::{
+        remote::BalanceOf,
+        runtime::Runtime,
     },
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
 };
@@ -40,7 +40,7 @@ pub struct Data<'a> {
 pub struct Message {
     pub is_payable: bool,
     pub payload: Vec<u8>,
-    pub value_token: BalanceOf<Test>,
+    pub value_token: BalanceOf<Runtime>,
     pub message_metadata: Value,
     pub origin: Origin,
 }

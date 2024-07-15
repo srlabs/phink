@@ -48,7 +48,7 @@ use crate::{
 pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<
     <T as frame_system::Config>::AccountId,
 >>::Balance;
-pub type Test = Runtime; // Alias to your own Runtime
+
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::RuntimeEvent,
@@ -61,7 +61,7 @@ pub type FullContractResponse =
 #[derive(Clone)]
 pub struct ContractBridge {
     pub genesis: Storage,
-    pub contract_address: AccountIdOf<Test>,
+    pub contract_address: AccountIdOf<Runtime>,
     pub json_specs: String,
     pub path_to_specs: PathBuf,
 }
@@ -78,7 +78,7 @@ impl ContractBridge {
         path_to_specs: &Path,
         config: Configuration,
     ) -> ContractBridge {
-        let mut contract_addr: AccountIdOf<Test> = config
+        let mut contract_addr: AccountIdOf<Runtime> = config
             .deployer_address
             .clone()
             .unwrap_or(ContractBridge::DEFAULT_DEPLOYER);
@@ -101,7 +101,7 @@ impl ContractBridge {
 
                 // We verify if the contract is correctly instantiated
                 assert!(
-                    ContractInfoOf::<Test>::contains_key(
+                    ContractInfoOf::<Runtime>::contains_key(
                         &contract_addr
                     )
                 );
@@ -129,16 +129,20 @@ impl ContractBridge {
         self,
         payload: &[u8],
         who: u8,
-        transfer_value: BalanceOf<Test>,
+        transfer_value: BalanceOf<Runtime>,
         config: Configuration,
     ) -> FullContractResponse {
         let acc = AccountId32::new([who; 32]);
+
+        let storage_deposit_limit: Option<BalanceOf<Runtime>> =
+            Configuration::parse_storage_deposit(&config);
+
         Contracts::bare_call(
             acc,
             self.contract_address,
             transfer_value,
             config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
-            config.storage_deposit_limit,
+            storage_deposit_limit,
             payload.to_owned(),
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
@@ -173,7 +177,7 @@ impl ContractBridge {
         code_hash: H256,
         who: AccountId,
         config: Configuration,
-    ) -> Option<AccountIdOf<Test>> {
+    ) -> Option<AccountIdOf<Runtime>> {
         let instantiate = Contracts::bare_instantiate(
             who.clone(),
             0,

@@ -53,26 +53,33 @@ impl BugManager {
         message: Message,
         response: FullContractResponse,
     ) {
-        println!("\n🤯 A trapped contract got caught! Let's dive into it");
+        // We print the details only when we don't fuzz, so when we run a seed
+        // for instance, otherwise this will pollute the AFL logs
+        #[cfg(not(fuzzing))]
+        {
+            println!("\n🤯 A trapped contract got caught! Let's dive into it");
 
-        println!(
-            "\n🐛 IMPORTANT STACKTRACE : {}\n",
-            String::from_utf8_lossy(&Coverage::remove_cov_from_trace(
-                response.clone().debug_message
-            ))
-            .replace("\n", " ")
-        );
+            println!(
+                "\n🐛 IMPORTANT STACKTRACE : {}\n",
+                String::from_utf8_lossy(&Coverage::remove_cov_from_trace(
+                    response.clone().debug_message
+                ))
+                .replace("\n", " ")
+            );
 
-        println!("🎉 Find below the trace that caused that trapped contract");
+            println!(
+                "🎉 Find below the trace that caused that trapped contract"
+            );
 
-        <Fuzzer as FuzzerEngine>::pretty_print(
-            vec![response],
-            OneInput {
-                messages: vec![message.clone()],
-                origin: message.origin,
-                fuzz_option: self.configuration.should_fuzz_origin(),
-            },
-        );
+            <Fuzzer as FuzzerEngine>::pretty_print(
+                vec![response],
+                OneInput {
+                    messages: vec![message.clone()],
+                    origin: message.origin,
+                    fuzz_option: self.configuration.should_fuzz_origin(),
+                },
+            );
+        }
 
         // Artificially trigger a bug for AFL
         panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
@@ -85,10 +92,6 @@ impl BugManager {
         invariant_tested: Selector,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
-        println!("\n🤯 An invariant got caught! Let's dive into it");
-
-        // Convert the array to a slice and then take a mutable reference to the
-        // slice
         let mut invariant_slice: &[u8] = &invariant_tested;
 
         let hex = transcoder_loader
@@ -97,10 +100,15 @@ impl BugManager {
             .decode_contract_message(&mut invariant_slice)
             .unwrap();
 
-        println!("\n🫵  This was caused by `{}`\n", hex);
+        #[cfg(not(fuzzing))]
+        {
+            println!("\n🤯 An invariant got caught! Let's dive into it");
 
-        println!("🎉 Find below the trace that caused that invariant");
-        <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
+            println!("\n🫵  This was caused by `{}`\n", hex);
+
+            println!("🎉 Find below the trace that caused that invariant");
+            <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
+        }
         // Artificially trigger a bug for AFL
         panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
     }
