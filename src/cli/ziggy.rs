@@ -1,19 +1,19 @@
-use std::fs::File;
-use std::io::{
-    BufRead,
-    Write,
-};
-use std::path::{
-    Path,
-    PathBuf,
-};
-use std::process::{
-    Command,
-    Stdio,
-};
 use std::{
     fs,
+    fs::File,
     io,
+    io::{
+        BufRead,
+        Write,
+    },
+    path::{
+        Path,
+        PathBuf,
+    },
+    process::{
+        Command,
+        Stdio,
+    },
 };
 
 use serde_derive::{
@@ -21,9 +21,13 @@ use serde_derive::{
     Serialize,
 };
 
-use crate::cli::config::Configuration;
-use crate::fuzzer::fuzz::DICT_FILE;
-use crate::fuzzer::parser::MIN_SEED_LEN;
+use crate::{
+    cli::config::Configuration,
+    fuzzer::{
+        fuzz::DICT_FILE,
+        parser::MIN_SEED_LEN,
+    },
+};
 
 pub enum ZiggyCommand {
     Run,

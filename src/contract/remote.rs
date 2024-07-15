@@ -1,21 +1,29 @@
-use std::fs;
-use std::path::{
-    Path,
-    PathBuf,
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
-use crate::cli::config::Configuration;
-use crate::contract::payload;
-use crate::contract::runtime::{
-    AccountId,
-    BalancesConfig,
-    Contracts,
-    Runtime,
-    RuntimeGenesisConfig,
+use crate::{
+    cli::config::Configuration,
+    contract::{
+        payload,
+        runtime::{
+            AccountId,
+            BalancesConfig,
+            Contracts,
+            Runtime,
+            RuntimeGenesisConfig,
+        },
+    },
 };
-use frame_support::__private::BasicExternalities;
-use frame_support::pallet_prelude::Weight;
-use frame_support::traits::fungible::Inspect;
+use frame_support::{
+    __private::BasicExternalities,
+    pallet_prelude::Weight,
+    traits::fungible::Inspect,
+};
 use migration::v13;
 use pallet_contracts::{
     migration,
@@ -28,9 +36,11 @@ use pallet_contracts::{
     ExecReturnValue,
 };
 use payload::PayloadCrafter;
-use sp_core::crypto::AccountId32;
-use sp_core::storage::Storage;
-use sp_core::H256;
+use sp_core::{
+    crypto::AccountId32,
+    storage::Storage,
+    H256,
+};
 use sp_runtime::{
     BuildStorage,
     DispatchError,

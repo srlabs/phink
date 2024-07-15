@@ -1,26 +1,30 @@
 use regex::Regex;
-use std::ffi::OsStr;
-use std::fs::{
-    copy,
-    File,
-};
-use std::io::Write;
-use std::path::{
-    Path,
-    PathBuf,
-};
-use std::process::Command;
 use std::{
+    ffi::OsStr,
     fs,
+    fs::{
+        copy,
+        File,
+    },
     io,
+    io::Write,
+    path::{
+        Path,
+        PathBuf,
+    },
+    process::Command,
 };
 
 use crate::instrumenter::instrumentation::instrument::ContractCovUpdater;
 use quote::quote;
-use rand::distributions::Alphanumeric;
-use rand::Rng;
-use syn::parse_file;
-use syn::visit_mut::VisitMut;
+use rand::{
+    distributions::Alphanumeric,
+    Rng,
+};
+use syn::{
+    parse_file,
+    visit_mut::VisitMut,
+};
 use walkdir::WalkDir;
 
 /// The objective of this `struct` is to assist Phink in instrumenting ink!
@@ -268,9 +272,9 @@ impl ContractInstrumenter for Instrumenter {
 mod instrument {
     use proc_macro2::Span;
     use rand::Rng;
-    use syn::visit_mut::VisitMut;
     use syn::{
         parse_quote,
+        visit_mut::VisitMut,
         Expr,
         LitInt,
         Stmt,

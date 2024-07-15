@@ -1,12 +1,14 @@
-use crate::cli::config::{
-    Configuration,
-    OriginFuzzingOption,
+use crate::{
+    cli::config::{
+        Configuration,
+        OriginFuzzingOption,
+    },
+    contract::remote::{
+        BalanceOf,
+        Test,
+    },
+    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
 };
-use crate::contract::remote::{
-    BalanceOf,
-    Test,
-};
-use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use contract_transcode::{
     ContractMessageTranscoder,
     Value,

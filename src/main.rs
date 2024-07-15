@@ -2,24 +2,34 @@
 
 extern crate core;
 
-use std::env::var;
-use std::path::PathBuf;
+use std::{
+    env::var,
+    path::PathBuf,
+};
 
 use clap::Parser;
 
-use crate::cli::config::Configuration;
-use crate::cli::ziggy::ZiggyConfig;
-use crate::cover::report::CoverageTracker;
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::fuzz::FuzzingMode::{
-    ExecuteOneInput,
-    Fuzz,
-};
-use crate::instrumenter::cleaner::Cleaner;
-use crate::instrumenter::instrumentation::{
-    ContractBuilder,
-    ContractInstrumenter,
-    Instrumenter,
+use crate::{
+    cli::{
+        config::Configuration,
+        ziggy::ZiggyConfig,
+    },
+    cover::report::CoverageTracker,
+    fuzzer::fuzz::{
+        Fuzzer,
+        FuzzingMode::{
+            ExecuteOneInput,
+            Fuzz,
+        },
+    },
+    instrumenter::{
+        cleaner::Cleaner,
+        instrumentation::{
+            ContractBuilder,
+            ContractInstrumenter,
+            Instrumenter,
+        },
+    },
 };
 
 mod cli;

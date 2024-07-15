@@ -1,12 +1,12 @@
 use crate::Instrumenter;
-use std::io::Write;
-use std::path::{
-    Path,
-    PathBuf,
-};
 use std::{
     fs,
     io,
+    io::Write,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 pub trait Cleaner {
     fn clean() -> Result<(), io::Error>;

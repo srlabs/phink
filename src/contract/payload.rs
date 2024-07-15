@@ -126,17 +126,21 @@ impl PayloadCrafter {
 
 #[cfg(test)]
 mod test {
-    use crate::cli::config::Configuration;
-    use crate::contract::payload::{
-        PayloadCrafter,
-        Selector,
+    use crate::{
+        cli::config::Configuration,
+        contract::payload::{
+            PayloadCrafter,
+            Selector,
+        },
+        fuzzer::parser::parse_input,
     };
-    use crate::fuzzer::parser::parse_input;
     use contract_transcode::ContractMessageTranscoder;
     use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
-    use std::fs;
-    use std::path::Path;
+    use std::{
+        fs,
+        path::Path,
+    };
 
     #[test]
     fn fetch_good_invariants() {

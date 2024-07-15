@@ -1,15 +1,19 @@
-use crate::cli::ziggy::ZiggyConfig;
-use crate::cover::coverage::COVERAGE_PATH;
-use std::collections::{
-    HashMap,
-    HashSet,
+use crate::{
+    cli::ziggy::ZiggyConfig,
+    cover::coverage::COVERAGE_PATH,
 };
-use std::fs::{
-    self,
-    File,
+use std::{
+    collections::{
+        HashMap,
+        HashSet,
+    },
+    fs::{
+        self,
+        File,
+    },
+    io::Read,
+    path::Path,
 };
-use std::io::Read;
-use std::path::Path;
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {

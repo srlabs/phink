@@ -1,12 +1,14 @@
-use std::collections::HashSet;
-use std::fs::{
-    File,
-    OpenOptions,
-};
-use std::hint::black_box;
-use std::io::{
-    Read,
-    Write,
+use std::{
+    collections::HashSet,
+    fs::{
+        File,
+        OpenOptions,
+    },
+    hint::black_box,
+    io::{
+        Read,
+        Write,
+    },
 };
 
 pub type CoverageTrace = Vec<u8>;

@@ -1,17 +1,25 @@
-use std::path::PathBuf;
-use std::sync::Mutex;
-
-use crate::contract::remote::FullContractResponse;
-use crate::contract::runtime::{
-    AllPalletsWithSystem,
-    BlockNumber,
-    RuntimeOrigin,
-    Timestamp,
-    SLOT_DURATION,
+use std::{
+    path::PathBuf,
+    sync::Mutex,
 };
-use crate::fuzzer::bug::BugManager;
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::parser::OneInput;
+
+use crate::{
+    contract::{
+        remote::FullContractResponse,
+        runtime::{
+            AllPalletsWithSystem,
+            BlockNumber,
+            RuntimeOrigin,
+            Timestamp,
+            SLOT_DURATION,
+        },
+    },
+    fuzzer::{
+        bug::BugManager,
+        fuzz::Fuzzer,
+        parser::OneInput,
+    },
+};
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::traits::{
     OnFinalize,
@@ -33,6 +41,7 @@ pub trait FuzzerEngine {
         bug_manager: &mut BugManager,
         input: &[u8],
     );
+    fn exec_seed(self, seed: PathBuf);
 
     /// Pretty print the result of `OneInput`
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
@@ -100,5 +109,4 @@ pub trait FuzzerEngine {
             .unwrap();
         }
     }
-    fn exec_seed(self, seed: PathBuf);
 }

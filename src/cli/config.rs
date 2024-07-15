@@ -1,21 +1,25 @@
-use crate::cli::config::OriginFuzzingOption::{
-    DisableOriginFuzzing,
-    EnableOriginFuzzing,
+use crate::{
+    cli::config::OriginFuzzingOption::{
+        DisableOriginFuzzing,
+        EnableOriginFuzzing,
+    },
+    contract::remote::{
+        BalanceOf,
+        ContractBridge,
+        Test,
+    },
+    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
 };
-use crate::contract::remote::{
-    BalanceOf,
-    ContractBridge,
-    Test,
-};
-use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use frame_support::weights::Weight;
 use serde_derive::{
     Deserialize,
     Serialize,
 };
 use sp_core::crypto::AccountId32;
-use std::fs;
-use std::path::PathBuf;
+use std::{
+    fs,
+    path::PathBuf,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {

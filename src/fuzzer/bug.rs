@@ -1,24 +1,32 @@
-use crate::cli::config::Configuration;
-use crate::contract::payload::Selector;
-use crate::contract::remote::{
-    ContractBridge,
-    FullContractResponse,
-};
-use crate::cover::coverage::Coverage;
-use crate::fuzzer::engine::FuzzerEngine;
-use crate::fuzzer::fuzz::Fuzzer;
-use crate::fuzzer::parser::{
-    Message,
-    OneInput,
-    Origin,
+use crate::{
+    cli::config::Configuration,
+    contract::{
+        payload::Selector,
+        remote::{
+            ContractBridge,
+            FullContractResponse,
+        },
+    },
+    cover::coverage::Coverage,
+    fuzzer::{
+        engine::FuzzerEngine,
+        fuzz::Fuzzer,
+        parser::{
+            Message,
+            OneInput,
+            Origin,
+        },
+    },
 };
 use contract_transcode::ContractMessageTranscoder;
 use sp_runtime::{
     DispatchError,
     ModuleError,
 };
-use std::panic;
-use std::sync::Mutex;
+use std::{
+    panic,
+    sync::Mutex,
+};
 
 #[derive(Clone)]
 pub struct BugManager {

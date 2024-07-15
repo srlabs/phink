@@ -1,18 +1,18 @@
 use crate::contract::remote::BalanceOf;
-use frame_support::traits::{
-    ConstU16,
-    ConstU32,
-};
-use frame_support::weights::constants::RocksDbWeight;
-use frame_support::weights::{
-    ConstantMultiplier,
-    IdentityFee,
-};
 use frame_support::{
     construct_runtime,
     derive_impl,
     parameter_types,
     traits,
+    traits::{
+        ConstU16,
+        ConstU32,
+    },
+    weights::{
+        constants::RocksDbWeight,
+        ConstantMultiplier,
+        IdentityFee,
+    },
 };
 use frame_system::EnsureSigned;
 pub use pallet_transaction_payment::{
@@ -21,16 +21,16 @@ pub use pallet_transaction_payment::{
     TargetedFeeAdjustment,
 };
 use sp_core::ConstBool;
-use sp_runtime::testing::H256;
-use sp_runtime::traits::{
-    BlakeTwo256,
-    Bounded,
-    IdentifyAccount,
-    IdentityLookup,
-    Verify,
-};
 use sp_runtime::{
     generic,
+    testing::H256,
+    traits::{
+        BlakeTwo256,
+        Bounded,
+        IdentifyAccount,
+        IdentityLookup,
+        Verify,
+    },
     FixedPointNumber,
     MultiSignature,
     Perbill,

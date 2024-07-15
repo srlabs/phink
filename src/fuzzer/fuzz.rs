@@ -1,40 +1,50 @@
-use std::fs;
-use std::io::{
-    self,
-    Write,
+use std::{
+    fs,
+    io::{
+        self,
+        Write,
+    },
+    path::{
+        Path,
+        PathBuf,
+    },
+    sync::Mutex,
 };
-use std::path::{
-    Path,
-    PathBuf,
-};
-use std::sync::Mutex;
 
 use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 
-use crate::cli::config::Configuration;
-use crate::cli::ziggy::ZiggyConfig;
-use crate::contract::payload::{
-    PayloadCrafter,
-    Selector,
+use crate::{
+    cli::{
+        config::Configuration,
+        ziggy::ZiggyConfig,
+    },
+    contract::{
+        payload::{
+            PayloadCrafter,
+            Selector,
+        },
+        remote::{
+            ContractBridge,
+            FullContractResponse,
+        },
+    },
+    cover::coverage::Coverage,
+    fuzzer::{
+        bug::BugManager,
+        engine::FuzzerEngine,
+        fuzz::FuzzingMode::{
+            ExecuteOneInput,
+            Fuzz,
+        },
+        parser::{
+            parse_input,
+            OneInput,
+        },
+    },
+    instrumenter::instrumentation::Instrumenter,
 };
-use crate::contract::remote::{
-    ContractBridge,
-    FullContractResponse,
-};
-use crate::cover::coverage::Coverage;
-use crate::fuzzer::bug::BugManager;
-use crate::fuzzer::engine::FuzzerEngine;
-use crate::fuzzer::fuzz::FuzzingMode::{
-    ExecuteOneInput,
-    Fuzz,
-};
-use crate::fuzzer::parser::{
-    parse_input,
-    OneInput,
-};
-use crate::instrumenter::instrumentation::Instrumenter;
 
 pub const CORPUS_DIR: &str = "./output/phink/corpus";
 pub const DICT_FILE: &str = "./output/phink/selectors.dict";
@@ -160,15 +170,6 @@ impl FuzzerEngine for Fuzzer {
             &mut coverage,
         );
 
-        chain.execute_with(|| {
-            check_invariants(
-                bug_manager,
-                &all_msg_responses,
-                &decoded_msgs,
-                transcoder_loader,
-            )
-        });
-
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
         // of performance) Simply comment out the following line :)
@@ -177,6 +178,15 @@ impl FuzzerEngine for Fuzzer {
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage.save().expect("🙅 Cannot save the coverage");
         }
+
+        chain.execute_with(|| {
+            check_invariants(
+                bug_manager,
+                &all_msg_responses,
+                &decoded_msgs,
+                transcoder_loader,
+            )
+        });
 
         // Pretty print all the calls of the current input
         #[cfg(not(fuzzing))]
