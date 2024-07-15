@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn test_parse_input() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-        let mut transcoder = Mutex::new(
+        let transcoder = Mutex::new(
             ContractMessageTranscoder::load(metadata_path)
                 .expect("Failed to load ContractMessageTranscoder"),
         );
