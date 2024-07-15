@@ -44,6 +44,7 @@ pub trait FuzzerEngine {
     fn exec_seed(self, seed: PathBuf);
 
     /// Pretty print the result of `OneInput`
+    #[allow(dead_code)]
     fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
         println!("\n🌱 Executing new seed");
         let mut table = Table::new();
