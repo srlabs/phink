@@ -190,7 +190,12 @@ impl FuzzerEngine for Fuzzer {
 
         // Pretty print all the calls of the current input
         #[cfg(not(fuzzing))]
-        <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
+        {
+            <Fuzzer as FuzzerEngine>::pretty_print(
+                all_msg_responses,
+                decoded_msgs,
+            );
+        }
 
         // We now fake the coverage
         coverage.redirect_coverage();
