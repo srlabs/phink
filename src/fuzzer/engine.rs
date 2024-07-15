@@ -40,7 +40,7 @@ pub trait FuzzerEngine {
                 } => format!(
                     "⛽️ Gas required: {}\n\
                  🔥 Gas consumed: {}\n\
-                 🧑 Origin: {} ({})\n\
+                 🧑 Origin: {:?} ({})\n\
                  💾 Storage deposit: {:?}{}",
                     response.gas_required,
                     response.gas_consumed,

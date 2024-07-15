@@ -48,7 +48,6 @@ impl ContractBridge {
         path_to_specs: &Path,
         config: Configuration,
     ) -> ContractBridge {
-
         let mut contract_addr: AccountIdOf<Test> = config
             .deployer_address
             .clone()

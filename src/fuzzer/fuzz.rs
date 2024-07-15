@@ -246,7 +246,7 @@ fn execute_messages(
 
             let result: FullContractResponse = client.setup.clone().call(
                 &message.payload,
-                decoded_msgs.origin,
+                decoded_msgs.origin.into(),
                 transfer_value,
                 client.fuzzing_config.clone(),
             );

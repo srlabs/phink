@@ -1,4 +1,4 @@
-###### Phink Configurqtion
+# Phink Configuration
 
 cores = 1
 max_messages_per_exec = 1
@@ -13,4 +13,3 @@ fuzz_origin = false
 [default_gas_limit]
 ref_time = 100000000000
 proof_size = 3145728  # 3 * 1024 * 1024
-

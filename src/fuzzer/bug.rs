@@ -1,10 +1,6 @@
-use contract_transcode::ContractMessageTranscoder;
-use sp_runtime::{DispatchError, ModuleError};
-use std::panic;
-use std::sync::Mutex;
-
 use crate::cli::config::Configuration;
 use crate::cover::coverage::Coverage;
+use crate::fuzzer::parser::Origin;
 use crate::{
     contract::{
         payload::Selector,
@@ -12,6 +8,10 @@ use crate::{
     },
     fuzzer::{engine::FuzzerEngine, fuzz::Fuzzer, parser::Message, parser::OneInput},
 };
+use contract_transcode::ContractMessageTranscoder;
+use sp_runtime::{DispatchError, ModuleError};
+use std::panic;
+use std::sync::Mutex;
 
 pub type FailedInvariantTrace = (Selector, FullContractResponse);
 
@@ -57,6 +57,7 @@ impl BugManager {
             OneInput {
                 messages: vec![message.clone()],
                 origin: message.origin,
+                fuzz_option: self.configuration.should_fuzz_origin(),
             },
         );
 
@@ -91,11 +92,11 @@ impl BugManager {
     }
 
     /// This function aims to call every invariant function via `invariant_selectors`.
-    pub fn are_invariants_passing(&self, origin: u8) -> Result<(), FailedInvariantTrace> {
+    pub fn are_invariants_passing(&self, origin: Origin) -> Result<(), FailedInvariantTrace> {
         for invariant in &self.invariant_selectors {
             let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
                 invariant.as_ref(),
-                origin,
+                origin.into(),
                 0,
                 self.configuration.clone(),
             );

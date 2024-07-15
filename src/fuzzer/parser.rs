@@ -1,17 +1,18 @@
-use crate::cli::config::Configuration;
-use crate::contract::remote::{BalanceOf, Test};
-use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
+use crate::{
+    cli::config::{Configuration, OriginFuzzingOption},
+    contract::remote::{BalanceOf, Test},
+    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC
+};
 use contract_transcode::{ContractMessageTranscoder, Value};
 use ink_metadata::{InkProject, Selector};
 use std::sync::Mutex;
+use OriginFuzzingOption::{DisableOriginFuzzing, EnableOriginFuzzing};
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
-                                        // Minimum size for the seed
-pub const MIN_SEED_LEN: usize = 5;
-/// 4 covers index 4. (origin)
-/// 0..4 covers indices 0, 1, 2, and 3. (value)
-/// 5..starts from index 5 and goes to the end of the array.
-
+pub const MIN_SEED_LEN: usize = 4;
+/// 0..4 covers indices 0, 1, 2, and 3. (value to be transfered)
+/// 4 covers index 4. (origin) (optionnal)
+/// 5.. starts from index 5 and goes to the end of the array.
 #[derive(Clone, Copy)]
 pub struct Data<'a> {
     pub data: &'a [u8],
@@ -26,14 +27,34 @@ pub struct Message {
     pub payload: Vec<u8>,
     pub value_token: BalanceOf<Test>,
     pub message_metadata: Value,
-    pub origin: u8,
+    pub origin: Origin,
 }
 
 #[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
-    pub origin: u8,
+    pub origin: Origin,
+    pub fuzz_option: OriginFuzzingOption,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Origin(u8);
+impl Default for Origin {
+    fn default() -> Self {
+        Origin(1)
+    }
+}
+impl From<u8> for Origin {
+    fn from(value: u8) -> Self {
+        Origin(value)
+    }
+}
+impl From<Origin> for u8 {
+    fn from(origin: Origin) -> Self {
+        origin.0
+    }
+}
+
 
 impl<'a> Data<'a> {
     fn size_limit_reached(&self) -> bool {
@@ -90,10 +111,13 @@ pub fn parse_input(
         size: 0,
         max_messages_per_exec,
     };
+
     let mut input = OneInput {
         messages: vec![],
-        origin: 1,
+        origin: Default::default(),
+        fuzz_option: config.should_fuzz_origin(),
     };
+
     for decoded_payloads in iterable {
         let value_token: u32 = u32::from_ne_bytes(
             decoded_payloads[0..4]
@@ -101,9 +125,16 @@ pub fn parse_input(
                 .expect("missing transfer value bytes"),
         );
 
-        input.origin = decoded_payloads[4];
+        let encoded_message: &[u8];
 
-        let encoded_message: &[u8] = &decoded_payloads[5..];
+        match input.fuzz_option {
+            EnableOriginFuzzing => {
+                input.origin = Origin(decoded_payloads[4]);
+                encoded_message = &decoded_payloads[5..];
+            }
+            DisableOriginFuzzing => encoded_message = &decoded_payloads[4..],
+        }
+
         let binding = transcoder.get_mut().unwrap();
         let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
 

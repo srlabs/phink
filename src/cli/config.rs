@@ -1,3 +1,4 @@
+use crate::cli::config::OriginFuzzingOption::{DisableOriginFuzzing, EnableOriginFuzzing};
 use crate::contract::remote::{BalanceOf, ContractBridge, Test};
 use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use frame_support::weights::Weight;
@@ -18,8 +19,8 @@ pub struct Configuration {
     pub max_messages_per_exec: Option<usize>,
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
-    /// Fuzz the origin
-    pub fuzz_origin: bool, //todo: not implemented
+    /// Fuzz the origin. If `false`, the fuzzer will execute each message with the same account.
+    pub fuzz_origin: bool,  
     /// The gas limit enforced when executing the constructor
     pub default_gas_limit: Option<Weight>,
     /// The maximum amount of balance that can be charged from the caller to pay for the storage consumed.
@@ -40,8 +41,26 @@ impl Default for Configuration {
         }
     }
 }
+#[derive(Clone, Debug)]
+pub enum OriginFuzzingOption {
+    EnableOriginFuzzing,
+    DisableOriginFuzzing,
+}
+
+impl Default for OriginFuzzingOption {
+    fn default() -> Self {
+        DisableOriginFuzzing
+    }
+}
 
 impl Configuration {
+    pub fn should_fuzz_origin(&self) -> OriginFuzzingOption {
+        match self.fuzz_origin {
+            true => EnableOriginFuzzing,
+            false => DisableOriginFuzzing,
+        }
+    }
+
     pub fn load_config(file_path: &PathBuf) -> Configuration {
         let config_str = fs::read_to_string(file_path).unwrap_or_else(|err| {
             panic!("🚫 Can't read config: {}", err);
