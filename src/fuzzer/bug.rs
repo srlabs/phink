@@ -1,4 +1,4 @@
-#[allow(unused_imports, # [warn(unused_variables))]
+#[allow(unused_imports, unused_variables)]
 use crate::{
     cli::config::Configuration,
     contract::{
