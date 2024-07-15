@@ -154,7 +154,7 @@ impl CoverageTracker {
         html.push_str(&format!("<h1>Coverage for {}</h1><pre>", file_path));
         html.push_str("<h3>This is a beta version of the code visualizer. \
         <br>You can assume that if a line is green, it has been executed. <br>\
-        If the line represents a block (e.g., `if`), it means that the `if` condition was met.</h3>");
+        If the green line represents a block (e.g., green `if`), it means that the `if` condition was met, and we got inside the condition.<br></h3>");
 
         for (i, line) in lines.iter().enumerate() {
             let line_class = if coverage[i] { "covered" } else { "uncovered" };
@@ -196,7 +196,7 @@ impl CoverageTracker {
         {
             tracker
                 .process_file(entry.path().as_os_str().to_str().unwrap())
-                .expect("🙅 Cannot process file"); //todo: does that work ?
+                .expect("🙅 Cannot process file");
         }
         tracker
             .generate_report(config.config.report_path.clone().unwrap().to_str().unwrap())

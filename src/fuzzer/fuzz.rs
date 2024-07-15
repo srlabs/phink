@@ -145,13 +145,6 @@ impl FuzzerEngine for Fuzzer {
             )
         });
 
-        // Pretty print all the calls of the current input
-        #[cfg(not(fuzzing))]
-        <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
-
-        // We now fake the coverage
-        coverage.redirect_coverage();
-
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose of performance)
         // Simply comment out the following line :)
@@ -160,6 +153,13 @@ impl FuzzerEngine for Fuzzer {
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage.save().expect("🙅 Cannot save the coverage");
         }
+
+        // Pretty print all the calls of the current input
+        #[cfg(not(fuzzing))]
+        <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
+
+        // We now fake the coverage
+        coverage.redirect_coverage();
     }
 
     fn exec_seed(self, seed: PathBuf) {

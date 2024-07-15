@@ -20,7 +20,7 @@ pub struct Configuration {
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
     /// Fuzz the origin. If `false`, the fuzzer will execute each message with the same account.
-    pub fuzz_origin: bool,  
+    pub fuzz_origin: bool,
     /// The gas limit enforced when executing the constructor
     pub default_gas_limit: Option<Weight>,
     /// The maximum amount of balance that can be charged from the caller to pay for the storage consumed.

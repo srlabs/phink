@@ -14,6 +14,7 @@ use migration::v13;
 use pallet_contracts::{
     migration, Code, CollectEvents, Config, ContractResult, DebugInfo, Determinism, ExecReturnValue,
 };
+use payload::PayloadCrafter;
 use sp_core::{crypto::AccountId32, storage::Storage, H256};
 use sp_runtime::{BuildStorage, DispatchError};
 use v13::ContractInfoOf;
@@ -64,7 +65,6 @@ impl ContractBridge {
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
-                println!("🔍 Uploaded the WASM bytes. Code hash: {:?}", code_hash);
 
                 contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config).expect(
                     "🙅 Can't fetch the contract address because because of incorrect instantiation",
@@ -146,16 +146,18 @@ impl ContractBridge {
         config: Configuration,
     ) -> Option<AccountIdOf<Test>> {
         let instantiate = Contracts::bare_instantiate(
-            who,
+            who.clone(),
             0,
             config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
             None,
             Code::Existing(code_hash),
-            Vec::from(payload::PayloadCrafter::get_constructor(json_specs)?),
+            Vec::from(PayloadCrafter::get_constructor(json_specs)?),
             vec![],
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
         );
+
+        println!("🔍 Instantiated the contract, using account {:?}", who);
 
         Some(instantiate.result.unwrap().account_id)
     }

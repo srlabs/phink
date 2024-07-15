@@ -1,7 +1,7 @@
 use crate::{
     cli::config::{Configuration, OriginFuzzingOption},
     contract::remote::{BalanceOf, Test},
-    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC
+    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
 };
 use contract_transcode::{ContractMessageTranscoder, Value};
 use ink_metadata::{InkProject, Selector};
@@ -54,7 +54,6 @@ impl From<Origin> for u8 {
         origin.0
     }
 }
-
 
 impl<'a> Data<'a> {
     fn size_limit_reached(&self) -> bool {
