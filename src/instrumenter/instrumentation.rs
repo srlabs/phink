@@ -1,30 +1,39 @@
 use regex::Regex;
+use std::ffi::OsStr;
+use std::fs::{
+    copy,
+    File,
+};
+use std::io::Write;
+use std::path::{
+    Path,
+    PathBuf,
+};
+use std::process::Command;
 use std::{
-    ffi::OsStr,
     fs,
-    fs::{copy, File},
     io,
-    io::Write,
-    path::{Path, PathBuf},
-    process::Command,
 };
 
-use crate::instrumenter::instrument::instrument::ContractCovUpdater;
+use crate::instrumenter::instrumentation::instrument::ContractCovUpdater;
 use quote::quote;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use syn::{parse_file, visit_mut::VisitMut};
+use syn::parse_file;
+use syn::visit_mut::VisitMut;
 use walkdir::WalkDir;
 
-/// The objective of this `struct` is to assist Phink in instrumenting ink! smart contracts.
-/// In a fuzzing context, instrumenting a smart contract involves modifying the target (i.e., the WASM blob),
-/// for example, by adding additional code to branches to obtain a coverage map during the execution of the smart contract.
-/// By doing so, we can effectively generate a coverage map that will be provided to Ziggy
-/// transforming Phink from a basic brute-forcing tool into a powerful coverage-guided fuzzer.
+/// The objective of this `struct` is to assist Phink in instrumenting ink!
+/// smart contracts. In a fuzzing context, instrumenting a smart contract
+/// involves modifying the target (i.e., the WASM blob), for example, by adding
+/// additional code to branches to obtain a coverage map during the execution of
+/// the smart contract. By doing so, we can effectively generate a coverage map
+/// that will be provided to Ziggy transforming Phink from a basic brute-forcing
+/// tool into a powerful coverage-guided fuzzer.
 ///
-/// Phink opted for a Rust AST approach. For each code instruction on the smart-contract, Phink will
-/// automatically add a tracing code, which will then be fetched at the end of the input execution
-/// in order to get coverage.
+/// Phink opted for a Rust AST approach. For each code instruction on the
+/// smart-contract, Phink will automatically add a tracing code, which will then
+/// be fetched at the end of the input execution in order to get coverage.
 #[derive(Default, Clone)]
 pub struct Instrumenter {
     pub contract_dir: PathBuf,
@@ -32,7 +41,7 @@ pub struct Instrumenter {
 
 #[derive(Debug)]
 pub struct InkFilesPath {
-    pub wasm_path: PathBuf,
+    pub wasm_path:  PathBuf,
     pub specs_path: PathBuf,
 }
 
@@ -41,8 +50,14 @@ pub trait ContractInstrumenter {
     where
         Self: Sized;
     fn instrument_file(&self, path: &Path) -> Result<(), String>;
-    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
+    fn parse_and_visit(
+        code: &str,
+        visitor: impl VisitMut,
+    ) -> Result<String, ()>;
+    fn save_and_format(
+        source_code: String,
+        lib_rs: PathBuf,
+    ) -> Result<(), io::Error>;
     fn already_instrumented(code: &str) -> bool;
 }
 
@@ -64,7 +79,9 @@ impl Instrumenter {
             })?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
-                if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
+                if path.is_file()
+                    && path.extension().and_then(OsStr::to_str) == Some("wasm")
+                {
                     Some(path)
                 } else {
                     None
@@ -73,12 +90,11 @@ impl Instrumenter {
             .next()
             .ok_or("🙅 No .wasm file found in target directory")?;
 
-        let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+        let specs_path = PathBuf::from(
+            wasm_path.to_str().unwrap().replace(".wasm", ".json"),
+        );
 
-        Ok(InkFilesPath {
-            wasm_path,
-            specs_path,
-        })
+        Ok(InkFilesPath { wasm_path, specs_path })
     }
 }
 pub trait ContractBuilder {
@@ -123,7 +139,8 @@ impl ContractForker for Instrumenter {
             .map(char::from)
             .collect();
 
-        let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
+        let new_dir =
+            Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
         println!("🏗️ Creating new directory: {:?}", new_dir);
         fs::create_dir_all(&new_dir)
             .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
@@ -131,7 +148,8 @@ impl ContractForker for Instrumenter {
         println!("📁 Starting to copy files from {:?}", self.contract_dir);
 
         for entry in WalkDir::new(&self.contract_dir) {
-            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
+            let entry =
+                entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
@@ -141,10 +159,15 @@ impl ContractForker for Instrumenter {
 
             if entry.path().is_dir() {
                 println!("📂 Creating subdirectory: {:?}", target_path);
-                fs::create_dir_all(&target_path)
-                    .map_err(|e| format!("🙅 Failed to create subdirectory: {}", e))?;
+                fs::create_dir_all(&target_path).map_err(|e| {
+                    format!("🙅 Failed to create subdirectory: {}", e)
+                })?;
             } else {
-                println!("📄 Copying file: {:?} -> {:?}", entry.path(), target_path);
+                println!(
+                    "📄 Copying file: {:?} -> {:?}",
+                    entry.path(),
+                    target_path
+                );
                 copy(entry.path(), &target_path)
                     .map_err(|e| format!("🙅 Failed to copy file: {}", e))?;
             }
@@ -167,7 +190,9 @@ impl ContractInstrumenter for Instrumenter {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
-            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
+            .filter(|e| {
+                !e.path().components().any(|c| c.as_os_str() == "target")
+            })
         // Don't instrument anything inside target
         {
             let path = entry.path();
@@ -177,28 +202,39 @@ impl ContractInstrumenter for Instrumenter {
     }
 
     fn instrument_file(&self, path: &Path) -> Result<(), String> {
-        let code = fs::read_to_string(path)
-            .map_err(|e| format!("🙅 Failed to read {}: {:?}", path.display(), e))?;
+        let code = fs::read_to_string(path).map_err(|e| {
+            format!("🙅 Failed to read {}: {:?}", path.display(), e)
+        })?;
 
         if Self::already_instrumented(&code) {
             return Ok(());
         }
 
         let modified_code = Self::parse_and_visit(&code, ContractCovUpdater)
-            .map_err(|_| format!("🙅 Failed to parse and visit code in {}", path.display()))?;
+            .map_err(|_| {
+                format!(
+                    "🙅 Failed to parse and visit code in {}",
+                    path.display()
+                )
+            })?;
 
-        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(|e| {
-            format!(
-                "🙅 Failed to save and format code in {}: {:?}",
-                path.display(),
-                e
-            )
-        })?;
+        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(
+            |e| {
+                format!(
+                    "🙅 Failed to save and format code in {}: {:?}",
+                    path.display(),
+                    e
+                )
+            },
+        )?;
 
         Ok(())
     }
 
-    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
+    fn parse_and_visit(
+        code: &str,
+        mut visitor: impl VisitMut,
+    ) -> Result<String, ()> {
         let mut ast = parse_file(code).expect(
             "⚠️ This is most likely that your ink! contract \
         contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
@@ -207,7 +243,10 @@ impl ContractInstrumenter for Instrumenter {
         Ok(quote!(#ast).to_string())
     }
 
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error> {
+    fn save_and_format(
+        source_code: String,
+        lib_rs: PathBuf,
+    ) -> Result<(), io::Error> {
         let mut file = File::create(lib_rs.clone())?;
         file.write_all(source_code.as_bytes())?;
         file.flush()?;
@@ -216,10 +255,12 @@ impl ContractInstrumenter for Instrumenter {
     }
 
     /// Checks if the given code string is already instrumented.
-    /// This function looks for the presence of the pattern `ink::env::debug_println!("COV=abc")`
-    /// where `abc` can be any number. If this pattern is found, it means the code is instrumented.
+    /// This function looks for the presence of the pattern
+    /// `ink::env::debug_println!("COV=abc")` where `abc` can be any number. If
+    /// this pattern is found, it means the code is instrumented.
     fn already_instrumented(code: &str) -> bool {
-        let re = Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
+        let re =
+            Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
         re.is_match(code)
     }
 }
@@ -227,26 +268,38 @@ impl ContractInstrumenter for Instrumenter {
 mod instrument {
     use proc_macro2::Span;
     use rand::Rng;
-    use syn::{parse_quote, visit_mut::VisitMut, Expr, LitInt, Stmt, Token};
+    use syn::visit_mut::VisitMut;
+    use syn::{
+        parse_quote,
+        Expr,
+        LitInt,
+        Stmt,
+        Token,
+    };
 
     pub struct ContractCovUpdater;
 
     impl VisitMut for ContractCovUpdater {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
             let mut new_stmts = Vec::new();
-            // Temporarily replace block.stmts with an empty Vec to avoid borrowing issues
+            // Temporarily replace block.stmts with an empty Vec to avoid
+            // borrowing issues
             let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
-                let random_number = rand::thread_rng().gen_range(0..999_999_999);
-                let line_lit = LitInt::new(&random_number.to_string(), Span::call_site());
+                let random_number =
+                    rand::thread_rng().gen_range(0..999_999_999);
+                let line_lit =
+                    LitInt::new(&random_number.to_string(), Span::call_site());
 
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)
                 };
                 // Convert this expression into a statement
-                let pre_stmt: Stmt = Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
+                let pre_stmt: Stmt =
+                    Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
                 new_stmts.push(pre_stmt);
-                // Use recursive visitation to handle nested blocks and other statement types
+                // Use recursive visitation to handle nested blocks and other
+                // statement types
                 self.visit_stmt_mut(&mut stmt);
                 new_stmts.push(stmt.clone());
             }

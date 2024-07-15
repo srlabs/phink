@@ -1,14 +1,25 @@
-use std::io::Write;
+use std::fs::File;
+use std::io::{
+    BufRead,
+    Write,
+};
+use std::path::{
+    Path,
+    PathBuf,
+};
+use std::process::{
+    Command,
+    Stdio,
+};
 use std::{
     fs,
-    fs::File,
     io,
-    io::BufRead,
-    path::{Path, PathBuf},
-    process::{Command, Stdio},
 };
 
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::cli::config::Configuration;
 use crate::fuzzer::fuzz::DICT_FILE;
@@ -32,10 +43,7 @@ impl ZiggyConfig {
     pub const AFL_DEBUG: &'static str = "1";
 
     pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
-        Self {
-            config,
-            contract_path,
-        }
+        Self { config, contract_path }
     }
 
     pub fn parse(config_str: String) -> Self {
@@ -98,7 +106,7 @@ impl ZiggyConfig {
             ZiggyCommand::Build => {
                 Self::build_llvm_allowlist()?;
                 "build"
-            }
+            },
         };
         Ok(command_arg.parse().unwrap())
     }
@@ -168,7 +176,8 @@ impl ZiggyConfig {
         fs::create_dir_all(path.parent().unwrap())?;
         let mut allowlist_file = File::create(path)?;
 
-        let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
+        let functions =
+            ["redirect_coverage*", "should_stop_now*", "parse_input*"];
         for func in &functions {
             writeln!(allowlist_file, "fun: {}", func)?;
         }

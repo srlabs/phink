@@ -1,15 +1,22 @@
 use crate::cli::config::Configuration;
+use crate::contract::payload::Selector;
+use crate::contract::remote::{
+    ContractBridge,
+    FullContractResponse,
+};
 use crate::cover::coverage::Coverage;
-use crate::fuzzer::parser::Origin;
-use crate::{
-    contract::{
-        payload::Selector,
-        remote::{ContractBridge, FullContractResponse},
-    },
-    fuzzer::{engine::FuzzerEngine, fuzz::Fuzzer, parser::Message, parser::OneInput},
+use crate::fuzzer::engine::FuzzerEngine;
+use crate::fuzzer::fuzz::Fuzzer;
+use crate::fuzzer::parser::{
+    Message,
+    OneInput,
+    Origin,
 };
 use contract_transcode::ContractMessageTranscoder;
-use sp_runtime::{DispatchError, ModuleError};
+use sp_runtime::{
+    DispatchError,
+    ModuleError,
+};
 use std::panic;
 use std::sync::Mutex;
 
@@ -28,18 +35,18 @@ impl BugManager {
         contract_bridge: ContractBridge,
         configuration: Configuration,
     ) -> Self {
-        Self {
-            contract_bridge,
-            invariant_selectors,
-            configuration,
-        }
+        Self { contract_bridge, invariant_selectors, configuration }
     }
 
     pub fn contains_selector(&self, selector: &Selector) -> bool {
         self.invariant_selectors.contains(selector)
     }
 
-    pub fn display_trap(&self, message: Message, response: FullContractResponse) {
+    pub fn display_trap(
+        &self,
+        message: Message,
+        response: FullContractResponse,
+    ) {
         println!("\n🤯 A trapped contract got caught! Let's dive into it");
 
         println!(
@@ -61,7 +68,7 @@ impl BugManager {
             },
         );
 
-        //Artificially trigger a bug for AFL
+        // Artificially trigger a bug for AFL
         panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
     }
 
@@ -74,7 +81,8 @@ impl BugManager {
     ) {
         println!("\n🤯 An invariant got caught! Let's dive into it");
 
-        // Convert the array to a slice and then take a mutable reference to the slice
+        // Convert the array to a slice and then take a mutable reference to the
+        // slice
         let mut invariant_slice: &[u8] = &invariant_tested.0;
 
         let hex = transcoder_loader
@@ -87,19 +95,24 @@ impl BugManager {
 
         println!("🎉 Find below the trace that caused that invariant");
         <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
-        //Artificially trigger a bug for AFL
+        // Artificially trigger a bug for AFL
         panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
     }
 
-    /// This function aims to call every invariant function via `invariant_selectors`.
-    pub fn are_invariants_passing(&self, origin: Origin) -> Result<(), FailedInvariantTrace> {
+    /// This function aims to call every invariant function via
+    /// `invariant_selectors`.
+    pub fn are_invariants_passing(
+        &self,
+        origin: Origin,
+    ) -> Result<(), FailedInvariantTrace> {
         for invariant in &self.invariant_selectors {
-            let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
-                invariant.as_ref(),
-                origin.into(),
-                0,
-                self.configuration.clone(),
-            );
+            let invariant_call: FullContractResponse =
+                self.contract_bridge.clone().call(
+                    invariant.as_ref(),
+                    origin.into(),
+                    0,
+                    self.configuration.clone(),
+                );
             if invariant_call.result.is_err() {
                 return Err((*invariant, invariant_call));
             }
@@ -107,8 +120,13 @@ impl BugManager {
         Ok(())
     }
 
-    pub fn is_contract_trapped(&self, contract_response: &FullContractResponse) -> bool {
-        if let Err(DispatchError::Module(ModuleError { message, .. })) = contract_response.result {
+    pub fn is_contract_trapped(
+        &self,
+        contract_response: &FullContractResponse,
+    ) -> bool {
+        if let Err(DispatchError::Module(ModuleError { message, .. })) =
+            contract_response.result
+        {
             if message == Some("ContractTrapped") {
                 return true;
             }

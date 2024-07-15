@@ -1,26 +1,45 @@
-use std::path::Path;
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::{
+    Path,
+    PathBuf,
+};
 
-use crate::{
-    cli::config::Configuration,
-    contract::payload,
-    contract::runtime::AccountId,
-    contract::runtime::{BalancesConfig, Contracts, Runtime, RuntimeGenesisConfig},
+use crate::cli::config::Configuration;
+use crate::contract::payload;
+use crate::contract::runtime::{
+    AccountId,
+    BalancesConfig,
+    Contracts,
+    Runtime,
+    RuntimeGenesisConfig,
 };
-use frame_support::{
-    __private::BasicExternalities, pallet_prelude::Weight, traits::fungible::Inspect,
-};
+use frame_support::__private::BasicExternalities;
+use frame_support::pallet_prelude::Weight;
+use frame_support::traits::fungible::Inspect;
 use migration::v13;
 use pallet_contracts::{
-    migration, Code, CollectEvents, Config, ContractResult, DebugInfo, Determinism, ExecReturnValue,
+    migration,
+    Code,
+    CollectEvents,
+    Config,
+    ContractResult,
+    DebugInfo,
+    Determinism,
+    ExecReturnValue,
 };
 use payload::PayloadCrafter;
-use sp_core::{crypto::AccountId32, storage::Storage, H256};
-use sp_runtime::{BuildStorage, DispatchError};
+use sp_core::crypto::AccountId32;
+use sp_core::storage::Storage;
+use sp_core::H256;
+use sp_runtime::{
+    BuildStorage,
+    DispatchError,
+};
 use v13::ContractInfoOf;
 
-pub type BalanceOf<T> =
-    <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<
+    <T as frame_system::Config>::AccountId,
+>>::Balance;
 pub type Test = Runtime; // Alias to your own Runtime
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
 pub type EventRecord = frame_system::EventRecord<
@@ -40,10 +59,12 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
-    pub const DEFAULT_GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+    pub const DEFAULT_GAS_LIMIT: Weight =
+        Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
     pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([0u8; 32]);
 
-    /// Create a proper genesis storage, deploy and instantiate a given ink! contract
+    /// Create a proper genesis storage, deploy and instantiate a given ink!
+    /// contract
     pub fn initialize_wasm(
         wasm_bytes: Vec<u8>,
         path_to_specs: &Path,
@@ -103,7 +124,7 @@ impl ContractBridge {
         transfer_value: BalanceOf<Test>,
         config: Configuration,
     ) -> FullContractResponse {
-        let acc = AccountId32::new([who.try_into().unwrap(); 32]);
+        let acc = AccountId32::new([who; 32]);
         Contracts::bare_call(
             acc,
             self.contract_address,
@@ -132,10 +153,10 @@ impl ContractBridge {
                     upload_info.code_hash
                 );
                 upload_info.code_hash
-            }
+            },
             Err(e) => {
                 panic!("❌ Upload failed for: {:?} with error: {:?}", who, e);
-            }
+            },
         }
     }
 
@@ -162,7 +183,7 @@ impl ContractBridge {
         Some(instantiate.result.unwrap().account_id)
     }
 
-    //TODO: Make this configurable as a Generic kind of
+    // TODO: Make this configurable as a Generic kind of
     fn storage() -> Storage {
         let storage = RuntimeGenesisConfig {
             balances: BalancesConfig {

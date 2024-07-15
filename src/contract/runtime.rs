@@ -1,26 +1,48 @@
 use crate::contract::remote::BalanceOf;
+use frame_support::traits::{
+    ConstU16,
+    ConstU32,
+};
+use frame_support::weights::constants::RocksDbWeight;
+use frame_support::weights::{
+    ConstantMultiplier,
+    IdentityFee,
+};
 use frame_support::{
-    construct_runtime, derive_impl, parameter_types, traits,
-    traits::{ConstU16, ConstU32},
-    weights::{constants::RocksDbWeight, ConstantMultiplier, IdentityFee},
+    construct_runtime,
+    derive_impl,
+    parameter_types,
+    traits,
 };
 use frame_system::EnsureSigned;
-pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
+pub use pallet_transaction_payment::{
+    CurrencyAdapter,
+    Multiplier,
+    TargetedFeeAdjustment,
+};
 use sp_core::ConstBool;
+use sp_runtime::testing::H256;
+use sp_runtime::traits::{
+    BlakeTwo256,
+    Bounded,
+    IdentifyAccount,
+    IdentityLookup,
+    Verify,
+};
 use sp_runtime::{
     generic,
-    testing::H256,
-    traits::Bounded,
-    traits::IdentityLookup,
-    traits::{BlakeTwo256, IdentifyAccount, Verify},
-    FixedPointNumber, MultiSignature, Perbill, Perquintill,
+    FixedPointNumber,
+    MultiSignature,
+    Perbill,
+    Perquintill,
 };
 
 pub type BlockNumber = u32;
 
 pub type Signature = MultiSignature;
 
-pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+pub type AccountId =
+    <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 pub type Balance = u128;
 
@@ -138,9 +160,9 @@ impl pallet_timestamp::Config for Runtime {
 
 impl pallet_contracts::Config for Runtime {
     /// This must be `true` in order to get proper coverage feedback
-    /// As a developper, feel free to change any `type` EXCEPT `UnsafeUnstableInterface`
+    /// As a developper, feel free to change any `type` EXCEPT
+    /// `UnsafeUnstableInterface`
     type UnsafeUnstableInterface = ConstBool<true>;
-    ///
     type Time = Timestamp;
     type Randomness = Randomness;
     type Currency = Balances;
@@ -148,10 +170,11 @@ impl pallet_contracts::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     /// The safest default is to allow no calls at all.
     ///
-    /// Runtimes should whitelist dispatchables that are allowed to be called from contracts
-    /// and make sure they are stable. Dispatchables exposed to contracts are not allowed to
-    /// change because that would break already deployed contracts. The `Call` structure itself
-    /// is not allowed to change the indices of existing pallets, too.
+    /// Runtimes should whitelist dispatchables that are allowed to be called
+    /// from contracts and make sure they are stable. Dispatchables exposed
+    /// to contracts are not allowed to change because that would break
+    /// already deployed contracts. The `Call` structure itself is not
+    /// allowed to change the indices of existing pallets, too.
     type CallFilter = frame_support::traits::Nothing;
     type WeightPrice = pallet_transaction_payment::Pallet<Self>;
     type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
@@ -174,7 +197,7 @@ impl pallet_contracts::Config for Runtime {
     type Migrations = ();
     type Debug = ();
     type Environment = ();
-    //pallet_contracts::Environment<Self>
+    // pallet_contracts::Environment<Self>
     type ApiVersion = ();
     type Xcm = ();
 }

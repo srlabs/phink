@@ -1,14 +1,19 @@
-use crate::{cli::ziggy::ZiggyConfig, cover::coverage::COVERAGE_PATH};
-use std::{
-    collections::{HashMap, HashSet},
-    fs::{self, File},
-    io::Read,
-    path::Path,
+use crate::cli::ziggy::ZiggyConfig;
+use crate::cover::coverage::COVERAGE_PATH;
+use std::collections::{
+    HashMap,
+    HashSet,
 };
+use std::fs::{
+    self,
+    File,
+};
+use std::io::Read;
+use std::path::Path;
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {
-    coverage: HashMap<String, Vec<bool>>,
+    coverage:  HashMap<String, Vec<bool>>,
     hit_lines: HashSet<usize>,
 }
 
@@ -20,10 +25,7 @@ impl CoverageTracker {
             .filter_map(|s| s.parse().ok())
             .collect();
 
-        CoverageTracker {
-            coverage: HashMap::new(),
-            hit_lines,
-        }
+        CoverageTracker { coverage: HashMap::new(), hit_lines }
     }
 
     pub fn process_file(&mut self, file_path: &str) -> std::io::Result<()> {
@@ -45,19 +47,25 @@ impl CoverageTracker {
             if trimmed.contains('}') {
                 if let Some(start) = block_stack.pop() {
                     if file_coverage[start] {
-                        // If the start of the block is covered, cover everything up to this line 
-                        for j in start..=i {
-                            file_coverage[j] = true;
+                        // If the start of the block is covered, cover
+                        // everything up to this line
+                        for item in
+                            file_coverage.iter_mut().take(i + 1).skip(start)
+                        {
+                            *item = true;
                         }
                     }
                 }
             }
 
-            if let Some(cov_num) = trimmed.strip_prefix("ink::env::debug_println!(\"COV={}\", ") {
+            if let Some(cov_num) =
+                trimmed.strip_prefix("ink::env::debug_println!(\"COV={}\", ")
+            {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {
                         if self.hit_lines.contains(&num) {
-                            // Mark the current line and previous non-empty lines as covered
+                            // Mark the current line and previous non-empty
+                            // lines as covered
                             file_coverage[i] = true;
                             for j in (0..i).rev() {
                                 if !lines[j].trim().is_empty() {
@@ -119,8 +127,9 @@ impl CoverageTracker {
         );
 
         for (file_path, coverage) in &self.coverage {
-            let file_name = Path::new(file_path).file_name().unwrap().to_str().unwrap();
-            let report_path = format!("{}/{}.html", output_dir.to_string(), file_name);
+            let file_name =
+                Path::new(file_path).file_name().unwrap().to_str().unwrap();
+            let report_path = format!("{}/{}.html", output_dir, file_name);
 
             self.generate_file_report(file_path, coverage, &report_path)?;
 
@@ -183,7 +192,7 @@ impl CoverageTracker {
             Err(_) => {
                 println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");
                 return;
-            }
+            },
         };
 
         let mut contents = String::new();
@@ -195,14 +204,18 @@ impl CoverageTracker {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
-            .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
+            .filter(|e| {
+                !e.path().components().any(|c| c.as_os_str() == "target")
+            })
         {
             tracker
                 .process_file(entry.path().as_os_str().to_str().unwrap())
                 .expect("🙅 Cannot process file");
         }
         tracker
-            .generate_report(config.config.report_path.clone().unwrap().to_str().unwrap())
+            .generate_report(
+                config.config.report_path.clone().unwrap().to_str().unwrap(),
+            )
             .expect("🙅 Cannot generate coverage report");
         println!(
             "📊 Coverage report generated at: {}",
@@ -254,9 +267,8 @@ mod tests {
         let mut file_coverage = vec![false; test_lines.len()];
 
         for (i, line) in test_lines.iter().enumerate() {
-            if let Some(cov_num) = line
-                .trim()
-                .strip_prefix("ink::env::debug_println!(\"COV=\", ")
+            if let Some(cov_num) =
+                line.trim().strip_prefix("ink::env::debug_println!(\"COV=\", ")
             {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {

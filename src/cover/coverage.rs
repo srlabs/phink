@@ -1,4 +1,13 @@
-use std::{collections::HashSet, fs::File, fs::OpenOptions, hint::black_box, io::Read, io::Write};
+use std::collections::HashSet;
+use std::fs::{
+    File,
+    OpenOptions,
+};
+use std::hint::black_box;
+use std::io::{
+    Read,
+    Write,
+};
 
 pub type CoverageTrace = Vec<u8>;
 pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
@@ -10,18 +19,16 @@ pub struct Coverage {
 
 impl Coverage {
     pub fn new() -> Self {
-        Coverage {
-            branches: Vec::new(),
-        }
+        Coverage { branches: Vec::new() }
     }
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         self.branches.push(coverage.clone());
     }
 
-    /// This function takes a `CoverageTrace` and removes all the coverage from the trace
-    /// 'COV=153 COV=154 panicked at lib.rs:157:24: index out of bounds' =>
-    /// 'panicked at lib.rs:157:24: index out of bounds'
+    /// This function takes a `CoverageTrace` and removes all the coverage from
+    /// the trace 'COV=153 COV=154 panicked at lib.rs:157:24: index out of
+    /// bounds' => 'panicked at lib.rs:157:24: index out of bounds'
     pub fn remove_cov_from_trace(trace: CoverageTrace) -> Vec<u8> {
         let cleaned_str = String::from_utf8_lossy(&trace)
             .split_whitespace()
@@ -44,21 +51,23 @@ impl Coverage {
             trace_strings.push(x);
         }
 
-        let mut file = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(COVERAGE_PATH)?;
+        let mut file =
+            OpenOptions::new().append(true).create(true).open(COVERAGE_PATH)?;
 
         write!(file, "{}", trace_strings.join("\n"))?;
 
         Ok(())
     }
 
-    /// This function create an artificial coverage to convince Ziggy that a message is interesting or not.
+    /// This function create an artificial coverage to convince Ziggy that a
+    /// message is interesting or not.
     #[allow(unused_doc_comments)]
+    #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self) {
-        let flatten_cov: Vec<u8> = self.branches.clone().into_iter().flatten().collect();
-        let coverage_str = Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
+        let flatten_cov: Vec<u8> =
+            self.branches.clone().into_iter().flatten().collect();
+        let coverage_str =
+            Self::deduplicate(&String::from_utf8_lossy(&flatten_cov));
         let coverage_lines: Vec<&str> = coverage_str.split('\n').collect();
 
         #[cfg(not(fuzzing))]
@@ -70,8 +79,9 @@ impl Coverage {
             );
         }
 
-        /// We assume that the instrumentation will never insert more than `2_000` artificial branches
-        /// This value should be big enough to handle most of smart-contract, even the biggest
+        /// We assume that the instrumentation will never insert more than
+        /// `2_000` artificial branches This value should be big enough
+        /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
             let target = format!("COV={}", x);
             if coverage_lines.contains(&target.as_str()) {
@@ -81,8 +91,8 @@ impl Coverage {
     }
 
     /// A simple helper to remove some duplicated lines from a `&str`
-    /// This is used mainly to remove coverage returns being inserted many times in the debug vector
-    /// in case of any `iter()`, `for` loop and so on
+    /// This is used mainly to remove coverage returns being inserted many times
+    /// in the debug vector in case of any `iter()`, `for` loop and so on
     /// # Arguments
     /// * `input`: The string to deduplicate
     pub fn deduplicate(input: &str) -> String {

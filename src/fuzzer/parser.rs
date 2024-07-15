@@ -1,12 +1,25 @@
-use crate::{
-    cli::config::{Configuration, OriginFuzzingOption},
-    contract::remote::{BalanceOf, Test},
-    fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
+use crate::cli::config::{
+    Configuration,
+    OriginFuzzingOption,
 };
-use contract_transcode::{ContractMessageTranscoder, Value};
-use ink_metadata::{InkProject, Selector};
+use crate::contract::remote::{
+    BalanceOf,
+    Test,
+};
+use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
+use contract_transcode::{
+    ContractMessageTranscoder,
+    Value,
+};
+use ink_metadata::{
+    InkProject,
+    Selector,
+};
 use std::sync::Mutex;
-use OriginFuzzingOption::{DisableOriginFuzzing, EnableOriginFuzzing};
+use OriginFuzzingOption::{
+    DisableOriginFuzzing,
+    EnableOriginFuzzing,
+};
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
 pub const MIN_SEED_LEN: usize = 4;
@@ -76,11 +89,11 @@ impl<'a> Iterator for Data<'a> {
                 Some(delimiter) => self.pointer + delimiter,
                 None => self.data.len(),
             };
-            let res = Some(&self.data[self.pointer..next_pointer]);
+            let res = &self.data[self.pointer..next_pointer];
             self.pointer = next_pointer + DELIMITER.len();
-            if res.unwrap().len() >= MIN_SEED_LEN {
+            if res.len() >= MIN_SEED_LEN {
                 self.size += 1;
-                return res;
+                return Option::from(res);
             }
         }
     }
@@ -100,16 +113,10 @@ pub fn parse_input(
     transcoder: &mut Mutex<ContractMessageTranscoder>,
     config: Configuration,
 ) -> OneInput {
-    let max_messages_per_exec = config
-        .max_messages_per_exec
-        .unwrap_or(MAX_MESSAGES_PER_EXEC);
+    let max_messages_per_exec =
+        config.max_messages_per_exec.unwrap_or(MAX_MESSAGES_PER_EXEC);
 
-    let iterable = Data {
-        data,
-        pointer: 0,
-        size: 0,
-        max_messages_per_exec,
-    };
+    let iterable = Data { data, pointer: 0, size: 0, max_messages_per_exec };
 
     let mut input = OneInput {
         messages: vec![],
@@ -130,12 +137,13 @@ pub fn parse_input(
             EnableOriginFuzzing => {
                 input.origin = Origin(decoded_payloads[4]);
                 encoded_message = &decoded_payloads[5..];
-            }
+            },
             DisableOriginFuzzing => encoded_message = &decoded_payloads[4..],
         }
 
         let binding = transcoder.get_mut().unwrap();
-        let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
+        let decoded_msg =
+            binding.decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
             Ok(_) => {
@@ -144,9 +152,12 @@ pub fn parse_input(
                 {
                     let is_payable: bool = is_message_payable(
                         &Selector::from(
-                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4]).unwrap(),
+                            <&[u8] as TryInto<[u8; 4]>>::try_into(
+                                &encoded_message[0..4],
+                            )
+                            .unwrap(),
                         ),
-                        transcoder.lock().unwrap().metadata(),
+                        transcoder.get_mut().unwrap().metadata(),
                     );
 
                     input.messages.push(Message {
@@ -157,10 +168,10 @@ pub fn parse_input(
                         origin: input.origin,
                     });
                 }
-            }
+            },
             Err(_) => {
                 continue;
-            }
+            },
         }
     }
     input

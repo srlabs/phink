@@ -1,2 +1,2 @@
 pub mod cleaner;
-pub mod instrument;
+pub mod instrumentation;

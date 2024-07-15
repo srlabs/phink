@@ -1,8 +1,18 @@
-use crate::cli::config::OriginFuzzingOption::{DisableOriginFuzzing, EnableOriginFuzzing};
-use crate::contract::remote::{BalanceOf, ContractBridge, Test};
+use crate::cli::config::OriginFuzzingOption::{
+    DisableOriginFuzzing,
+    EnableOriginFuzzing,
+};
+use crate::contract::remote::{
+    BalanceOf,
+    ContractBridge,
+    Test,
+};
 use crate::fuzzer::fuzz::MAX_MESSAGES_PER_EXEC;
 use frame_support::weights::Weight;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use sp_core::crypto::AccountId32;
 use std::fs;
 use std::path::PathBuf;
@@ -19,11 +29,13 @@ pub struct Configuration {
     pub max_messages_per_exec: Option<usize>,
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
-    /// Fuzz the origin. If `false`, the fuzzer will execute each message with the same account.
+    /// Fuzz the origin. If `false`, the fuzzer will execute each message with
+    /// the same account.
     pub fuzz_origin: bool,
     /// The gas limit enforced when executing the constructor
     pub default_gas_limit: Option<Weight>,
-    /// The maximum amount of balance that can be charged from the caller to pay for the storage consumed.
+    /// The maximum amount of balance that can be charged from the caller to
+    /// pay for the storage consumed.
     pub storage_deposit_limit: Option<BalanceOf<Test>>,
 }
 
@@ -41,16 +53,11 @@ impl Default for Configuration {
         }
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum OriginFuzzingOption {
     EnableOriginFuzzing,
+    #[default]
     DisableOriginFuzzing,
-}
-
-impl Default for OriginFuzzingOption {
-    fn default() -> Self {
-        DisableOriginFuzzing
-    }
 }
 
 impl Configuration {
