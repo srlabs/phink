@@ -1,11 +1,11 @@
 # Phink Configuration
 
 cores = 1
-max_messages_per_exec = 1
-report_path = "output/coverage"
+max_messages_per_exec = 4
+report_path = "output/phink/contract_coverage"
 use_honggfuzz = false
 fuzz_origin = false
-deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Alice (Origin(1))
+deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" #Alice (Origin(1))
 #storage_deposit_limit = 10_000_000
 
 [default_gas_limit]

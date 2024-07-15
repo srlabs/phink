@@ -6,19 +6,6 @@ use std::{
     },
 };
 
-use crate::{
-    cli::config::Configuration,
-    contract::{
-        payload,
-        runtime::{
-            AccountId,
-            BalancesConfig,
-            Contracts,
-            Runtime,
-            RuntimeGenesisConfig,
-        },
-    },
-};
 use frame_support::{
     __private::BasicExternalities,
     pallet_prelude::Weight,
@@ -35,17 +22,28 @@ use pallet_contracts::{
     Determinism,
     ExecReturnValue,
 };
-use payload::PayloadCrafter;
 use sp_core::{
     crypto::AccountId32,
     storage::Storage,
     H256,
 };
-use sp_runtime::{
-    BuildStorage,
-    DispatchError,
-};
+use sp_runtime::DispatchError;
 use v13::ContractInfoOf;
+
+use payload::PayloadCrafter;
+
+use crate::{
+    cli::config::Configuration,
+    contract::{
+        payload,
+        runtime::{
+            runtime_storage,
+            AccountId,
+            Contracts,
+            Runtime,
+        },
+    },
+};
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Inspect<
     <T as frame_system::Config>::AccountId,
@@ -92,7 +90,7 @@ impl ContractBridge {
 
         let json_specs = fs::read_to_string(path_to_specs).unwrap();
         let genesis_storage: Storage = {
-            let storage = Self::storage();
+            let storage = runtime_storage();
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
@@ -191,24 +189,5 @@ impl ContractBridge {
         println!("🔍 Instantiated the contract, using account {:?}", who);
 
         Some(instantiate.result.unwrap().account_id)
-    }
-
-    // TODO: Make this configurable as a Generic kind of
-    fn storage() -> Storage {
-        let storage = RuntimeGenesisConfig {
-            balances: BalancesConfig {
-                balances: (0..u8::MAX) // Lot of money for Alice, Bob ... Ferdie
-                    .map(|i| [i; 32].into())
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .cloned()
-                    .map(|k| (k, 10000000000000000000 * 2))
-                    .collect(),
-            },
-            ..Default::default()
-        }
-        .build_storage()
-        .unwrap();
-        storage
     }
 }

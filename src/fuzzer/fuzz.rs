@@ -170,15 +170,6 @@ impl FuzzerEngine for Fuzzer {
             &mut coverage,
         );
 
-        // If we are not in fuzzing mode, we save the coverage
-        // If you ever wish to have real-time coverage while fuzzing (and a lose
-        // of performance) Simply comment out the following line :)
-        #[cfg(not(fuzzing))]
-        {
-            println!("[🚧UPDATE] Adding to the coverage file...");
-            coverage.save().expect("🙅 Cannot save the coverage");
-        }
-
         chain.execute_with(|| {
             check_invariants(
                 bug_manager,
@@ -188,9 +179,14 @@ impl FuzzerEngine for Fuzzer {
             )
         });
 
-        // Pretty print all the calls of the current input
+        // If we are not in fuzzing mode, we save the coverage
+        // If you ever wish to have real-time coverage while fuzzing (and a lose
+        // of performance) Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
+            println!("[🚧UPDATE] Adding to the coverage file...");
+            coverage.save().expect("🙅 Cannot save the coverage");
+
             <Fuzzer as FuzzerEngine>::pretty_print(
                 all_msg_responses,
                 decoded_msgs,

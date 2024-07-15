@@ -30,10 +30,8 @@ std = [
 [dependencies]
 # Standard crates
 seq-macro = { version = "0.3.5" }
-parity-scale-codec = { version = "3.6.9", default-features = false }
 scale-info = { version = "2.6.0", default-features = false }
 prettytable-rs = { version = "0.10.0" }
-contract-metadata = { version = "4.1.1" }
 ziggy = { version = "1.1.0", default-features = false }
 hex = { version = "0.4.3" }
 serde = { version = "1.0.197", features = ["derive"] }
@@ -53,6 +51,7 @@ walkdir = { version = "2.5.0" }
 regex = "1.10.4"
 
 # Substrate-specific crates
+parity-scale-codec = { version = "*", default-features = false }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
@@ -66,9 +65,10 @@ pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", bra
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 
 # ink! crates
-ink_metadata = { version = "5.0.0" }
-ink_env = { version = "5.0.0" }
-contract-transcode = { version = "4.1.0" }
+ink_metadata = { version = "*" }
+ink_env = { version = "*" }
+contract-transcode = { version = "*" }
+contract-metadata = { version = "*" }
 
 
 [lints.rust]

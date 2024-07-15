@@ -20,7 +20,10 @@ pub use pallet_transaction_payment::{
     Multiplier,
     TargetedFeeAdjustment,
 };
-use sp_core::ConstBool;
+use sp_core::{
+    storage::Storage,
+    ConstBool,
+};
 use sp_runtime::{
     generic,
     testing::H256,
@@ -31,6 +34,7 @@ use sp_runtime::{
         IdentityLookup,
         Verify,
     },
+    BuildStorage,
     FixedPointNumber,
     MultiSignature,
     Perbill,
@@ -71,12 +75,29 @@ pub type UncheckedExtrinsic =
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
 pub const MILLISECS_PER_BLOCK: Moment = 3000;
-
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 pub const MILLICENTS: Balance = 1_000_000_000;
-// pub const CENTS: Balance = 1_000 * MILLICENTS;
-// assume this is worth about a cent.
-// pub const DOLLARS: Balance = 100 * CENTS;
+
+/// This function allows developers to add their own storage configurations 🛠️.
+/// It is used to mock the state and provide sufficient data for the fuzzer 🐛.
+/// You should definitely adapt this function to your needs 🔧.
+pub fn runtime_storage() -> Storage {
+    let storage = RuntimeGenesisConfig {
+        balances: BalancesConfig {
+            balances: (0..u8::MAX) // Lot of money for Alice, Bob ... Ferdie
+                .map(|i| [i; 32].into())
+                .collect::<Vec<_>>()
+                .iter()
+                .cloned()
+                .map(|k| (k, 10000000000000000000 * 2))
+                .collect(),
+        },
+        ..Default::default()
+    }
+    .build_storage()
+    .unwrap();
+    storage
+}
 
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 parameter_types! {
