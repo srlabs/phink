@@ -43,6 +43,13 @@ pub struct Configuration {
     /// The maximum amount of balance that can be charged from the caller to
     /// pay for the storage consumed.
     pub storage_deposit_limit: Option<String>,
+    /// In the case where you wouldn't have any default constructor in you
+    /// smart contract, i.e `new()` (without parameters), then you would
+    /// need to specify inside the config file the `Vec<u8>` representation
+    /// of the SCALE-encoded data of your constructor. This typically
+    /// involved the four first bytes of the constructor' selector,
+    /// followed by the payload.
+    pub constructor_payload: Option<String>,
 }
 
 impl Default for Configuration {
@@ -56,6 +63,7 @@ impl Default for Configuration {
             fuzz_origin: false,
             default_gas_limit: Option::from(ContractBridge::DEFAULT_GAS_LIMIT),
             storage_deposit_limit: None,
+            constructor_payload: None,
         }
     }
 }

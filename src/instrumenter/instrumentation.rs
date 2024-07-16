@@ -228,6 +228,7 @@ impl ContractInstrumenter for Instrumenter {
     fn save_and_format(source_code: String, rust_file: PathBuf) -> Result<(), io::Error> {
         let mut file = File::create(rust_file.clone())?;
         file.write_all(source_code.as_bytes())?;
+        println!("✍️ Writing instrumented source code");
         file.flush()?;
         println!("🛠️ Formatting {} with rustfmt...", rust_file.display());
         Command::new("rustfmt")
@@ -242,8 +243,9 @@ impl ContractInstrumenter for Instrumenter {
     /// `ink::env::debug_println!("COV=abc")` where `abc` can be any number. If
     /// this pattern is found, it means the code is instrumented.
     fn already_instrumented(code: &str) -> bool {
-        let re = Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#).unwrap();
-        re.is_match(code)
+        Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#)
+            .unwrap()
+            .is_match(code)
     }
 }
 

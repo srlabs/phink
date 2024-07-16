@@ -99,13 +99,19 @@ impl ContractBridge {
                 );
 
                 // We verify if the contract is correctly instantiated
-                assert!(
-                    ContractInfoOf::<Runtime>::contains_key(
-                        &contract_addr
-                    )
-                );
-                println!("🏗️ Instantiated the contract. New contract address: {:?}", contract_addr);
+                if !ContractInfoOf::<Runtime>::contains_key(&contract_addr) {
+                    panic!(
+                        "🚨 Contract Instantiation Failed! 🚨
+                            This error is likely due to a misconfigured constructor payload in the configuration file.
+                            Please ensure the correct payload for the constructor (selector + parameters) is provided, just as you would for a regular deployment. You can use the `constructor_payload` field inside the TOML configuration file for this purpose.
+                            To generate your payload, please use `cargo contract`:
+                            Example:
+                            ❯ cargo contract encode --message \"new\" --args 4444 123 \"0xe7109741c21967a67e4d4edaf7accb253a5e11455ff9e07bdd16ecb186c94be1\" \"0xe7109741c21967a67e4d4edaf7accb253a5e11455ff9e07bdd16ecb186c94be1\" \"0xe7109741c21967a67e4d4edaf7accb253a5e11455ff9e07bdd16ecb186c94be1\" -- target/ink/multi_contract_caller.json
+                            Encoded data: 9BAE9D5E...4BE1"
+                    );
+                }
             });
+
             chain.into_storages()
         };
 
@@ -177,13 +183,20 @@ impl ContractBridge {
         who: AccountId,
         config: Configuration,
     ) -> Option<AccountIdOf<Runtime>> {
+        let data: Vec<u8> = if let Some(payload) = config.constructor_payload {
+            hex::decode(payload)
+                .expect("Impossible to hex-decode this. Check your config file")
+        } else {
+            PayloadCrafter::get_constructor(json_specs)?.into()
+        };
+
         let instantiate = Contracts::bare_instantiate(
             who.clone(),
             0,
             config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
             None,
             Code::Existing(code_hash),
-            Vec::from(PayloadCrafter::get_constructor(json_specs)?),
+            data,
             vec![],
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
