@@ -133,6 +133,7 @@ impl ZiggyConfig {
         fuzzing_args.push(minlength);
 
         if !self.config.use_honggfuzz {
+            panic!("x");
             fuzzing_args.push("--no-honggfuzz".parse().unwrap());
         }
 
