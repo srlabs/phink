@@ -43,6 +43,9 @@ pub struct Configuration {
     /// The maximum amount of balance that can be charged from the caller to
     /// pay for the storage consumed.
     pub storage_deposit_limit: Option<String>,
+    /// The `value` being transferred to the new account during the contract
+    /// instantiation
+    pub instantiate_initial_value: Option<String>,
     /// In the case where you wouldn't have any default constructor in you
     /// smart contract, i.e `new()` (without parameters), then you would
     /// need to specify inside the config file the `Vec<u8>` representation
@@ -57,12 +60,13 @@ impl Default for Configuration {
         Self {
             cores: Some(1),
             use_honggfuzz: false,
+            fuzz_origin: false,
             deployer_address: ContractBridge::DEFAULT_DEPLOYER.into(),
             max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
-            fuzz_origin: false,
             default_gas_limit: Option::from(ContractBridge::DEFAULT_GAS_LIMIT),
             storage_deposit_limit: None,
+            instantiate_initial_value: None,
             constructor_payload: None,
         }
     }
@@ -92,7 +96,7 @@ impl Configuration {
         });
 
         if config.storage_deposit_limit.is_some()
-            && Option::is_none(&Self::parse_storage_deposit(&config))
+            && Option::is_none(&Self::parse_balance(config.storage_deposit_limit.clone()))
         {
             panic!("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file");
         }
@@ -100,13 +104,10 @@ impl Configuration {
         config
     }
 
-    pub fn parse_storage_deposit(config: &Configuration) -> Option<BalanceOf<Runtime>> {
+    pub fn parse_balance(value: Option<String>) -> Option<BalanceOf<Runtime>> {
         // Currently, TOML & Serde don't handle parsing `u128` 🤡
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)
-        config
-            .storage_deposit_limit
-            .clone()
-            .and_then(|s| s.parse::<u128>().ok())
+        value.clone().and_then(|s| s.parse::<u128>().ok())
     }
 }

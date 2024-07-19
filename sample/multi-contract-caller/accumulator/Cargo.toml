@@ -5,7 +5,7 @@ authors = ["Use Ink <ink@use.ink>"]
 edition = "2021"
 
 [dependencies]
-ink = { version = "5.0.0" , default-features = false}
+ink = { version = "5.0.0", default-features = false }
 [lib]
 path = "lib.rs"
 
@@ -15,3 +15,4 @@ std = [
     "ink/std",
 ]
 ink-as-dependency = []
+phink = []

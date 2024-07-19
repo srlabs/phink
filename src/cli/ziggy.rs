@@ -100,7 +100,7 @@ impl ZiggyConfig {
 
         let status = ziggy_child.wait()?;
         if !status.success() {
-            eprintln!("`cargo ziggy` failed");
+            eprintln!("🚫 Can't start `cargo ziggy`, command failed");
         }
         Ok(())
     }
@@ -119,33 +119,31 @@ impl ZiggyConfig {
     }
 
     pub fn ziggy_fuzz(&self) -> io::Result<()> {
-        Self::start(ZiggyCommand::Build, vec![], vec![])?;
+        let build_args = if !self.config.use_honggfuzz {
+            vec!["--no-honggfuzz".parse().unwrap()]
+        } else {
+            vec!["".parse().unwrap()]
+        };
+
+        Self::start(ZiggyCommand::Build, build_args, vec![])?;
+
         println!("🏗️ Ziggy Build completed");
 
-        let mut fuzzing_args = Vec::new();
-
-        let jobs = format!("--jobs={}", self.config.cores.unwrap_or_default());
-        let dict = format!("--dict={}", DICT_FILE);
-        let minlength = format!("--minlength={}", MIN_SEED_LEN);
-
-        fuzzing_args.push(jobs);
-        fuzzing_args.push(dict);
-        fuzzing_args.push(minlength);
-
+        let mut fuzzing_args = vec![
+            format!("--jobs={}", self.config.cores.unwrap_or_default()),
+            format!("--dict={}", DICT_FILE),
+            format!("--minlength={}", MIN_SEED_LEN),
+        ];
         if !self.config.use_honggfuzz {
-            panic!("x");
-            fuzzing_args.push("--no-honggfuzz".parse().unwrap());
+            fuzzing_args.push("--no-honggfuzz".parse().unwrap())
         }
 
-        Self::start(
-            ZiggyCommand::Fuzz,
-            fuzzing_args,
-            vec![(
-                "PHINK_START_FUZZING_WITH_CONFIG".into(),
-                serde_json::to_string(self).unwrap(),
-            )],
-        )?;
-        Ok(())
+        let fuzz_config = vec![(
+            "PHINK_START_FUZZING_WITH_CONFIG".to_string(),
+            serde_json::to_string(self)?,
+        )];
+
+        Self::start(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
     }
 
     pub fn ziggy_cover(&self) -> io::Result<()> {

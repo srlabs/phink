@@ -53,7 +53,11 @@ pub trait ContractInstrumenter {
     fn instrument(&mut self) -> Result<&mut Self, String>
     where
         Self: Sized;
-    fn instrument_file(&self, path: &Path) -> Result<(), String>;
+    fn instrument_file(
+        &self,
+        path: &Path,
+        contract_cov_manager: &mut ContractCovUpdater,
+    ) -> Result<(), String>;
     fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
     fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
     fn already_instrumented(code: &str) -> bool;
@@ -178,7 +182,7 @@ impl ContractInstrumenter for Instrumenter {
     fn instrument(&mut self) -> Result<&mut Instrumenter, String> {
         let new_working_dir = self.fork()?;
         self.contract_dir = new_working_dir.clone();
-
+        let mut contract_cov_manager = ContractCovUpdater { line_id: 0 };
         for entry in WalkDir::new(&new_working_dir)
             .into_iter()
             .filter_map(|e| e.ok())
@@ -187,12 +191,16 @@ impl ContractInstrumenter for Instrumenter {
         // Don't instrument anything inside target
         {
             let path = entry.path();
-            self.instrument_file(path)?;
+            self.instrument_file(path, &mut contract_cov_manager)?;
         }
         Ok(self)
     }
 
-    fn instrument_file(&self, path: &Path) -> Result<(), String> {
+    fn instrument_file(
+        &self,
+        path: &Path,
+        contract_cov_manager: &mut ContractCovUpdater,
+    ) -> Result<(), String> {
         let code = fs::read_to_string(path)
             .map_err(|e| format!("🙅 Failed to read {}: {:?}", path.display(), e))?;
 
@@ -200,8 +208,14 @@ impl ContractInstrumenter for Instrumenter {
             return Ok(());
         }
 
+        println!(
+            "📝 Instrumenting file: {} with {:?}",
+            path.display(),
+            contract_cov_manager
+        );
+
         let modified_code =
-            Self::parse_and_visit(&code, ContractCovUpdater).map_err(|_| {
+            Self::parse_and_visit(&code, contract_cov_manager).map_err(|_| {
                 format!("🙅 Failed to parse and visit code in {}", path.display())
             })?;
 
@@ -222,6 +236,7 @@ impl ContractInstrumenter for Instrumenter {
         contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
         );
         visitor.visit_file_mut(&mut ast);
+
         Ok(quote!(#ast).to_string())
     }
 
@@ -251,7 +266,6 @@ impl ContractInstrumenter for Instrumenter {
 
 mod instrument {
     use proc_macro2::Span;
-    use rand::Rng;
     use syn::{
         parse_quote,
         visit_mut::VisitMut,
@@ -261,17 +275,22 @@ mod instrument {
         Token,
     };
 
-    pub struct ContractCovUpdater;
+    #[derive(Debug)]
+    pub struct ContractCovUpdater {
+        pub line_id: u64,
+    }
 
-    impl VisitMut for ContractCovUpdater {
+    impl VisitMut for &mut ContractCovUpdater {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
             let mut new_stmts = Vec::new();
             // Temporarily replace block.stmts with an empty Vec to avoid
             // borrowing issues
             let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
-                let random_number = rand::thread_rng().gen_range(0..999_999_999);
-                let line_lit = LitInt::new(&random_number.to_string(), Span::call_site());
+                let line_lit =
+                    LitInt::new(self.line_id.to_string().as_str(), Span::call_site());
+
+                self.line_id = self.line_id + 1;
 
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)

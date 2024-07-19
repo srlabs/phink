@@ -81,7 +81,7 @@ impl BugManager {
         }
 
         // Artificially trigger a bug for AFL
-        panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
+        panic!("\n🫡  Job is done! Please, don't mind the backtrace below/above.\n\n");
     }
 
     pub fn display_invariant(
@@ -109,7 +109,7 @@ impl BugManager {
             <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
         }
         // Artificially trigger a bug for AFL
-        panic!("\nJob is done! Please, don't mind the backtrace below/above 🫡\n\n");
+        panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");
     }
 
     /// This function aims to call every invariant function via

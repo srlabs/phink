@@ -143,12 +143,6 @@ mod multi_contract_caller {
                 .expect("uploading `subber` failed")
                 .code_hash;
 
-            use hex;
-            use parity_scale_codec::{
-                Decode,
-                Encode,
-            };
-
             let mut constructor = MultiContractCallerRef::new(
                 1234, // initial value
                 1337, // salt
@@ -156,9 +150,6 @@ mod multi_contract_caller {
                 adder_hash,
                 subber_hash,
             );
-
-            // let encoded = constructor.encode();
-            // println!("{}", hex::encode(&encoded));
 
             let multi_contract_caller = client
                 .instantiate("multi_contract_caller", &ink_e2e::alice(), &mut constructor)
