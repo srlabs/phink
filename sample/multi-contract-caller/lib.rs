@@ -6,7 +6,7 @@ mod multi_contract_caller {
     use adder::AdderRef;
     use subber::SubberRef;
 
-    /// ❯ cargo contract encode --message "new"
+    /// cargo contract encode --message "new"
     /// --args 4444 123
     /// "0x279c603e9d4b5c6c8c672893ab54d068ceccbfbec619e56e819a7769eadcbd76"
     /// "0x6d714e7624d4be6a35bed20d0730277d0f3a13a7b01dcda7cedbf67fe3a4e95f"

@@ -102,7 +102,7 @@ impl ContractBridge {
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
 
                 contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config).expect(
-                    "🙅 Can't fetch the contract address because because of incorrect instantiation",
+                    "🙅 Can't fetch the contract address because of incorrect instantiation",
                 );
 
                 // We verify if the contract is correctly instantiated
@@ -207,7 +207,7 @@ impl ContractBridge {
                 Some(contract_info.account_id)
             }
             Err(e) => {
-                eprintln!("❌ Failed to instantiate the contract. Double-check your `constructor_payload` please. ({:?})", e);
+                eprintln!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
                 None
             }
         }

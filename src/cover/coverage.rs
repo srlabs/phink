@@ -127,15 +127,15 @@ impl InputCoverage {
         #[cfg(not(fuzzing))]
         {
             println!(
-                "[🚧DEBUG TRACE] Detected {} messages traces ({:?})",
+                "[🚧DEBUG TRACE] Detected {} messages traces",
                 self.messages_coverage.clone().len(),
-                &flattened_cov
             );
+            println!("[🚧DEBUG TRACE] Full trace: {:?}", &flattened_cov);
         }
 
         /// We assume that the instrumentation will never insert more than
         /// `2_000` artificial branches This value should be big enough
-        /// to handle most of smart-contract, even the biggest
+        /// to handle most of smart-contract, even the biggests
         seq_macro::seq!(x in 0..= 2_000 {
             if flattened_cov.contains(&(x as u64)) {
                 let _ = black_box(x + 1);
