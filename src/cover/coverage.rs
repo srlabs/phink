@@ -118,7 +118,7 @@ impl InputCoverage {
         let flattened_cov: Vec<_> = self
             .messages_coverage
             .iter()
-            .flat_map(|entry| entry.coverage_data.keys().cloned())
+            .flat_map(|entry| entry.coverage_data.clone().into_iter())
             .collect();
 
         #[cfg(not(fuzzing))]
