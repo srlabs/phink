@@ -130,7 +130,10 @@ impl InputCoverage {
                 "[🚧DEBUG TRACE] Detected {} messages traces",
                 self.messages_coverage.clone().len(),
             );
-            println!("[🚧DEBUG TRACE] Full trace: {:?}", &flattened_cov);
+            println!(
+                "[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n",
+                &flattened_cov
+            );
         }
 
         /// We assume that the instrumentation will never insert more than
