@@ -43,9 +43,12 @@ impl DevelopperPreferences for Preferences {
     /// Most of the time, you might want this function to be empty
     fn on_contract_initialize() {
         fn on_contract_initialize() {
+            let ink_fuzzed_path: &str = "ink_fuzzed_Cw0g";
+
             let adder = Contracts::bare_upload_code(
                 AccountId32::new([1; 32]),
-                match fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/adder/adder.wasm") {
+                match fs::read(format!("{}/target/ink/adder/adder.wasm", ink_fuzzed_path))
+                {
                     Ok(data) => data.to_owned(),
                     Err(_) => {
                         println!("❌ Error reading adder wasm file");
@@ -63,9 +66,10 @@ impl DevelopperPreferences for Preferences {
 
             let accumulator = Contracts::bare_upload_code(
                 AccountId32::new([1; 32]),
-                match fs::read(
-                    "/tmp/ink_fuzzed_1Mi7O/target/ink/accumulator/accumulator.wasm",
-                ) {
+                match fs::read(format!(
+                    "{}/target/ink/accumulator/accumulator.wasm",
+                    ink_fuzzed_path
+                )) {
                     Ok(data) => data.to_owned(),
                     Err(_) => {
                         println!("❌ Error reading accumulator wasm file");
@@ -83,7 +87,10 @@ impl DevelopperPreferences for Preferences {
 
             let subber = Contracts::bare_upload_code(
                 AccountId32::new([1; 32]),
-                match fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/subber/subber.wasm") {
+                match fs::read(format!(
+                    "{}/target/ink/subber/subber.wasm",
+                    ink_fuzzed_path
+                )) {
                     Ok(data) => data.to_owned(),
                     Err(_) => {
                         println!("❌ Error reading subber wasm file");
