@@ -25,6 +25,7 @@ pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
 #[derive(Clone)]
 pub struct Coverage {
     branches: Vec<CoverageEntry>,
+    raw: Vec<CoverageTrace>,
 }
 
 #[derive(Clone, Debug)]
@@ -46,11 +47,13 @@ impl Coverage {
     pub fn new() -> Self {
         Coverage {
             branches: Vec::new(),
+            raw: Vec::new(),
         }
     }
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = Self::parse_coverage(coverage);
+        self.raw.push(coverage.clone());
         self.branches.push(CoverageEntry {
             coverage_data: parsed,
         });
@@ -88,9 +91,14 @@ impl Coverage {
         }
 
         let trace_strings: Vec<String> = self
-            .branches
+            .raw
             .iter()
-            .map(|entry| String::from_utf8_lossy(&entry.raw).to_string())
+            .map(|trace| {
+                trace
+                    .iter()
+                    .map(|byte| format!("{:02x}", byte))
+                    .collect::<String>()
+            })
             .collect();
 
         let mut file = OpenOptions::new()
