@@ -42,36 +42,62 @@ impl DevelopperPreferences for Preferences {
     /// We want for our test case to upload other contracts
     /// Most of the time, you might want this function to be empty
     fn on_contract_initialize() {
-        let adder = Contracts::bare_upload_code(
-            AccountId32::new([1; 32]),
-            fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/adder/adder.wasm")
-                .unwrap()
-                .to_owned(),
-            None,
-            Determinism::Enforced,
-        );
+        fn on_contract_initialize() {
+            let adder = Contracts::bare_upload_code(
+                AccountId32::new([1; 32]),
+                match fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/adder/adder.wasm") {
+                    Ok(data) => data.to_owned(),
+                    Err(_) => {
+                        println!("❌ Error reading adder wasm file");
+                        return;
+                    }
+                },
+                None,
+                Determinism::Enforced,
+            );
 
-        println!("ℹ️ Adder hash: {:?}", adder.unwrap().code_hash);
+            match adder {
+                Ok(code) => println!("ℹ️ Adder hash: {:?}", code.code_hash),
+                Err(_) => println!("❌ Error uploading adder code"),
+            }
 
-        let accumulator = Contracts::bare_upload_code(
-            AccountId32::new([1; 32]),
-            fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/accumulator/accumulator.wasm")
-                .unwrap()
-                .to_owned(),
-            None,
-            Determinism::Enforced,
-        );
-        println!("ℹ️ Accumulator hash: {:?}", accumulator.unwrap().code_hash);
+            let accumulator = Contracts::bare_upload_code(
+                AccountId32::new([1; 32]),
+                match fs::read(
+                    "/tmp/ink_fuzzed_1Mi7O/target/ink/accumulator/accumulator.wasm",
+                ) {
+                    Ok(data) => data.to_owned(),
+                    Err(_) => {
+                        println!("❌ Error reading accumulator wasm file");
+                        return;
+                    }
+                },
+                None,
+                Determinism::Enforced,
+            );
 
-        let subber = Contracts::bare_upload_code(
-            AccountId32::new([1; 32]),
-            fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/subber/subber.wasm")
-                .unwrap()
-                .to_owned(),
-            None,
-            Determinism::Enforced,
-        );
+            match accumulator {
+                Ok(code) => println!("ℹ️ Accumulator hash: {:?}", code.code_hash),
+                Err(_) => println!("❌ Error uploading accumulator code"),
+            }
 
-        println!("ℹ️ Subber hash: {:?}", subber.unwrap().code_hash);
+            let subber = Contracts::bare_upload_code(
+                AccountId32::new([1; 32]),
+                match fs::read("/tmp/ink_fuzzed_1Mi7O/target/ink/subber/subber.wasm") {
+                    Ok(data) => data.to_owned(),
+                    Err(_) => {
+                        println!("❌ Error reading subber wasm file");
+                        return;
+                    }
+                },
+                None,
+                Determinism::Enforced,
+            );
+
+            match subber {
+                Ok(code) => println!("ℹ️ Subber hash: {:?}", code.code_hash),
+                Err(_) => println!("❌ Error uploading subber code"),
+            }
+        }
     }
 }
