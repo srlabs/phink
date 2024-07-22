@@ -29,8 +29,6 @@ pub struct Coverage {
 
 #[derive(Clone, Debug)]
 struct CoverageEntry {
-    /// Contains the `Vec<u8>` of the `String` coverage
-    pub raw: CoverageTrace,
     /// A map where the key is the ID of the parsed value of COV=..., and the value is
     /// the number of times this coverage point was hit.
     pub coverage_data: HashMap<u64, u64>,
@@ -54,7 +52,6 @@ impl Coverage {
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = Self::parse_coverage(coverage);
         self.branches.push(CoverageEntry {
-            raw: coverage.clone(),
             coverage_data: parsed,
         });
     }
