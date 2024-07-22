@@ -29,27 +29,18 @@ pub struct Coverage {
 
 #[derive(Clone, Debug)]
 struct CoverageEntry {
+    /// Contains the `Vec<u8>` of the `String` coverage
     pub raw: CoverageTrace,
-    pub parsed: HashMap<u64, u64>,
+    /// A map where the key is the ID of the parsed value of COV=..., and the value is
+    /// the number of times this coverage point was hit.
+    pub coverage_data: HashMap<u64, u64>,
 }
 
 impl Debug for Coverage {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "Coverage {{ branches: [")?;
-        for (i, entry) in self.branches.iter().enumerate() {
-            if i > 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "CoverageEntry {{ raw: {:?}, parsed: {{", entry.raw)?;
-            for (j, (&key, _)) in entry.parsed.iter().enumerate() {
-                if j > 0 {
-                    write!(f, ", ")?;
-                }
-                write!(f, "{}", key)?;
-            }
-            write!(f, "}} }}")?;
-        }
-        write!(f, "] }}")
+        f.debug_struct("Coverage")
+            .field("branches", &self.branches)
+            .finish()
     }
 }
 
@@ -64,7 +55,7 @@ impl Coverage {
         let parsed = Self::parse_coverage(coverage);
         self.branches.push(CoverageEntry {
             raw: coverage.clone(),
-            parsed,
+            coverage_data: parsed,
         });
     }
 
@@ -118,21 +109,18 @@ impl Coverage {
     #[allow(unused_doc_comments)]
     #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self) {
-        let flattened_cov: HashMap<u64, u64> = self
+        let flattened_cov: Vec<_> = self
             .branches
             .iter()
-            .flat_map(|entry| entry.parsed.clone())
-            .fold(HashMap::new(), |mut acc, (k, v)| {
-                *acc.entry(k).or_insert(0) += v;
-                acc
-            });
+            .flat_map(|entry| entry.coverage_data.keys().cloned())
+            .collect();
 
         #[cfg(not(fuzzing))]
         {
             println!(
                 "[🚧DEBUG TRACE] Coverage size of {} {:?}",
-                flattened_cov.len(),
-                flattened_cov
+                self.branches.clone().len(),
+                self.branches
             );
         }
 
@@ -140,7 +128,7 @@ impl Coverage {
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
-            if flattened_cov.contains_key(&(x as u64)) {
+            if flattened_cov.contains(&(x as u64)) {
                 let _ = black_box(x + 1);
             }
         });
