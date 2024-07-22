@@ -8,7 +8,7 @@ use crate::{
             FullContractResponse,
         },
     },
-    cover::coverage::Coverage,
+    cover::coverage::InputCoverage,
     fuzzer::{
         engine::FuzzerEngine,
         fuzz::Fuzzer,
@@ -62,7 +62,7 @@ impl BugManager {
 
             println!(
                 "\n🐛 IMPORTANT STACKTRACE : {}\n",
-                String::from_utf8_lossy(&Coverage::remove_cov_from_trace(
+                String::from_utf8_lossy(&InputCoverage::remove_cov_from_trace(
                     response.clone().debug_message
                 ))
                 .replace("\n", " ")

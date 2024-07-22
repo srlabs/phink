@@ -30,7 +30,7 @@ use crate::{
             FullContractResponse,
         },
     },
-    cover::coverage::Coverage,
+    cover::coverage::InputCoverage,
     fuzzer::{
         bug::BugManager,
         engine::FuzzerEngine,
@@ -154,7 +154,7 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage = Coverage::new();
+        let mut coverage = InputCoverage::new();
 
         let all_msg_responses =
             execute_messages(&client.clone(), &decoded_msgs, &mut chain, &mut coverage);
@@ -255,7 +255,7 @@ fn execute_messages(
     client: &Fuzzer,
     decoded_msgs: &OneInput,
     chain: &mut BasicExternalities,
-    coverage: &mut Coverage,
+    coverage: &mut InputCoverage,
 ) -> Vec<FullContractResponse> {
     let mut all_msg_responses = Vec::new();
 

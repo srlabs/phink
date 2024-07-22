@@ -23,50 +23,51 @@ pub type CoverageTrace = Vec<u8>;
 pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
 
 #[derive(Clone)]
-pub struct Coverage {
-    branches: Vec<CoverageEntry>,
-    raw: Vec<CoverageTrace>,
+pub struct InputCoverage {
+    /// One input might contains multiple messages
+    messages_coverage: Vec<CoverageEntry>,
+    raw_from_debug: Vec<CoverageTrace>,
 }
 
 #[derive(Clone, Debug)]
 struct CoverageEntry {
     /// A map where the key is the ID of the parsed value of COV=..., and the value is
     /// the number of times this coverage point was hit.
-    pub coverage_data: HashMap<u64, u64>,
+    pub coverage_data: Vec<u64>,
 }
 
-impl Debug for Coverage {
+impl Debug for InputCoverage {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Coverage")
-            .field("branches", &self.branches)
+            .field("messages_coverage", &self.messages_coverage)
             .finish()
     }
 }
 
-impl Coverage {
+impl InputCoverage {
     pub fn new() -> Self {
-        Coverage {
-            branches: Vec::new(),
-            raw: Vec::new(),
+        InputCoverage {
+            messages_coverage: Vec::new(),
+            raw_from_debug: Vec::new(),
         }
     }
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = Self::parse_coverage(coverage);
-        self.raw.push(coverage.clone());
-        self.branches.push(CoverageEntry {
+        self.raw_from_debug.push(coverage.clone());
+        self.messages_coverage.push(CoverageEntry {
             coverage_data: parsed,
         });
     }
 
-    fn parse_coverage(coverage: &CoverageTrace) -> HashMap<u64, u64> {
+    fn parse_coverage(coverage: &CoverageTrace) -> Vec<u64> {
         let coverage_str = String::from_utf8_lossy(coverage);
-        let mut parsed = HashMap::new();
+        let mut parsed = Vec::new();
 
         for part in coverage_str.split_whitespace() {
             if let Some(cov) = part.strip_prefix("COV=") {
                 if let Ok(value) = cov.parse::<u64>() {
-                    *parsed.entry(value).or_insert(0) += 1;
+                    parsed.push(value);
                 }
             }
         }
@@ -91,7 +92,7 @@ impl Coverage {
         }
 
         let trace_strings: Vec<String> = self
-            .raw
+            .raw_from_debug
             .iter()
             .map(|trace| {
                 trace
@@ -115,7 +116,7 @@ impl Coverage {
     #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self) {
         let flattened_cov: Vec<_> = self
-            .branches
+            .messages_coverage
             .iter()
             .flat_map(|entry| entry.coverage_data.keys().cloned())
             .collect();
@@ -124,8 +125,8 @@ impl Coverage {
         {
             println!(
                 "[🚧DEBUG TRACE] Coverage size of {} {:?}",
-                self.branches.clone().len(),
-                self.branches
+                self.messages_coverage.clone().len(),
+                self.messages_coverage
             );
         }
 
