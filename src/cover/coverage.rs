@@ -25,15 +25,19 @@ pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
 #[derive(Clone)]
 pub struct InputCoverage {
     /// One input might contains multiple messages
-    messages_coverage: Vec<CoverageEntry>,
+    messages_coverage: Vec<MessageCoverage>,
+    /// Simply the Vec of Strings, for example
+    /// COV=128
+    /// COV=129 ...
     raw_from_debug: Vec<CoverageTrace>,
 }
 
+/// This struct represent the coverage of one message.
 #[derive(Clone, Debug)]
-struct CoverageEntry {
+pub struct MessageCoverage {
     /// A map where the key is the ID of the parsed value of COV=..., and the value is
     /// the number of times this coverage point was hit.
-    pub coverage_data: Vec<u64>,
+    pub cov_ids: Vec<u64>,
 }
 
 impl Debug for InputCoverage {
@@ -55,9 +59,8 @@ impl InputCoverage {
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = Self::parse_coverage(coverage);
         self.raw_from_debug.push(coverage.clone());
-        self.messages_coverage.push(CoverageEntry {
-            coverage_data: parsed,
-        });
+        self.messages_coverage
+            .push(MessageCoverage { cov_ids: parsed });
     }
 
     fn parse_coverage(coverage: &CoverageTrace) -> Vec<u64> {
@@ -118,15 +121,15 @@ impl InputCoverage {
         let flattened_cov: Vec<_> = self
             .messages_coverage
             .iter()
-            .flat_map(|entry| entry.coverage_data.clone().into_iter())
+            .flat_map(|entry| entry.cov_ids.clone().into_iter())
             .collect();
 
         #[cfg(not(fuzzing))]
         {
             println!(
-                "[🚧DEBUG TRACE] Coverage size of {} {:?}",
+                "[🚧DEBUG TRACE] Detected {} messages traces ({:?})",
                 self.messages_coverage.clone().len(),
-                self.messages_coverage
+                &flattened_cov
             );
         }
 
