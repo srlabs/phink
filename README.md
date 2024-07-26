@@ -9,7 +9,7 @@
   
 ```bash
 cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
-cargo afl config --build --plugins --verbose --force
+cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
 git clone https://github.com/kevin-valerio/phink
 cd phink/
 ```
