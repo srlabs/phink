@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 #![recursion_limit = "1024"]
 
 extern crate core;
@@ -91,9 +92,10 @@ struct Contract {
 
 fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
-    if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
-        let config = ZiggyConfig::parse(config_str.clone());
-        Fuzzer::execute_harness(Fuzz, config).unwrap();
+    if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG")
+        && var("PHINK_FROM_ZIGGY").is_ok()
+    {
+        Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone())).unwrap();
     } else {
         handle_cli();
     }
@@ -131,7 +133,7 @@ fn handle_cli() {
                 ExecuteOneInput(seed),
                 ZiggyConfig::new(config, contract_path),
             )
-            .unwrap();
+                .unwrap();
         }
         Commands::HarnessCover(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)

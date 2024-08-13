@@ -57,11 +57,8 @@ impl ZiggyConfig {
     pub fn parse(config_str: String) -> Self {
         let config: Self =
             serde_json::from_str(&config_str).expect("❌ Failed to parse config");
-        println!("tozzz");
         if config.config.verbose {
-            println!("tozzz");
-
-            println!("🖨️ PHINK_START_FUZZING_WITH_CONFIG = {}", config_str);
+            println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {}", config_str);
         }
         config
     }
@@ -80,12 +77,14 @@ impl ZiggyConfig {
             .arg(command_arg)
             .env("AFL_FORKSRV_INIT_TMOUT", Self::AFL_FORKSRV_INIT_TMOUT)
             .env("AFL_DEBUG", Self::AFL_DEBUG)
+            .env("PHINK_FROM_ZIGGY", "1")
             .stdout(Stdio::piped());
 
         // Add `AFL_LLVM_ALLOWLIST` if not on macOS
         // See https://github.com/rust-lang/rust/issues/127573
         // See https://github.com/rust-lang/rust/issues/127577
         if cfg!(not(target_os = "macos")) {
+            // todo:! comment :)
             command_builder = command_builder.env(
                 "AFL_LLVM_ALLOWLIST",
                 Path::new(Self::ALLOWLIST_PATH)
@@ -197,7 +196,11 @@ impl ZiggyConfig {
         fs::create_dir_all(path.parent().unwrap())?;
         let mut allowlist_file = File::create(path)?;
 
-        let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
+        let functions = ["*mafunctionaieaie*"]; //todo: we set this to empty because we will provide our own map
+        //so we don't collide from the coverage of the harness and the coverage coming frm wasmi
+
+
+        // let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
         for func in &functions {
             writeln!(allowlist_file, "fun: {}", func)?;
         }

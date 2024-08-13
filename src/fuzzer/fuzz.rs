@@ -109,14 +109,14 @@ impl Fuzzer {
     fn should_stop_now(bug_manager: &BugManager, decoded_msgs: &OneInput) -> bool {
         decoded_msgs.messages.is_empty()
             || decoded_msgs.messages.iter().any(|payload| {
-                payload
-                    .payload
-                    .get(..4)
-                    .and_then(|slice| slice.try_into().ok())
-                    .map_or(false, |slice: &[u8; 4]| {
-                        bug_manager.contains_selector(slice)
-                    })
-            })
+            payload
+                .payload
+                .get(..4)
+                .and_then(|slice| slice.try_into().ok())
+                .map_or(false, |slice: &[u8; 4]| {
+                    bug_manager.contains_selector(slice)
+                })
+        })
     }
 
     fn set_config(&mut self, config: Configuration) {
@@ -171,13 +171,13 @@ impl FuzzerEngine for Fuzzer {
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
         // of performance) Simply comment out the following line :)
-        // #[cfg(not(fuzzing))]
-        // {
-        println!("[🚧UPDATE] Adding to the coverage file...");
-        coverage.save().expect("🙅 Cannot save the coverage");
+        #[cfg(not(fuzzing))]
+        {
+            println!("[🚧UPDATE] Adding to the coverage file...");
+            coverage.save().expect("🙅 Cannot save the coverage");
 
-        <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
-        // }
+            <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
+        }
 
         // We now fake the coverage
         coverage.redirect_coverage();
@@ -323,7 +323,7 @@ mod tests {
         let encoded_bytes = hex::decode(
             "229b553f9400000000000000000027272727272727272700002727272727272727272727",
         )
-        .expect("Failed to decode hex string");
+            .expect("Failed to decode hex string");
 
         let hex = transcoder
             .lock()

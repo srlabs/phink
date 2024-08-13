@@ -78,6 +78,8 @@ impl InputCoverage {
         parsed
     }
 
+    pub fn do_nothing_for_allowlist() {}
+
     pub fn remove_cov_from_trace(trace: CoverageTrace) -> Vec<u8> {
         let cleaned_str = String::from_utf8_lossy(&trace)
             .split_whitespace()

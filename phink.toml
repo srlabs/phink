@@ -1,7 +1,7 @@
 # Phink Configuration
 
 cores = 10 # set it to 1 for single-core
-max_messages_per_exec = 4
+max_messages_per_exec = 1
 report_path = "output/phink/contract_coverage"
 use_honggfuzz = false # obligatory for MacOS users
 fuzz_origin = false
