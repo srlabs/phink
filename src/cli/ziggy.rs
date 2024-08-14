@@ -45,6 +45,7 @@ pub struct ZiggyConfig {
 impl ZiggyConfig {
     pub const ALLOWLIST_PATH: &'static str = "./output/phink/allowlist.txt";
     pub const AFL_DEBUG: &'static str = "1";
+    pub const AFL_FORKSRV_INIT_TMOUT: &'static str = "10000000";
 
     pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
         Self {
@@ -54,7 +55,12 @@ impl ZiggyConfig {
     }
 
     pub fn parse(config_str: String) -> Self {
-        serde_json::from_str(&config_str).expect("❌ Failed to parse config")
+        let config: Self =
+            serde_json::from_str(&config_str).expect("❌ Failed to parse config");
+        if config.config.verbose {
+            println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {}", config_str);
+        }
+        config
     }
 
     /// This function execute `cargo ziggy + command + args`
@@ -66,20 +72,27 @@ impl ZiggyConfig {
         let command_arg = Self::command_to_arg(&command)?;
 
         let mut binding = Command::new("cargo");
-        let command_builder = binding
+        let mut command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
-            .env("AFL_FORKSRV_INIT_TMOUT", "10000000")
-            .env(
+            .env("PHINK_FROM_ZIGGY", "1")
+            .env("AFL_FORKSRV_INIT_TMOUT", Self::AFL_FORKSRV_INIT_TMOUT)
+            .env("AFL_DEBUG", Self::AFL_DEBUG)
+            .stdout(Stdio::piped());
+
+        // Add `AFL_LLVM_ALLOWLIST` if not on macOS
+        // See https://github.com/rust-lang/rust/issues/127573
+        // See https://github.com/rust-lang/rust/issues/127577
+        if cfg!(not(target_os = "macos")) {
+            command_builder = command_builder.env(
                 "AFL_LLVM_ALLOWLIST",
                 Path::new(Self::ALLOWLIST_PATH)
                     .canonicalize()
                     .unwrap()
                     .to_str()
                     .unwrap(),
-            )
-            .env("AFL_DEBUG", Self::AFL_DEBUG)
-            .stdout(Stdio::piped());
+            );
+        }
 
         // If there are additional arguments, pass them to the command
         command_builder.args(args.iter());

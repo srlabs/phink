@@ -123,7 +123,7 @@ impl BugManager {
                 self.configuration.clone(),
             );
             if invariant_call.result.is_err() {
-                return Err(*invariant)
+                return Err(*invariant);
             }
         }
         Ok(())
