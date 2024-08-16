@@ -4,8 +4,5 @@ components = ["rustfmt", "cargo", "rustc", "rust-std"]
 targets = [
     "aarch64-apple-darwin", # macOS on ARM architecture
     "x86_64-unknown-linux-gnu", # Linux on x86_64 architecture
-    "x86_64-apple-darwin", # macOS on Intel architecture
-    "x86_64-pc-windows-msvc", # Windows on x86_64 architecture
-    "aarch64-unknown-linux-gnu" # Linux on ARM architecture
 ]
 profile = "default"

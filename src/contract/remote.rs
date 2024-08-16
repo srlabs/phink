@@ -33,7 +33,10 @@ use v13::ContractInfoOf;
 use payload::PayloadCrafter;
 
 use crate::{
-    cli::config::Configuration,
+    cli::{
+        config::Configuration,
+        ziggy::ZiggyConfig,
+    },
     contract::{
         custom::{
             DevelopperPreferences,
@@ -46,6 +49,7 @@ use crate::{
             Runtime,
         },
     },
+    instrumenter::instrumentation::Instrumenter,
 };
 
 pub type BalanceOf<T> =
@@ -66,6 +70,7 @@ pub struct ContractBridge {
     pub contract_address: AccountIdOf<Runtime>,
     pub json_specs: String,
     pub path_to_specs: PathBuf,
+    pub contract_path: PathBuf
 }
 
 impl ContractBridge {
@@ -75,12 +80,12 @@ impl ContractBridge {
 
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
-    pub fn initialize_wasm(
-        wasm_bytes: Vec<u8>,
-        path_to_specs: &Path,
-        config: Configuration,
-    ) -> ContractBridge {
+    pub fn initialize_wasm(config: ZiggyConfig) -> ContractBridge {
+        let finder = Instrumenter::new(config.contract_path.clone()).find().unwrap();
+        let wasm_bytes = fs::read(&finder.wasm_path).unwrap();
+
         let mut contract_addr: AccountIdOf<Runtime> = config
+            .config
             .deployer_address
             .clone()
             .unwrap_or(ContractBridge::DEFAULT_DEPLOYER);
@@ -90,7 +95,7 @@ impl ContractBridge {
             contract_addr
         );
 
-        let json_specs = fs::read_to_string(path_to_specs).unwrap();
+        let json_specs = fs::read_to_string(finder.specs_path.clone()).unwrap();
         let genesis_storage: Storage = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
 
@@ -101,7 +106,7 @@ impl ContractBridge {
 
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
 
-                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config).expect(
+                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config.config).expect(
                     "🙅 Can't fetch the contract address because of incorrect instantiation",
                 );
 
@@ -126,7 +131,8 @@ impl ContractBridge {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
-            path_to_specs: path_to_specs.to_path_buf(),
+            path_to_specs: finder.specs_path.to_path_buf(),
+            contract_path: config.contract_path.clone(),
         }
     }
 

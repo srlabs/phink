@@ -23,6 +23,7 @@ use serde_derive::{
 
 use crate::{
     cli::config::Configuration,
+    cover::coverage::COVERAGE_PATH,
     fuzzer::{
         fuzz::DICT_FILE,
         parser::MIN_SEED_LEN,
@@ -172,6 +173,12 @@ impl ZiggyConfig {
     }
 
     pub fn ziggy_run(&self) -> io::Result<()> {
+        // We clean up the old one first
+        match fs::remove_file(COVERAGE_PATH) {
+            Ok(_) => println!("💨 Removed previous coverage file"),
+            Err(_) => {}
+        }
+
         Self::start(
             ZiggyCommand::Run,
             vec![],

@@ -1,5 +1,10 @@
 use serde::Deserialize;
 use serde_json::Value;
+use std::{
+    fs,
+    path::PathBuf,
+};
+use walkdir::WalkDir;
 
 pub type Selector = [u8; 4];
 
@@ -14,34 +19,49 @@ pub struct PayloadCrafter {}
 /// ...
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
+#[derive(Deserialize)]
+struct Spec {
+    constructors: Vec<SelectorEntry>,
+    messages: Vec<SelectorEntry>,
+}
 
+#[derive(Deserialize)]
+struct SelectorEntry {
+    selector: String,
+}
 impl PayloadCrafter {
-    /// Extract all selectors for a given spec
-    /// Parses a JSON and returns a list of all possibles messages
-    /// # Argument
-    /// * `json_data`: The JSON metadata of the smart-contract
+    pub fn extract_all(contract_path: PathBuf) -> Vec<Selector> {
+        let mut all_selectors: Vec<Selector> = Vec::new();
 
-    pub fn extract_all(json_data: &str) -> Vec<Selector> {
-        #[derive(Deserialize)]
-        struct Spec {
-            constructors: Vec<SelectorEntry>,
-            messages: Vec<SelectorEntry>,
+        for entry in WalkDir::new(contract_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            if entry.path().extension().map_or(false, |ext| ext == "json") {
+                if let Ok(contents) = fs::read_to_string(entry.path()) {
+                    if let Ok(v) = serde_json::from_str::<Value>(&contents) {
+                        if let Ok(spec) =
+                            serde_json::from_value::<Spec>(v["spec"].clone())
+                        {
+                            let selectors = Self::parse_selectors(&spec);
+                            all_selectors.extend(selectors);
+                        }
+                    }
+                }
+            }
         }
 
-        #[derive(Deserialize)]
-        struct SelectorEntry {
-            selector: String,
-        }
+        all_selectors
+    }
 
-        let v: Value = serde_json::from_str(json_data).unwrap();
-
-        let spec: Spec = serde_json::from_value(v["spec"].clone()).unwrap();
-
+    pub fn parse_selectors(spec: &Spec) -> Vec<Selector> {
         let mut selectors: Vec<Selector> = Vec::new();
         for entry in spec.constructors.iter().chain(spec.messages.iter()) {
-            let bytes: Vec<u8> =
-                hex::decode(entry.selector.trim_start_matches("0x")).unwrap();
-            selectors.push(<[u8; 4]>::try_from(bytes).unwrap());
+            if let Ok(bytes) = hex::decode(entry.selector.trim_start_matches("0x")) {
+                if let Ok(selector) = <[u8; 4]>::try_from(bytes.as_slice()) {
+                    selectors.push(selector);
+                }
+            }
         }
         selectors
     }

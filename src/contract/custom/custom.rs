@@ -42,7 +42,7 @@ impl DevelopperPreferences for Preferences {
     /// We want for our test case to upload other contracts
     /// Most of the time, you might want this function to be empty
     fn on_contract_initialize() {
-        let ink_fuzzed_path: &str = "ink_fuzzed_Cw0gY";
+        let ink_fuzzed_path: &str = "/tmp/ink_fuzzed_UfY2T";
 
         let adder = Contracts::bare_upload_code(
             AccountId32::new([1; 32]),

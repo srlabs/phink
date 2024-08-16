@@ -89,27 +89,29 @@ impl InputCoverage {
     }
 
     pub fn save(&self) -> std::io::Result<()> {
-        let mut existing_content = String::new();
-        if let Ok(mut file) = File::open(COVERAGE_PATH) {
-            file.read_to_string(&mut existing_content)?;
+        // Create a HashSet to store unique coverage IDs
+        let mut unique_cov_ids = HashSet::new();
+
+        // Collect all coverage IDs from MessageCoverage into the HashSet
+        for message in &self.messages_coverage {
+            for &cov_id in &message.cov_ids {
+                unique_cov_ids.insert(cov_id);
+            }
         }
 
-        let trace_strings: Vec<String> = self
-            .raw_from_debug
-            .iter()
-            .map(|trace| {
-                trace
-                    .iter()
-                    .map(|byte| format!("{:02x}", byte))
-                    .collect::<String>()
-            })
+        // Convert HashSet to a sorted Vec of Strings
+        let mut trace_strings: Vec<String> = unique_cov_ids
+            .into_iter()
+            .map(|id| id.to_string())
             .collect();
+        trace_strings.sort_unstable();
 
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
             .open(COVERAGE_PATH)?;
 
+        // Write each unique ID to the file, one per line
         writeln!(file, "{}", trace_strings.join("\n"))?;
 
         Ok(())
@@ -138,7 +140,7 @@ impl InputCoverage {
 
         /// We assume that the instrumentation will never insert more than
         /// `2_000` artificial branches This value should be big enough
-        /// to handle most of smart-contract, even the biggests
+        /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
             if flattened_cov.contains(&(x as u64)) {
                 let _ = black_box(x + 1);

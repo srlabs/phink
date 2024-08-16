@@ -59,25 +59,21 @@ pub enum FuzzingMode {
 pub struct Fuzzer {
     pub setup: ContractBridge,
     pub fuzzing_config: Configuration,
+    pub contract_path: PathBuf,
 }
 
 impl Fuzzer {
-    pub fn new(setup: ContractBridge) -> Self {
+    pub fn new(setup: ContractBridge, contract_path: PathBuf) -> Self {
         Self {
             setup,
             fuzzing_config: Default::default(),
+            contract_path,
         }
     }
 
     pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> io::Result<()> {
-        let finder = Instrumenter::new(config.contract_path).find().unwrap();
-        let wasm = fs::read(&finder.wasm_path)?;
-        let setup = ContractBridge::initialize_wasm(
-            wasm,
-            &finder.specs_path,
-            config.config.clone(),
-        );
-        let mut fuzzer = Fuzzer::new(setup);
+        let setup = ContractBridge::initialize_wasm(config.clone());
+        let mut fuzzer = Fuzzer::new(setup, config.contract_path);
 
         match mode {
             Fuzz => {
@@ -85,6 +81,11 @@ impl Fuzzer {
                 fuzzer.fuzz();
             }
             ExecuteOneInput(seed_path) => {
+                // We also reset the cov map
+                match fs::remove_file(crate::cover::coverage::COVERAGE_PATH) {
+                    Ok(_) => println!("💨 Removed previous coverage file"),
+                    Err(_) => {}
+                }
                 fuzzer.exec_seed(seed_path);
             }
         }
@@ -202,7 +203,7 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
     );
 
     let specs = &fuzzer.setup.json_specs;
-    let selectors = PayloadCrafter::extract_all(specs);
+    let selectors = PayloadCrafter::extract_all(fuzzer.contract_path);
     let invariants = PayloadCrafter::extract_invariants(specs)
         .expect("🙅 No invariants found, check your contract");
 

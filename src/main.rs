@@ -1,20 +1,12 @@
 #![recursion_limit = "1024"]
 
 extern crate core;
-
-use std::{
-    env::var,
-    path::PathBuf,
-};
-
-use clap::Parser;
-
 use crate::{
+    cover::report::CoverageTracker,
     cli::{
         config::Configuration,
         ziggy::ZiggyConfig,
     },
-    cover::report::CoverageTracker,
     fuzzer::fuzz::{
         Fuzzer,
         FuzzingMode::{
@@ -31,6 +23,12 @@ use crate::{
         },
     },
 };
+use std::{
+    env::var,
+    path::PathBuf,
+};
+
+use clap::Parser;
 
 mod cli;
 mod contract;
@@ -133,7 +131,7 @@ fn handle_cli() {
                 ExecuteOneInput(seed),
                 ZiggyConfig::new(config, contract_path),
             )
-            .unwrap();
+                .unwrap();
         }
         Commands::HarnessCover(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)
@@ -141,6 +139,7 @@ fn handle_cli() {
                 .unwrap();
         }
         Commands::Coverage(contract_path) => {
+
             CoverageTracker::generate(ZiggyConfig::new(
                 config,
                 contract_path.contract_path,
