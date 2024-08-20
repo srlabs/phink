@@ -13,7 +13,6 @@ use std::{
         File,
     },
     io::Read,
-    path::Path,
 };
 use walkdir::WalkDir;
 
@@ -54,7 +53,9 @@ impl CoverageTracker {
                         if self.hit_lines.contains(&num) {
                             // Mark the current line and previous non-empty
                             // lines as covered
-                            file_coverage[i] = true;
+                            // We +1 to avoid marking the debug_println! as the covered
+                            // one
+                            file_coverage[i + 1] = true;
                         }
                     }
                 }
@@ -102,23 +103,11 @@ impl CoverageTracker {
                             <ul>",
         );
 
-
-
         for (file_path, coverage) in &self.coverage {
-            println!("file: {:?}", file_path);
-            println!("cov: {:?}", coverage);
-
-            // Create a sanitized file name for the report
             let sanitized_path = file_path.replace("/", "_").replace("\\", "_");
             let report_path = format!("{}/{}.html", output_dir, sanitized_path);
 
             self.generate_file_report(file_path, coverage, &report_path)?;
-
-            // Use the full file path in the index, but display only the file name
-            let file_name = Path::new(file_path)
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or(file_path);
 
             index_html.push_str(&format!(
                 "<li><a href='{}.html'>- {}</a></li>",
@@ -127,6 +116,7 @@ impl CoverageTracker {
         }
 
         index_html.push_str("</ul></body></html>");
+
         fs::write(format!("{}/index.html", output_dir), index_html)?;
 
         Ok(())
@@ -157,17 +147,17 @@ impl CoverageTracker {
 
         for (i, line) in lines.iter().enumerate() {
             let line_class = if coverage[i] { "covered" } else { "uncovered" };
-            // if !line.contains("ink::env::debug_println!(\"COV={}\", ") {
             html.push_str(&format!(
                 "<span class='{}'>{:4} | {}</span>\n",
                 line_class,
                 i + 1,
                 html_escape(line)
             ));
-            // }
         }
 
         html.push_str("</pre></body></html>");
+        Self::remove_debug_statement(&mut html);
+
         fs::write(output_path, html)?;
 
         Ok(())
@@ -184,7 +174,7 @@ impl CoverageTracker {
 
         let mut contents = String::new();
         coverage_trace.read_to_string(&mut contents).unwrap();
-        println!("📄 Successfully read coverage file. {:?}", coverage_trace);
+        println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
         for entry in WalkDir::new(config.contract_path)
@@ -205,6 +195,19 @@ impl CoverageTracker {
             "📊 Coverage report generated at: {}",
             config.config.report_path.unwrap().display()
         );
+    }
+
+    pub fn remove_debug_statement(html: &mut String) {
+        let lines: Vec<&str> = html.lines().collect();
+
+        let filtered_lines: Vec<&str> = lines
+            .into_iter()
+            .filter(|line| {
+                !(line.contains("ink::env::debug_println!") && line.contains("COV="))
+            })
+            .collect();
+
+        *html = filtered_lines.join("\n");
     }
 }
 

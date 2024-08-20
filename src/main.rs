@@ -2,11 +2,11 @@
 
 extern crate core;
 use crate::{
-    cover::report::CoverageTracker,
     cli::{
         config::Configuration,
         ziggy::ZiggyConfig,
     },
+    cover::report::CoverageTracker,
     fuzzer::fuzz::{
         Fuzzer,
         FuzzingMode::{
@@ -131,7 +131,7 @@ fn handle_cli() {
                 ExecuteOneInput(seed),
                 ZiggyConfig::new(config, contract_path),
             )
-                .unwrap();
+            .unwrap();
         }
         Commands::HarnessCover(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path)
@@ -139,7 +139,6 @@ fn handle_cli() {
                 .unwrap();
         }
         Commands::Coverage(contract_path) => {
-
             CoverageTracker::generate(ZiggyConfig::new(
                 config,
                 contract_path.contract_path,

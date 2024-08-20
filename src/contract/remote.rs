@@ -70,7 +70,7 @@ pub struct ContractBridge {
     pub contract_address: AccountIdOf<Runtime>,
     pub json_specs: String,
     pub path_to_specs: PathBuf,
-    pub contract_path: PathBuf
+    pub contract_path: PathBuf,
 }
 
 impl ContractBridge {
@@ -81,7 +81,9 @@ impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
     pub fn initialize_wasm(config: ZiggyConfig) -> ContractBridge {
-        let finder = Instrumenter::new(config.contract_path.clone()).find().unwrap();
+        let finder = Instrumenter::new(config.contract_path.clone())
+            .find()
+            .unwrap();
         let wasm_bytes = fs::read(&finder.wasm_path).unwrap();
 
         let mut contract_addr: AccountIdOf<Runtime> = config
@@ -186,7 +188,7 @@ impl ContractBridge {
         config: Configuration,
     ) -> Option<AccountIdOf<Runtime>> {
         let data: Vec<u8> = if let Some(payload) = config.constructor_payload {
-            hex::decode(payload)
+            hex::decode(payload.replace(" ", ""))
                 .expect("Impossible to hex-decode this. Check your config file")
         } else {
             PayloadCrafter::get_constructor(json_specs)?.into()
