@@ -1,26 +1,3 @@
-use std::{
-    fs,
-    fs::File,
-    io,
-    io::{
-        BufRead,
-        Write,
-    },
-    path::{
-        Path,
-        PathBuf,
-    },
-    process::{
-        Command,
-        Stdio,
-    },
-};
-
-use serde_derive::{
-    Deserialize,
-    Serialize,
-};
-
 use crate::{
     cli::config::Configuration,
     cover::coverage::COVERAGE_PATH,
@@ -29,6 +6,95 @@ use crate::{
         parser::MIN_SEED_LEN,
     },
 };
+
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
+use std::{
+    fs,
+    fs::File,
+    io::{
+        BufRead,
+        Write,
+    },
+    path::{
+        Path,
+        PathBuf,
+    },
+};
+
+use std::{
+    io::{
+        self,
+        Read,
+    },
+    process::{
+        Command,
+        Stdio,
+    },
+    sync::mpsc,
+    thread,
+    time::Duration,
+};
+
+use crossterm::{
+    event::{
+        self,
+        DisableMouseCapture,
+        EnableMouseCapture,
+        Event,
+        KeyCode,
+    },
+    execute,
+    terminal::{
+        disable_raw_mode,
+        enable_raw_mode,
+        EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
+};
+use ratatui::{
+    backend::CrosstermBackend,
+    layout::{
+        Constraint,
+        Direction,
+        Layout,
+    },
+    style::{
+        Color,
+        Modifier,
+        Style,
+    },
+    text::{
+        Line,
+        Span,
+    },
+    widgets::{
+        Block,
+        Borders,
+        Paragraph,
+    },
+    Frame,
+    Terminal,
+};
+
+enum AppEvent {
+    Tick,
+    ZiggyOutput(String),
+}
+
+struct App {
+    ziggy_output: Vec<String>,
+}
+
+impl App {
+    fn new() -> App {
+        App {
+            ziggy_output: Vec::new(),
+        }
+    }
+}
 
 pub enum ZiggyCommand {
     Run,
@@ -64,14 +130,13 @@ impl ZiggyConfig {
         config
     }
 
-    /// This function execute `cargo ziggy + command + args`
+    /// This function executes `cargo ziggy 'command' 'args'`
     fn start(
         command: ZiggyCommand,
         args: Vec<String>,
         env: Vec<(String, String)>,
     ) -> io::Result<()> {
         let command_arg = Self::command_to_arg(&command)?;
-
         let mut binding = Command::new("cargo");
         let mut command_builder = binding
             .arg("ziggy")
@@ -88,8 +153,7 @@ impl ZiggyConfig {
             command_builder = command_builder.env(
                 "AFL_LLVM_ALLOWLIST",
                 Path::new(Self::ALLOWLIST_PATH)
-                    .canonicalize()
-                    .unwrap()
+                    .canonicalize()?
                     .to_str()
                     .unwrap(),
             );
@@ -98,27 +162,43 @@ impl ZiggyConfig {
         // If there are additional arguments, pass them to the command
         command_builder.args(args.iter());
 
-        // If there is any env, pass them
         for (key, value) in env {
             command_builder.env(key, value);
         }
 
         let mut ziggy_child = command_builder.spawn()?;
+        let stdout = ziggy_child.stdout.take().expect("Failed to capture stdout");
 
-        if let Some(stdout) = ziggy_child.stdout.take() {
-            let reader = io::BufReader::new(stdout);
-            for line in reader.lines() {
-                println!("{}", line?);
-            }
-        }
-
+        // Wait for the child process to finish
         let status = ziggy_child.wait()?;
         if !status.success() {
-            eprintln!("🚫 Can't start `cargo ziggy`, command failed");
+            eprintln!("🚫 Can't start cargo ziggy, command failed");
         }
+
         Ok(())
     }
 
+    fn ui(f: &mut Frame, app: &App) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+            .split(f.size());
+
+        let hello_world = Paragraph::new("Hello World!")
+            .style(Style::default().fg(Color::Cyan))
+            .block(Block::default().borders(Borders::ALL).title("Greeting"));
+        f.render_widget(hello_world, chunks[0]);
+
+        let ziggy_output = Paragraph::new(Line::from(
+            app.ziggy_output
+                .iter()
+                .map(|line| Span::raw(line))
+                .collect::<Vec<_>>(),
+        ))
+        .scroll((app.ziggy_output.len() as u16, 0))
+        .block(Block::default().borders(Borders::ALL).title("Ziggy Output"));
+        f.render_widget(ziggy_output, chunks[1]);
+    }
     fn command_to_arg(command: &ZiggyCommand) -> Result<String, io::Error> {
         let command_arg = match command {
             ZiggyCommand::Run => "run",

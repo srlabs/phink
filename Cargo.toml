@@ -49,7 +49,8 @@ proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
 regex = "1.10.4"
-
+ratatui = { version = "0.28.0" , features = ["all-widgets"]}
+crossterm = { version = "0.28.1" }
 # Substrate-specific crates
 parity-scale-codec = { version = "*", default-features = false }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }

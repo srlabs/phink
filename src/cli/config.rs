@@ -18,10 +18,16 @@ use serde_derive::{
     Serialize,
 };
 use sp_core::crypto::AccountId32;
+use sp_runtime::{
+    traits::MaybeFromStr,
+    FixedPointOperand,
+};
 use std::{
     fs,
     path::PathBuf,
+    str::FromStr,
 };
+use toml::de::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {
@@ -31,7 +37,7 @@ pub struct Configuration {
     pub use_honggfuzz: bool,
     // Origin deploying and instantiating the contract
     pub deployer_address: Option<AccountId32>,
-    // Maximimum number of ink! message executed per seed
+    // Maximum number of ink! message executed per seed
     pub max_messages_per_exec: Option<usize>,
     /// Output directory for the coverage report
     pub report_path: Option<PathBuf>,
@@ -81,30 +87,38 @@ pub enum OriginFuzzingOption {
     DisableOriginFuzzing,
 }
 
+impl TryFrom<String> for Configuration {
+    type Error = String;
+    fn try_from(config_str: String) -> Result<Self, Self::Error> {
+        let config: Configuration = match toml::from_str(&config_str) {
+            Ok(config) => config,
+            Err(e) => return Err(format!("❌ Can't parse config: {}", e)),
+        };
+
+        if Configuration::parse_balance(config.storage_deposit_limit.clone()).is_none() {
+            return Err("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file".into());
+        }
+
+        Ok(config)
+    }
+}
+
+impl TryFrom<&PathBuf> for Configuration {
+    type Error = String;
+    fn try_from(path: &PathBuf) -> Result<Self, Self::Error> {
+        match fs::read_to_string(path) {
+            Ok(config) => config.try_into(),
+            Err(err) => Err(format!("🚫 Can't read config: {}", err)),
+        }
+    }
+}
+
 impl Configuration {
     pub fn should_fuzz_origin(&self) -> OriginFuzzingOption {
         match self.fuzz_origin {
             true => EnableOriginFuzzing,
             false => DisableOriginFuzzing,
         }
-    }
-
-    pub fn load_config(file_path: &PathBuf) -> Configuration {
-        let config_str = fs::read_to_string(file_path).unwrap_or_else(|err| {
-            panic!("🚫 Can't read config: {}", err);
-        });
-
-        let config: Configuration = toml::from_str(&config_str).unwrap_or_else(|err| {
-            panic!("❌ Can't parse config: {}", err);
-        });
-
-        if config.storage_deposit_limit.is_some()
-            && Option::is_none(&Self::parse_balance(config.storage_deposit_limit.clone()))
-        {
-            panic!("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file");
-        }
-
-        config
     }
 
     pub fn parse_balance(value: Option<String>) -> Option<BalanceOf<Runtime>> {
