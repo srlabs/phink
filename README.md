@@ -7,6 +7,9 @@ vulnerabilities and ensure contract reliability before deployment.
 > ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
 and feedback are welcome!
 
+If you have any question, would like to share feedback, discuss features, and connect with other ink! developers, join
+our [Discord community](https://discord.gg/gAahQMGE)
+
 ## Install
 
 ### Manual Installation
