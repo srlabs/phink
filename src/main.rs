@@ -14,13 +14,10 @@ use crate::{
             Fuzz,
         },
     },
-    instrumenter::{
-        cleaner::Cleaner,
-        instrumentation::{
-            ContractBuilder,
-            ContractInstrumenter,
-            Instrumenter,
-        },
+    instrumenter::instrumentation::{
+        ContractBuilder,
+        ContractInstrumenter,
+        Instrumenter,
     },
 };
 use std::{
@@ -29,13 +26,14 @@ use std::{
     path::PathBuf,
 };
 
+use crate::instrumenter::instrumented_path::InstrumentedPath;
 use clap::Parser;
 
-mod cli;
-mod contract;
-mod cover;
-mod fuzzer;
-mod instrumenter;
+pub mod cli;
+pub mod contract;
+pub mod cover;
+pub mod fuzzer;
+pub mod instrumenter;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
@@ -106,7 +104,9 @@ fn handle_cli() {
 
     match cli.command {
         Commands::Instrument(contract_path) => {
-            let mut engine = Instrumenter::new(contract_path.contract_path.clone());
+            let z_config: ZiggyConfig =
+                ZiggyConfig::new(config, contract_path.contract_path.clone());
+            let mut engine = Instrumenter::new(z_config);
             engine.instrument().unwrap().build().unwrap();
 
             println!(
@@ -146,7 +146,7 @@ fn handle_cli() {
             ));
         }
         Commands::Clean => {
-            Instrumenter::clean().unwrap();
+            InstrumentedPath::clean().unwrap();
         }
     }
 }

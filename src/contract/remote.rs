@@ -81,9 +81,7 @@ impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
     pub fn initialize_wasm(config: ZiggyConfig) -> ContractBridge {
-        let finder = Instrumenter::new(config.contract_path.clone())
-            .find()
-            .unwrap();
+        let finder = Instrumenter::new(config.clone()).find().unwrap();
         let wasm_bytes = fs::read(&finder.wasm_path).unwrap();
 
         let mut contract_addr: AccountIdOf<Runtime> = config

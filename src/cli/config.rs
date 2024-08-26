@@ -11,6 +11,7 @@ use crate::{
         runtime::Runtime,
     },
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
+    instrumenter::instrumented_path::InstrumentedPath,
 };
 use frame_support::weights::Weight;
 use serde_derive::{
@@ -61,6 +62,10 @@ pub struct Configuration {
     pub constructor_payload: Option<String>,
     /// Make Phink verbose to stdout
     pub verbose: bool,
+    /// Path where the instrumented contract will be stored after running `phink
+    /// instrument mycontract` By default, we create a random folder in
+    /// `/tmp/ink_fuzzed_XXXX`
+    pub instrumented_contract_path: Option<InstrumentedPath>,
 }
 
 impl Default for Configuration {
@@ -77,9 +82,11 @@ impl Default for Configuration {
             instantiate_initial_value: None,
             constructor_payload: None,
             verbose: true,
+            instrumented_contract_path: Some(InstrumentedPath::default()),
         }
     }
 }
+
 #[derive(Clone, Debug, Default)]
 pub enum OriginFuzzingOption {
     EnableOriginFuzzing,

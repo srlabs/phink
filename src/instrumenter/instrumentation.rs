@@ -15,7 +15,16 @@ use std::{
     process::Command,
 };
 
-use crate::instrumenter::instrumentation::instrument::ContractCovUpdater;
+use crate::{
+    cli::{
+        config::Configuration,
+        ziggy::ZiggyConfig,
+    },
+    instrumenter::{
+        instrumentation::instrument::ContractCovUpdater,
+        instrumented_path::InstrumentedPath,
+    },
+};
 use quote::quote;
 use rand::{
     distributions::Alphanumeric,
@@ -40,7 +49,7 @@ use walkdir::WalkDir;
 /// be fetched at the end of the input execution in order to get coverage.
 #[derive(Default, Clone)]
 pub struct Instrumenter {
-    pub contract_dir: PathBuf,
+    pub z_config: ZiggyConfig,
 }
 
 #[derive(Debug)]
@@ -64,18 +73,18 @@ pub trait ContractInstrumenter {
 }
 
 impl Instrumenter {
-    pub fn new(contract_dir: PathBuf) -> Self {
-        Self { contract_dir }
+    pub fn new(z_config: ZiggyConfig) -> Self {
+        Self { z_config }
     }
 
     pub fn find(&self) -> Result<InkFilesPath, String> {
-        let wasm_path = fs::read_dir(self.contract_dir.join("target/ink/"))
+        let wasm_path = fs::read_dir(self.z_config.contract_path.join("target/ink/"))
             .map_err(|e| {
                 format!(
                     "🙅 It seems that your contract is not compiled into `target/ink`. \
              Please, ensure that your the WASM blob and the JSON specs are stored into \
              '{}target/ink/' (more infos: {})",
-                    self.contract_dir.to_str().unwrap(),
+                    self.z_config.contract_path.to_str().unwrap(),
                     e
                 )
             })?
@@ -108,7 +117,7 @@ pub trait ContractBuilder {
 impl ContractBuilder for Instrumenter {
     fn build(&self) -> Result<InkFilesPath, String> {
         let status = Command::new("cargo")
-            .current_dir(&self.contract_dir)
+            .current_dir(&self.z_config.contract_path)
             .args(["contract", "build", "--features=phink"])
             .status()
             .map_err(|e| {
@@ -126,7 +135,7 @@ impl ContractBuilder for Instrumenter {
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
                 Please go to {}, edit the `lib.rs` file, and run cargo contract build again.\
                 (more infos: {})",
-                &self.contract_dir.display(),
+                &self.z_config.contract_path.display(),
                 status
             ))
         }
@@ -137,25 +146,29 @@ pub trait ContractForker {
 }
 impl ContractForker for Instrumenter {
     fn fork(&self) -> Result<PathBuf, String> {
-        let random_string: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(5)
-            .map(char::from)
-            .collect();
+        let new_dir = &self
+            .z_config
+            .config
+            .instrumented_contract_path
+            .clone()
+            .unwrap_or(InstrumentedPath::default())
+            .path;
 
-        let new_dir = Path::new("/tmp").join(format!("ink_fuzzed_{}", random_string));
         println!("🏗️ Creating new directory: {:?}", new_dir);
         fs::create_dir_all(&new_dir)
             .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
 
-        println!("📁 Starting to copy files from {:?}", self.contract_dir);
+        println!(
+            "📁 Starting to copy files from {:?}",
+            self.z_config.contract_path
+        );
 
-        for entry in WalkDir::new(&self.contract_dir) {
+        for entry in WalkDir::new(&self.z_config.contract_path) {
             let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
             let target_path = new_dir.join(
                 entry
                     .path()
-                    .strip_prefix(&self.contract_dir)
+                    .strip_prefix(&self.z_config.contract_path)
                     .map_err(|e| format!("🙅 Failed to strip prefix: {}", e))?,
             );
 
@@ -174,14 +187,15 @@ impl ContractForker for Instrumenter {
             "✅ Fork completed successfully! New directory: {:?}",
             new_dir
         );
-        Ok(new_dir)
+        Ok(new_dir.clone())
     }
 }
 
 impl ContractInstrumenter for Instrumenter {
     fn instrument(&mut self) -> Result<&mut Instrumenter, String> {
         let new_working_dir = self.fork()?;
-        self.contract_dir = new_working_dir.clone();
+        // self.z_config.contract_path = new_working_dir.clone(); //todo probably bugged
+        // here
         let mut contract_cov_manager = ContractCovUpdater { line_id: 0 };
         for entry in WalkDir::new(&new_working_dir)
             .into_iter()

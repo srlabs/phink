@@ -103,7 +103,7 @@ pub enum ZiggyCommand {
     Fuzz,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ZiggyConfig {
     pub config: Configuration,
     pub contract_path: PathBuf,
