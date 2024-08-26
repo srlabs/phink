@@ -1,25 +1,47 @@
-# Use the latest Debian as the base image
-FROM debian:latest
+# Build stage
+FROM rust:1.75-slim-bookworm AS builder
 
-WORKDIR /phink
-
-# Install necessary dependencies
-RUN apt-get update && apt-get install -y \
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
-    llvm-18.1.8 \
-    && apt-get clean
+    git \
+    wget \
+    gnupg \
+    software-properties-common \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Rust and Cargo (Nightly toolchain)
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install LLVM 19
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+    && echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main" >> /etc/apt/sources.list.d/llvm.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    llvm-19 \
+    llvm-19-dev \
+    clang-19 \
+    libclang-19-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install additional cargo tools
-RUN cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked
+# Set up Rust
+RUN rustup default nightly-2024-08-13 \
+    && rustup component add rust-src \
+    && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
 
-# Configure AFL
-RUN cargo afl config --build --plugins --verbose --force
+# Clone and build the project
+WORKDIR /phink
+RUN git clone https://github.com/kevin-valerio/phink . \
+    && cargo update \
+    && cargo afl config --build --plugins --verbose --force \
+    && cargo build --release
 
+# Runtime stage
+FROM debian:bookworm-slim
 
-# Set the default command to run cargo with a configurable target
-CMD ["cargo", "run", "--", "instrument", "sample/multi-contract-caller/"]
+# Copy the built binary from the builder stage
+COPY --from=builder /phink/target/release/phink /usr/local/bin/phink
+
+# Set the entrypoint
+ENTRYPOINT ["phink"]
+
+# Default command
+CMD ["instrument", "sample/multi-contract-caller/"]

@@ -92,7 +92,6 @@ fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
         if var("PHINK_FROM_ZIGGY").is_ok() {
-
             Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone()))
                 .unwrap();
         }
