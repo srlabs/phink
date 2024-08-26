@@ -1,13 +1,20 @@
-# 🐙 Phink  
+# 🐙 Phink
 
-**Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect vulnerabilities and ensure contract reliability before deployment.
+**Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
+embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
+vulnerabilities and ensure contract reliability before deployment.
 
-> ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions and feedback are welcome!
+> ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
+and feedback are welcome!
 
+Here's the updated `README.md` incorporating the Docker usage:
 
-## Install  
+```markdown
+## Install
 
-### Manual instlalation
+### Manual Installation
+If you prefer to install Phink manually, follow these steps:
+
 ```bash
 cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
 cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
@@ -15,18 +22,48 @@ git clone https://github.com/kevin-valerio/phink
 cd phink/
 ```
 
+### Using Docker
+
+Alternatively, you can use Docker to set up and run Phink without needing to manually install dependencies. Detailed
+instructions are available in [**README.Docker.md**](README.Docker.md).
+
+To build the Docker image:
+
+```bash
+docker build -t phink .docker/
+```
 
 ## Usage
+
+### Docker Usage
+
+To use Phink via Docker, you can run:
+
+```bash
+docker run --rm phink
+```
+
+For instrumenting a specific contract:
+
+```bash
+docker run --rm phink instrument path/to/ink_contract
+```
+
+Refer to [**README.Docker.md**](README.Docker.md) for more detailed instructions on using Phink with Docker.
+
+### Manual Usage
 
 ```bash
 cargo run -- instrumenter path/to/ink_contract
 cargo run -- fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
-```
-  
-## Example  
-#### Creating an invariant  
-Below are some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs) contract.
+```  
 
+## Example
+
+#### Creating an invariant
+
+Below are some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs)
+contract.
 
   ```rust
 #[cfg(feature = "phink")]
@@ -53,12 +90,15 @@ impl DomainNameService {
     }
 }
 ```
-#### Catching an invariant  
+
+#### Catching an invariant
 
 ```bash
 cargo run -- execute output/phink/crashes/1720191069751/id:000000,sig:06,src:000001,time:77,execs:2314,op:havoc,rep:4   /tmp/ink_fuzzed_XqUCn/
 ```
+
 Below, the trace after executing the crash:
+
 ```
 🚀 Now fuzzing `/tmp/ink_fuzzed_XqUCn/target/ink/transfer.json` (5H31F11yQUkqugbgC7ur4rT2WLKSkZKAZUfcmHkKoLkaRaZ4)!
 
@@ -82,20 +122,21 @@ thread 'main' panicked at src/fuzzer/bug.rs:83:9:
 
 Job is done! Please, don't matter the backtrace below/above 🫡
 ```
-## Features and upcoming ideas  
-  
- - [x] Integration of a custom runtime, using a generic one by default
- - [x] Invariants-based fuzzing
- - [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
- - [x] Handling of ink! specific encoding and constructors
- - [x] Automatic contract instantiation
- - [x] Crafting multiple messages in a single transaction
- - [x] Visualization of ink! contract coverage
- - [x] Proper binary usage
- - [ ] Enabling multi-contract fuzzing and cross-contract interactions
- - [ ] Creation of default invariants common to every contract
- - [ ] Provision of a specified on-chain state
- - [ ] Implementation of a snapshot-based fuzzing approach
- - [ ] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
- - [ ] Extraction of seeds and constants from the codebase (_research needed_)
- - [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_) 
+
+## Features and upcoming ideas
+
+- [x] Integration of a custom runtime, using a generic one by default
+- [x] Invariants-based fuzzing
+- [x] Detection of incorrect arithmetic, reentrancy, and panic handlers
+- [x] Handling of ink! specific encoding and constructors
+- [x] Automatic contract instantiation
+- [x] Crafting multiple messages in a single transaction
+- [x] Visualization of ink! contract coverage
+- [x] Proper binary usage
+- [x] Enabling multi-contract fuzzing and cross-contract interactions
+- [ ] Creation of default invariants common to every contract
+- [ ] Provision of a specified on-chain state
+- [ ] Implementation of a snapshot-based fuzzing approach
+- [ ] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
+- [ ] Extraction of seeds and constants from the codebase (_research needed_)
+- [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_) 
