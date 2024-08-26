@@ -37,11 +37,9 @@ RUN git clone https://github.com/kevin-valerio/phink . \
 # Runtime stage
 FROM debian:bookworm-slim
 
-# Copy the built binary from the builder stage
-COPY --from=builder /phink/target/release/phink /usr/local/bin/phink
-
 # Set the entrypoint
-ENTRYPOINT ["phink"]
+# We don't COPY into /bin because we want 1. the `phink.toml` and 2. `sample/` for the user to play with it
+ENTRYPOINT ["./target/debug/phink"]
 
-# Default command
+# Default command : we just instrument a contract
 CMD ["instrument", "sample/multi-contract-caller/"]
