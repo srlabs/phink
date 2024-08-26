@@ -7,9 +7,6 @@ vulnerabilities and ensure contract reliability before deployment.
 > ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
 and feedback are welcome!
 
-Here's the updated `README.md` incorporating the Docker usage:
-
-```markdown
 ## Install
 
 ### Manual Installation
@@ -94,7 +91,7 @@ impl DomainNameService {
 #### Catching an invariant
 
 ```bash
-cargo run -- execute output/phink/crashes/1720191069751/id:000000,sig:06,src:000001,time:77,execs:2314,op:havoc,rep:4   /tmp/ink_fuzzed_XqUCn/
+cargo run -- execute output/phink/crashes/<timestamp>/<id:000x:seed>  /tmp/ink_fuzzed_<random_string>/
 ```
 
 Below, the trace after executing the crash:
