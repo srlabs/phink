@@ -25,7 +25,7 @@ cd phink/
 ### Using Docker
 
 Alternatively, you can use Docker to set up and run Phink without needing to manually install dependencies. Detailed
-instructions are available in [**README.Docker.md**](README.Docker.md).
+instructions are available in [README.Docker.md](README.Docker.md).
 
 To build the Docker image:
 
@@ -49,13 +49,13 @@ For instrumenting a specific contract:
 docker run --rm phink instrument path/to/ink_contract
 ```
 
-Refer to [**README.Docker.md**](README.Docker.md) for more detailed instructions on using Phink with Docker.
+_Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on using Phink with Docker._
 
 ### Manual Usage
 
 ```bash
-cargo run -- instrumenter path/to/ink_contract
-cargo run -- fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
+phink instrument path/to/ink_contract
+phink fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
 ```  
 
 ## Example
@@ -94,7 +94,8 @@ impl DomainNameService {
 #### Catching an invariant
 
 ```bash
-cargo run -- execute output/phink/crashes/<timestamp>/<id:000x:seed>  /tmp/ink_fuzzed_<random_string>/
+phink execute output/phink/crashes/<timestamp>/<id:000x:seed> \
+      /tmp/ink_fuzzed_<random_string>/
 ```
 
 Below, the trace after executing the crash:
