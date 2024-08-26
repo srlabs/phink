@@ -123,6 +123,11 @@ thread 'main' panicked at src/fuzzer/bug.rs:83:9:
 Job is done! Please, don't matter the backtrace below/above 🫡
 ```
 
+#### List of samples
+You can find various sample ink! smart-contracts in the `sample/` directory. For detailed descriptions of these samples and
+instructions on how to instrument them for testing with Phink, please refer to the [sample's README](sample/README.md)
+file.
+
 ## Features and upcoming ideas
 
 - [x] Integration of a custom runtime, using a generic one by default
@@ -134,9 +139,9 @@ Job is done! Please, don't matter the backtrace below/above 🫡
 - [x] Visualization of ink! contract coverage
 - [x] Proper binary usage
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
-- [ ] Creation of default invariants common to every contract
-- [ ] Provision of a specified on-chain state
-- [ ] Implementation of a snapshot-based fuzzing approach
 - [ ] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
+- [ ] Creation of default invariants common to every contract  (_research needed_)
+- [ ] Provision of a specified on-chain state  (_research needed_)
+- [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
 - [ ] Extraction of seeds and constants from the codebase (_research needed_)
-- [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_) 
+- [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_)
