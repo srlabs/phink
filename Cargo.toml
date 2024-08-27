@@ -15,9 +15,14 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
-#[[bin]]
-#path = "src/main.rs"
-#name = "phink"
+[[bin]]
+name = "phink_bin"
+path = "src/main.rs"
+
+[lib]
+name = "phink_lib"
+path = "src/lib.rs"
+
 
 [features]
 default = ["std"]
@@ -32,8 +37,9 @@ std = [
 ]
 
 [dev-dependencies]
-assert_cmd = "2.0.16"
-predicates = "3.1.2"
+assert_cmd = { version = "2.0.16" }
+toml_edit = { version = "0.22.20" }
+predicates = { version = "3.1.2" }
 
 [dependencies]
 # Standard crates

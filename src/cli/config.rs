@@ -19,16 +19,12 @@ use serde_derive::{
     Serialize,
 };
 use sp_core::crypto::AccountId32;
-use sp_runtime::{
-    traits::MaybeFromStr,
-    FixedPointOperand,
-};
 use std::{
     fs,
+    fs::File,
+    io::Write,
     path::PathBuf,
-    str::FromStr,
 };
-use toml::de::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Configuration {
@@ -77,8 +73,8 @@ impl Default for Configuration {
             deployer_address: ContractBridge::DEFAULT_DEPLOYER.into(),
             max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
-            default_gas_limit: Option::from(ContractBridge::DEFAULT_GAS_LIMIT),
-            storage_deposit_limit: None,
+            default_gas_limit: Some(ContractBridge::DEFAULT_GAS_LIMIT),
+            storage_deposit_limit: Some("100000000000".into()),
             instantiate_initial_value: None,
             constructor_payload: None,
             verbose: true,
@@ -128,10 +124,16 @@ impl Configuration {
         }
     }
 
+    pub fn save_as_toml(&self, to: &str) {
+        let toml_str = toml::to_string(self).unwrap();
+        let mut file = File::create(to).unwrap();
+        file.write_all(toml_str.as_bytes()).unwrap();
+    }
+
     pub fn parse_balance(value: Option<String>) -> Option<BalanceOf<Runtime>> {
         // Currently, TOML & Serde don't handle parsing `u128` 🤡
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)
-        value.clone().and_then(|s| s.parse::<u128>().ok())
+        value.and_then(|s| s.parse::<u128>().ok()).map(|v| v)
     }
 }

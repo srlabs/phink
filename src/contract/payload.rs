@@ -20,13 +20,13 @@ pub struct PayloadCrafter {}
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
 #[derive(Deserialize)]
-struct Spec {
+pub struct Spec {
     constructors: Vec<SelectorEntry>,
     messages: Vec<SelectorEntry>,
 }
 
 #[derive(Deserialize)]
-struct SelectorEntry {
+pub struct SelectorEntry {
     selector: String,
 }
 impl PayloadCrafter {

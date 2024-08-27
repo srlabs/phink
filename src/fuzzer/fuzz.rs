@@ -43,7 +43,6 @@ use crate::{
             OneInput,
         },
     },
-    instrumenter::instrumentation::Instrumenter,
 };
 
 pub const CORPUS_DIR: &str = "./output/phink/corpus";

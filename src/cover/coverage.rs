@@ -1,6 +1,5 @@
 use std::{
     collections::{
-        HashMap,
         HashSet,
     },
     fmt,
@@ -9,12 +8,10 @@ use std::{
         Formatter,
     },
     fs::{
-        File,
         OpenOptions,
     },
     hint::black_box,
     io::{
-        Read,
         Write,
     },
 };

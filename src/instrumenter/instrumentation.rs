@@ -17,7 +17,6 @@ use std::{
 
 use crate::{
     cli::{
-        config::Configuration,
         ziggy::ZiggyConfig,
     },
     instrumenter::{
@@ -26,10 +25,6 @@ use crate::{
     },
 };
 use quote::quote;
-use rand::{
-    distributions::Alphanumeric,
-    Rng,
-};
 use syn::{
     parse_file,
     visit_mut::VisitMut,
