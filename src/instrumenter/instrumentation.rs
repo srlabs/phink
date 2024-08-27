@@ -16,9 +16,7 @@ use std::{
 };
 
 use crate::{
-    cli::{
-        ziggy::ZiggyConfig,
-    },
+    cli::ziggy::ZiggyConfig,
     instrumenter::{
         instrumentation::instrument::ContractCovUpdater,
         instrumented_path::InstrumentedPath,
