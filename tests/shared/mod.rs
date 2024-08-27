@@ -1,3 +1,4 @@
+use assert_cmd::Command;
 use std::{
     ffi::OsStr,
     fs,
@@ -11,10 +12,17 @@ use phink_lib::cli::config::Configuration;
 
 pub fn with_modified_phink_config<F>(config: Configuration, executed_test: F)
 where
-    F: FnOnce() -> std::io::Result<()>,
+    F: FnOnce() -> io::Result<()>,
 {
     // We ensure that the path doesn't exist yet. It doesn't matter if it `Err`
     let _ = remove_instrumented_contract_path(&config);
+
+    // If this isn't the default `fuzz_output`, we clean it
+    &config
+        .fuzz_output
+        .as_ref()
+        .map(|output| fs::remove_dir_all(output));
+
 
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
@@ -23,9 +31,14 @@ where
 
     // We remove the temp config file
     fs::remove_file(DEFAULT_TEST_PHINK_TOML).unwrap();
-
     // We clean the instrumented path
     remove_instrumented_contract_path(&config).unwrap();
+
+    // If this isn't the default `fuzz_output`, we clean it after the test executed
+    &config
+        .fuzz_output
+        .as_ref()
+        .map(|output| fs::remove_dir_all(output));
 }
 
 fn remove_instrumented_contract_path(config: &Configuration) -> Result<(), io::Error> {
@@ -39,6 +52,17 @@ fn remove_instrumented_contract_path(config: &Configuration) -> Result<(), io::E
         }
     }
 }
+
+pub fn instrument(contract_path: &str) {
+    let mut cmd = Command::cargo_bin("phink").unwrap();
+    let _binding = cmd
+        .args(["--config", DEFAULT_TEST_PHINK_TOML])
+        .arg("instrument")
+        .arg(contract_path)
+        .assert()
+        .success();
+}
+
 pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     fn is_rs_file(entry: &Path) -> bool {
         entry.extension() == Some(OsStr::new("rs"))

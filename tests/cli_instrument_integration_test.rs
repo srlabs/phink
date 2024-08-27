@@ -5,11 +5,7 @@ extern crate phink_lib;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::{
-        find_string_in_rs_files,
-        with_modified_phink_config,
-        DEFAULT_TEST_PHINK_TOML,
-    };
+    use crate::shared::{find_string_in_rs_files, instrument, with_modified_phink_config, DEFAULT_TEST_PHINK_TOML};
     use assert_cmd::Command;
     use phink_lib::{
         cli::config::Configuration,
@@ -36,13 +32,7 @@ mod tests {
         };
 
         with_modified_phink_config(config, || {
-            let mut cmd = Command::cargo_bin("phink").unwrap();
-            let binding = cmd
-                .args(["--config", DEFAULT_TEST_PHINK_TOML])
-                .arg("instrument")
-                .arg(contract_path)
-                .assert()
-                .success();
+            instrument(contract_path);
 
             assert!(
                 fs::exists(path_instrumented_contract.path.clone()).is_ok(),
@@ -65,6 +55,7 @@ mod tests {
         });
     }
 
+
     #[test]
     fn test_instrument_contains_instrumented_code() {
         let contract_path = "sample/dummy";
@@ -77,13 +68,7 @@ mod tests {
         };
 
         with_modified_phink_config(config, || {
-            let mut cmd = Command::cargo_bin("phink").unwrap();
-            let binding = cmd
-                .args(["--config", DEFAULT_TEST_PHINK_TOML])
-                .arg("instrument")
-                .arg(contract_path)
-                .assert()
-                .success();
+            instrument(contract_path);
 
             let contains_instrumented_code = find_string_in_rs_files(
                 &path_instrumented_contract.path,

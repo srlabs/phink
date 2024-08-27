@@ -14,9 +14,7 @@ use serde_derive::{
 use std::{
     fs,
     fs::File,
-    io::{
-        Write,
-    },
+    io::Write,
     path::{
         Path,
         PathBuf,
@@ -229,6 +227,13 @@ impl ZiggyConfig {
         ];
         if !self.config.use_honggfuzz {
             fuzzing_args.push("--no-honggfuzz".parse().unwrap())
+        }
+
+        if self.config.fuzz_output.is_some() {
+            fuzzing_args.push(format!(
+                "--ziggy-output={}",
+                self.config.fuzz_output.clone().unwrap().to_str().unwrap()
+            ))
         }
 
         let fuzz_config = vec![(

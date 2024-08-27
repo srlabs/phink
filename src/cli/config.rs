@@ -62,6 +62,9 @@ pub struct Configuration {
     /// instrument mycontract` By default, we create a random folder in
     /// `/tmp/ink_fuzzed_XXXX`
     pub instrumented_contract_path: Option<InstrumentedPath>,
+    /// Path where Ziggy will drop everything (logs, corpus, etc). If None, it'll be
+    /// output/ by default
+    pub fuzz_output: Option<PathBuf>,
 }
 
 impl Default for Configuration {
@@ -79,6 +82,7 @@ impl Default for Configuration {
             constructor_payload: None,
             verbose: true,
             instrumented_contract_path: Some(InstrumentedPath::default()),
+            fuzz_output: None,
         }
     }
 }
