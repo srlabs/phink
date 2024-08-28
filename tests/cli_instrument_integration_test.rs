@@ -5,7 +5,13 @@ extern crate phink_lib;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::{find_string_in_rs_files, instrument, with_modified_phink_config, DEFAULT_TEST_PHINK_TOML};
+    use crate::shared::{
+        find_string_in_rs_files,
+        instrument,
+        samples::Sample,
+        with_modified_phink_config,
+        DEFAULT_TEST_PHINK_TOML,
+    };
     use assert_cmd::Command;
     use phink_lib::{
         cli::config::Configuration,
@@ -22,7 +28,6 @@ mod tests {
 
     #[test]
     fn test_instrument_respects_configuration() {
-        let contract_path = "sample/dummy";
         let path_instrumented_contract =
             InstrumentedPath::new(PathBuf::from("just_a_random_path"));
 
@@ -32,7 +37,7 @@ mod tests {
         };
 
         with_modified_phink_config(config, || {
-            instrument(contract_path);
+            instrument(Sample::Dummy);
 
             assert!(
                 fs::exists(path_instrumented_contract.path.clone()).is_ok(),
@@ -55,10 +60,8 @@ mod tests {
         });
     }
 
-
     #[test]
     fn test_instrument_contains_instrumented_code() {
-        let contract_path = "sample/dummy";
         let path_instrumented_contract =
             InstrumentedPath::new(PathBuf::from("just_a_random_path"));
 
@@ -68,7 +71,7 @@ mod tests {
         };
 
         with_modified_phink_config(config, || {
-            instrument(contract_path);
+            instrument(Sample::Dummy);
 
             let contains_instrumented_code = find_string_in_rs_files(
                 &path_instrumented_contract.path,
@@ -76,7 +79,7 @@ mod tests {
             );
             assert!(
                 contains_instrumented_code,
-                "Expected to find 'ABCDEF' in at least one .rs file"
+                "Expected to find a trace of instrumentation in at least one .rs file"
             );
             Ok(())
         });

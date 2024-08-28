@@ -1,4 +1,8 @@
+pub mod samples;
+
+use crate::shared::samples::Sample;
 use assert_cmd::Command;
+use phink_lib::cli::config::Configuration;
 use std::{
     ffi::OsStr,
     fs,
@@ -8,8 +12,24 @@ use std::{
 };
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
-use phink_lib::cli::config::Configuration;
 
+/// This function is a helper used to run tests, it mainly checks that the instrumented
+/// folder doesn't exist yet, same for the fuzzing output, remove the temporary forked
+/// Phink configuration file, executes the tests and then clean everything again
+///
+/// # Arguments
+///
+/// * `config`: A `Configuration` struct, the same one used for CLI
+/// * `executed_test`: The function being executed that effectively performs the tests,
+///   i.e functions containing `assert`
+/// # Examples
+///
+/// ```
+/// with_modified_phink_config(config.clone(), || {
+///     instrument(Sample::Dummy);
+///     Ok(())
+/// });
+/// ```
 pub fn with_modified_phink_config<F>(config: Configuration, executed_test: F)
 where
     F: FnOnce() -> io::Result<()>,
@@ -22,7 +42,6 @@ where
         .fuzz_output
         .as_ref()
         .map(|output| fs::remove_dir_all(output));
-
 
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
@@ -53,21 +72,17 @@ fn remove_instrumented_contract_path(config: &Configuration) -> Result<(), io::E
     }
 }
 
-pub fn instrument(contract_path: &str) {
+pub fn instrument(contract_path: Sample) {
     let mut cmd = Command::cargo_bin("phink").unwrap();
     let _binding = cmd
         .args(["--config", DEFAULT_TEST_PHINK_TOML])
         .arg("instrument")
-        .arg(contract_path)
+        .arg(contract_path.path())
         .assert()
         .success();
 }
 
 pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
-    fn is_rs_file(entry: &Path) -> bool {
-        entry.extension() == Some(OsStr::new("rs"))
-    }
-
     fn file_contains_string(file_path: &Path, target: &str) -> bool {
         let mut file = fs::File::open(file_path).expect("Unable to open file");
         let mut content = String::new();
@@ -76,9 +91,7 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
         content.contains(target)
     }
 
-    let entries = fs::read_dir(dir).expect("Unable to read directory");
-
-    for entry in entries {
+    for entry in fs::read_dir(dir).unwrap() {
         let entry = entry.expect("Unable to get directory entry");
         let path = entry.path();
 
@@ -86,7 +99,7 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
             if find_string_in_rs_files(&path, target) {
                 return true;
             }
-        } else if is_rs_file(&path) {
+        } else if path.extension() == Some(OsStr::new("rs")) {
             if file_contains_string(&path, target) {
                 return true;
             }
