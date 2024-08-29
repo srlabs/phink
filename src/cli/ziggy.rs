@@ -141,7 +141,8 @@ impl ZiggyConfig {
             .env("PHINK_FROM_ZIGGY", "1")
             .env("AFL_FORKSRV_INIT_TMOUT", Self::AFL_FORKSRV_INIT_TMOUT)
             .env("AFL_DEBUG", Self::AFL_DEBUG)
-            .stdout(Stdio::piped());
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
 
         // Add `AFL_LLVM_ALLOWLIST` if not on macOS
         // See https://github.com/rust-lang/rust/issues/127573
@@ -163,14 +164,9 @@ impl ZiggyConfig {
             command_builder.env(key, value);
         }
 
-        let mut ziggy_child = command_builder.spawn()?;
-        let stdout = ziggy_child.stdout.take().expect("Failed to capture stdout");
+        command_builder.spawn()?;
 
-        // Wait for the child process to finish
-        let status = ziggy_child.wait()?;
-        if !status.success() {
-            eprintln!("🚫 Can't start cargo ziggy, command failed");
-        }
+        // let status = ziggy_child.wait()?;
 
         Ok(())
     }
