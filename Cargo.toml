@@ -23,7 +23,6 @@ path = "src/main.rs"
 name = "phink_lib"
 path = "src/lib.rs"
 
-
 [features]
 default = ["std"]
 std = [
@@ -63,7 +62,7 @@ proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
 regex = "1.10.4"
-ratatui = { version = "0.28.0" , features = ["all-widgets"]}
+ratatui = { version = "0.28.0", features = ["all-widgets"] }
 crossterm = { version = "0.28.1" }
 # Substrate-specific crates
 parity-scale-codec = { version = "*", default-features = false }

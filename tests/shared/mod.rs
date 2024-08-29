@@ -1,20 +1,36 @@
 pub mod samples;
 
 use crate::shared::samples::Sample;
+use anyhow::{
+    anyhow,
+    Context,
+    Result,
+};
 use assert_cmd::Command;
 use phink_lib::{
     cli::config::Configuration,
     instrumenter::instrumented_path::InstrumentedPath,
 };
+
 use std::{
+    collections::HashSet,
     ffi::OsStr,
     fs,
     io,
     io::Read,
-    path::Path,
+    path::{
+        Path,
+        PathBuf,
+    },
     process::{
         Child,
         Command as NativeCommand,
+        Stdio,
+    },
+    thread,
+    time::{
+        Duration,
+        Instant,
     },
 };
 
@@ -28,7 +44,7 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 ///
 /// * `config`: A `Configuration` struct, the same one used for CLI
 /// * `executed_test`: The function being executed that effectively performs the tests,
-///   i.e functions containing `assert`
+///   i.e functions containing `ensure!`
 /// # Examples
 ///
 /// ```
@@ -38,51 +54,102 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 /// });
 /// ```
 pub fn with_modified_phink_config<F>(
-    config: Configuration,
+    config: &Configuration,
     executed_test: F,
-) -> io::Result<()>
+) -> Result<()>
 where
-    F: FnOnce() -> io::Result<()>,
+    F: FnOnce() -> Result<()>,
 {
-    // We ensure that the path doesn't exist yet. It doesn't matter if it `Err`
-    let _ = remove_instrumented_contract_path(&config);
-
-    // If this isn't the default `fuzz_output`, we clean it
-    &config
-        .fuzz_output
-        .as_ref()
-        .map(|output| fs::remove_dir_all(output));
+    let _ = fs::remove_dir_all(
+        &config
+            .instrumented_contract_path
+            .clone()
+            .unwrap_or_default()
+            .path,
+    );
+    let _ = fs::remove_dir_all(&config.fuzz_output.clone().unwrap_or_default());
 
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
     // Executing the actual test
-    executed_test()?;
+    let test_result = executed_test();
 
     // We remove the temp config file
-    fs::remove_file(DEFAULT_TEST_PHINK_TOML)?;
+    let _ = fs::remove_file(DEFAULT_TEST_PHINK_TOML);
     // We clean the instrumented path
-    remove_instrumented_contract_path(&config)?;
+    let _ = fs::remove_dir_all(
+        &config
+            .instrumented_contract_path
+            .clone()
+            .unwrap_or_default()
+            .path,
+    );
+    let _ = fs::remove_dir_all(config.fuzz_output.clone().unwrap_or_default());
 
-    // If this isn't the default `fuzz_output`, we clean it after the test executed
-    &config
-        .fuzz_output
-        .as_ref()
-        .map(|output| fs::remove_dir_all(output));
-    Ok(())
+    test_result
 }
 
-fn remove_instrumented_contract_path(config: &Configuration) -> Result<(), io::Error> {
-    // If it's `None`, we'll just get the default path, so we don't remove it
-    match &config.instrumented_contract_path {
-        None => Ok(()),
-        Some(path) => {
-            let buf = &path.path;
-            println!("Removing {:?}", buf);
-            fs::remove_dir_all(buf)
+/// This function is a helper that pops the fuzzer on a given `Configuration`, and execute
+/// some tests during the campaign.
+///
+/// In other words, the test to be executed have a specific time (`timeout`) to pass. If
+/// they can't `Ok()` until then, it fails.
+/// # Arguments
+///
+/// * `config`: A `Configuration` struct, the same one used for CLI
+/// * `timeout`: A timeout where the test would be considered as failed if the conditions
+///   inside `executed_test` couldn't be met (i.e, it couldn't `Ok(())`)
+/// * `executed_test`: The function being executed that effectively performs the tests,
+///   i.e functions containing `ensure`
+///
+/// returns: Result<(), Error>
+///
+/// # Examples
+///
+/// ```
+/// let test_passed = verify_during_fuzz(&config, Duration::from_secs(30), || {
+///     ensure!(true);
+///     Ok(())
+/// });
+/// ensure!(test_passed.is_ok());
+/// ```
+pub fn ensure_while_fuzzing<F>(
+    config: &Configuration,
+    timeout: Duration,
+    mut executed_test: F,
+) -> Result<()>
+where
+    F: FnMut() -> Result<()>,
+{
+    // We start the fuzzer
+    let mut child = fuzz(
+        config
+            .clone()
+            .instrumented_contract_path
+            .unwrap_or_default(),
+    );
+
+    let start_time = Instant::now();
+
+    // When the fuzzer is popped, we check if the test pass. If it does, we kill Ziggy and
+    // we `Ok(())`
+    loop {
+        if let Ok(_) = executed_test() {
+            child.kill().context("Failed to kill Ziggy")?;
+            return Ok(());
         }
+
+        if start_time.elapsed() > timeout {
+            child.kill().context("Failed to kill Ziggy")?;
+            // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
+            return Err(anyhow!(
+                "Couldn't check the assert within the given timeout"
+            ));
+        }
+
+        thread::sleep(Duration::from_secs(1));
     }
 }
-
 pub fn instrument(contract_path: Sample) {
     let mut cmd = Command::cargo_bin("phink").unwrap();
     let _binding = cmd
@@ -97,8 +164,12 @@ pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
     let mut child = NativeCommand::new("cargo")
         .arg("run")
         .arg("--")
+        .args(["--config", DEFAULT_TEST_PHINK_TOML])
         .arg("fuzz")
         .arg(path_instrumented_contract.path.to_str().unwrap())
+        .stdout(Stdio::null())
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .expect("Failed to start the process");
     child
@@ -129,4 +200,13 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     }
 
     false
+}
+
+pub fn get_corpus_files(corpus_path: &PathBuf) -> HashSet<PathBuf> {
+    println!("Got corpus files in: {:?}", corpus_path);
+    fs::read_dir(corpus_path)
+        .unwrap()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .collect()
 }

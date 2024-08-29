@@ -2,9 +2,7 @@ use rand::{
     distributions::Alphanumeric,
     Rng,
 };
-use serde::{
-    Deserialize,
-};
+use serde::Deserialize;
 use serde_derive::Serialize;
 use std::{
     fs,

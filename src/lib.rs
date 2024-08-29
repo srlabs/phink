@@ -104,13 +104,14 @@ fn handle_cli() {
     match cli.command {
         Commands::Instrument(contract_path) => {
             let z_config: ZiggyConfig =
-                ZiggyConfig::new(config, contract_path.contract_path.clone());
+                ZiggyConfig::new(config.clone(), contract_path.contract_path.clone());
             let mut engine = Instrumenter::new(z_config);
             engine.instrument().unwrap().build().unwrap();
 
             println!(
-                "🤞 Contract {} has been instrumented and compiled!",
-                contract_path.contract_path.display()
+                "🤞 Contract '{}' has been instrumented and compiled! You can find the instrumented contract in '{}/'",
+                contract_path.contract_path.display(),
+                config.instrumented_contract_path.unwrap_or_default().path.display()
             );
         }
         Commands::Fuzz(contract_path) => {

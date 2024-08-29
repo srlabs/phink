@@ -1,0 +1,2 @@
+[env]
+RUST_TEST_THREADS = "1" # this is used to avoid race condition during test execution
