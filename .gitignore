@@ -1,15 +1,25 @@
-instrumented_output/
+#Mac stuff
 .DS_Store
-target
 sample/.DS_Store
 */.DS_Store
+
+# IDE stuff
 .idea/
-output/
 .vscode
-debug/
-target/
 .run/
+
+# Cargo & Rust stuff
 Cargo.lock
 **/*.rs.bk
 package-lock.json
+
+# This is for testing purposes
 just_a_random_path/
+phink_temp_test.toml
+instrumented_output/
+output/
+
+# Compilation targets
+target
+debug/
+target/
