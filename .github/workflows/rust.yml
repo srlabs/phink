@@ -12,23 +12,39 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v4
+
+    - name: Install LLVM and Clang
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
+        sudo apt-get update
+        sudo apt-get install -y llvm-19 llvm-19-dev clang-19 libclang-19-dev
+
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: stable
-        components: rustfmt
-        
-    - uses: actions/checkout@v4
-    
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test  --test cli_instrument_integration_test 
-      ### todo: add other integration tests
+        toolchain: nightly-2024-08-13
+        components: rustfmt, rust-src
+        override: true
+
+    - name: Install additional tools
+      run: |
+        cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
+
     - name: Run rustfmt
       run: cargo fmt -- --check
+
+    - name: Build
+      run: cargo build --release --verbose
+      
+    - name: Run AFL configuration
+      run: cargo afl config --build --plugins --verbose --force
+      
+    - name: Run tests
+      run: cargo test --release --test cli_instrument_integration_test
+
