@@ -1,19 +1,13 @@
 use std::{
-    collections::{
-        HashSet,
-    },
+    collections::HashSet,
     fmt,
     fmt::{
         Debug,
         Formatter,
     },
-    fs::{
-        OpenOptions,
-    },
+    fs::OpenOptions,
     hint::black_box,
-    io::{
-        Write,
-    },
+    io::Write,
 };
 
 pub type CoverageTrace = Vec<u8>;

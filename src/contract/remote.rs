@@ -1,8 +1,6 @@
 use std::{
     fs,
-    path::{
-        PathBuf,
-    },
+    path::PathBuf,
 };
 
 use frame_support::{
