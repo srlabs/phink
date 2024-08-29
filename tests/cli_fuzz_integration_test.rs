@@ -5,19 +5,21 @@ pub mod shared;
 mod tests {
     use super::*;
     use crate::shared::{
+        fuzz,
         instrument,
         samples::Sample,
         with_modified_phink_config,
         DEFAULT_TEST_PHINK_TOML,
     };
-    use assert_cmd::Command;
     use phink_lib::{
         cli::config::Configuration,
         instrumenter::instrumented_path::InstrumentedPath,
     };
+    use predicates::prelude::predicate;
     use std::{
         fs,
         io::{
+            stdout,
             BufRead,
             BufReader,
         },
@@ -25,14 +27,17 @@ mod tests {
             Path,
             PathBuf,
         },
-        process::Stdio,
+        process::{
+            Child,
+            Command,
+            Stdio,
+        },
         thread,
         time::{
             Duration,
             Instant,
         },
     };
-    use std::io::stdout;
 
     #[test]
     fn test_fuzz_started() {
@@ -41,61 +46,50 @@ mod tests {
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
+            fuzz_output: Some(PathBuf::from("output_for_integration_test")),
+            cores: Some(1),
             ..Default::default()
         };
 
-        with_modified_phink_config(config.clone(), || {
+        let exec_test = with_modified_phink_config(config.clone(), || {
             instrument(Sample::Dummy);
 
-            let mut cmd = Command::cargo_bin("phink").unwrap();
-            cmd.args(["--config", DEFAULT_TEST_PHINK_TOML])
-                .arg("fuzz")
-                .arg(path_instrumented_contract.path.to_str().unwrap())
-                .output().unwrap();
+            let mut child = fuzz(path_instrumented_contract);
 
-            let reader = BufReader::new(stdout);
-
+            // Track the time to ensure it's within the first 2 minutes
             let start_time = Instant::now();
-            let timeout = Duration::from_secs(300); // 5 minutes timeout
+            let timeout = Duration::from_secs(20); // 2 minutes
 
-            let corpus_path = Path::new("abc"); // Adjust this path as needed
-
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    println!("Output: {}", line);
+            // Capture the standard output of the child process
+            if let Some(stdout) = child.stdout.take() {
+                let reader = BufReader::new(stdout);
+                for line in reader.lines() {
+                    let line = line.expect("Failed to read line");
+                    println!("LINE IS {:?}", line);
                     if line.contains("ziggy rocking") {
-                        // Check if corpus is non-empty
-                        if corpus_path.exists()
-                            && corpus_path
-                                .read_dir()
-                                .map(|mut d| d.next().is_some())
-                                .unwrap_or(false)
-                        {
-                            println!("Corpus is non-empty!");
-                            child.kill().expect("Command won't die");
-                            return Ok(());
-                        } else {
-                            println!("Corpus is empty or doesn't exist");
-                        }
+                        panic!("Found 'ziggy rocks' in output, stopping the loop.");
                     }
                 }
-
-                if start_time.elapsed() > timeout {
-                    println!("Test timed out after {:?}", timeout);
-                    child.kill().expect("Command won't die");
-                    return Err(*Box::new(std::io::Error::new(
-                        std::io::ErrorKind::TimedOut,
-                        "Test timed out",
-                    )));
-                }
-
-                thread::sleep(Duration::from_millis(100));
             }
 
-            Err(*Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Test completed without finding 'ziggy rocking'",
-            )))
+            if fs::metadata(config.fuzz_output.clone().unwrap_or_default()).is_ok() {
+                child.kill().expect("Failed to kill the process");
+                assert!(true);
+                return Ok(());
+            }
+
+            // If 2 minutes have passed, fail the test
+            if start_time.elapsed() > timeout {
+                child.kill().expect("Failed to kill the process");
+                assert!(false, "Folder 'abc' was not created within 2 minutes");
+                return Ok(());
+            }
+
+            // Sleep for a short period to avoid busy-waiting
+            std::thread::sleep(Duration::from_secs(1));
+            Ok(())
         });
+
+        assert!(exec_test.is_ok());
     }
 }

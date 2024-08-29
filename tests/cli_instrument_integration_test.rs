@@ -1,6 +1,5 @@
-pub mod shared;
-
 extern crate phink_lib;
+pub mod shared;
 
 #[cfg(test)]
 mod tests {
@@ -10,17 +9,12 @@ mod tests {
         instrument,
         samples::Sample,
         with_modified_phink_config,
-        DEFAULT_TEST_PHINK_TOML,
     };
-    use assert_cmd::Command;
     use phink_lib::{
         cli::config::Configuration,
         instrumenter::instrumented_path::InstrumentedPath,
     };
-    use predicate::str;
-    use predicates::prelude::*;
     use std::{
-        ffi::OsStr,
         fs,
         path::PathBuf,
     };
@@ -36,7 +30,7 @@ mod tests {
             ..Default::default()
         };
 
-        with_modified_phink_config(config, || {
+        let test = with_modified_phink_config(config, || {
             instrument(Sample::Dummy);
 
             assert!(
@@ -58,6 +52,7 @@ mod tests {
 
             Ok(())
         });
+        assert!(test.is_ok());
     }
 
     #[test]
@@ -70,7 +65,7 @@ mod tests {
             ..Default::default()
         };
 
-        with_modified_phink_config(config, || {
+        let exec_test = with_modified_phink_config(config, || {
             instrument(Sample::Dummy);
 
             let contains_instrumented_code = find_string_in_rs_files(
@@ -83,5 +78,6 @@ mod tests {
             );
             Ok(())
         });
+        assert!(exec_test.is_ok());
     }
 }

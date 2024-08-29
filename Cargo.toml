@@ -16,7 +16,7 @@ panic = "abort"
 panic = "abort"
 
 [[bin]]
-name = "phink_bin"
+name = "phink"
 path = "src/main.rs"
 
 [lib]

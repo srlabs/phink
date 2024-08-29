@@ -2,13 +2,20 @@ pub mod samples;
 
 use crate::shared::samples::Sample;
 use assert_cmd::Command;
-use phink_lib::cli::config::Configuration;
+use phink_lib::{
+    cli::config::Configuration,
+    instrumenter::instrumented_path::InstrumentedPath,
+};
 use std::{
     ffi::OsStr,
     fs,
     io,
     io::Read,
     path::Path,
+    process::{
+        Child,
+        Command as NativeCommand,
+    },
 };
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
@@ -30,7 +37,10 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 ///     Ok(())
 /// });
 /// ```
-pub fn with_modified_phink_config<F>(config: Configuration, executed_test: F)
+pub fn with_modified_phink_config<F>(
+    config: Configuration,
+    executed_test: F,
+) -> io::Result<()>
 where
     F: FnOnce() -> io::Result<()>,
 {
@@ -46,18 +56,19 @@ where
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
     // Executing the actual test
-    executed_test().unwrap();
+    executed_test()?;
 
     // We remove the temp config file
-    fs::remove_file(DEFAULT_TEST_PHINK_TOML).unwrap();
+    fs::remove_file(DEFAULT_TEST_PHINK_TOML)?;
     // We clean the instrumented path
-    remove_instrumented_contract_path(&config).unwrap();
+    remove_instrumented_contract_path(&config)?;
 
     // If this isn't the default `fuzz_output`, we clean it after the test executed
     &config
         .fuzz_output
         .as_ref()
         .map(|output| fs::remove_dir_all(output));
+    Ok(())
 }
 
 fn remove_instrumented_contract_path(config: &Configuration) -> Result<(), io::Error> {
@@ -80,6 +91,17 @@ pub fn instrument(contract_path: Sample) {
         .arg(contract_path.path())
         .assert()
         .success();
+}
+
+pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
+    let mut child = NativeCommand::new("cargo")
+        .arg("run")
+        .arg("--")
+        .arg("fuzz")
+        .arg(path_instrumented_contract.path.to_str().unwrap())
+        .spawn()
+        .expect("Failed to start the process");
+    child
 }
 
 pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
