@@ -1,37 +1,37 @@
 # Phink Docker Image
 
-This README provides instructions for building and running the Phink Docker image. The Dockerfile is designed to create a streamlined environment for
+This README provides instructions for building and running the Phink Docker image. This Dockerfile is designed to create
+a streamlined environment for
 building and using Phink.
 
 ## Dockerfile Overview
 
 ### Build Stage
 
-The Dockerfile begins by setting up a build environment using the `rust:1.75-slim-bookworm` base image. This stage
+This Dockerfile setups a build environment using the `rust:1.75-slim-bookworm` base image. This stage
 includes:
 
 1. **Installing Dependencies**: Essential build tools and libraries are installed to ensure the Rust environment has
    everything it needs to compile Phink and its dependencies.
-    - Tools like `curl`, `git`, `build-essential`, and `wget` are installed.
-    - LLVM 19 and Clang 19 are installed to support Rust's code generation and fuzzing tools.
+    - `curl`, `git`, `build-essential`, and `wget` are installed.
+    - LLVM 19 and Clang 19 are installed
 
 2. **Setting Up Rust**:
-    - The Dockerfile sets Rust to a specific nightly version (`nightly-2024-08-13`) to ensure compatibility with Phink's
+    - This Dockerfile sets Rust to nightly version (`nightly-2024-08-13`) to ensure compatibility with Phink's
       codebase.
     - Additional Rust components and tools such as `rust-src`, `cargo-afl`, `honggfuzz`, `grcov`, and `cargo-contract`
       are installed to support fuzzing and coverage instrumentation.
 
 3. **Cloning and Building Phink**:
-    - Phink is cloned from the specified GitHub repository.
+    - Phink is cloned from the `srlabs/phink`
     - The project is built in release mode.
 
 ### Runtime Stage
 
-The runtime stage uses a lightweight `debian:bookworm-slim` base image. This stage is optimized to run the Phink binary:
+The runtime stage uses a lightweight `debian:bookworm-slim` base image. This stage is optimized to run Phink:
 
 1. **Setting the Entry Point**:
-    - The entry point is set to execute the Phink binary directly, providing a streamlined command-line interface for
-      users.
+    - The entry point is set to execute the Phink binary directly
 
 2. **Default Command**:
     - The default command provided is for instrumenting a sample contract located in `sample/multi-contract-caller/`.
@@ -58,7 +58,8 @@ The runtime stage uses a lightweight `debian:bookworm-slim` base image. This sta
    ```bash
    docker run --rm phink fuzz <path_to_instrumented_contract>
    ```
-   Please, note that `path_to_instrumented_contract` corresponds to the directory created after the instrumentation step (as shown above). `path_to_instrumented_contract` is *not* the same path as `path_to_your_contract` !
+   Please, note that `path_to_instrumented_contract` corresponds to the directory created after the instrumentation
+   step (as shown above). `path_to_instrumented_contract` is *not* the same path as `path_to_your_contract` !
 
 ### Notes
 
