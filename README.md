@@ -1,11 +1,16 @@
 # 🐙 Phink
 
+![Build Status](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
+[![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
+[![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
+[![Discord](https://img.shields.io/discord/1276519988349374587.svg?label=&logo=discord&logoColor=ffffff&color=7289DA&labelColor=2C2F33)](https://discord.gg/gAahQMGE)
+
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 
 > ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
-and feedback are welcome!
+> and feedback are welcome!
 
 If you have any question, would like to share feedback, discuss features, and connect with other ink! developers, join
 our [Discord community](https://discord.gg/gAahQMGE)
@@ -13,6 +18,7 @@ our [Discord community](https://discord.gg/gAahQMGE)
 ## Install
 
 ### Manual Installation
+
 If you prefer to install Phink manually, follow these steps:
 
 ```bash
@@ -125,7 +131,9 @@ Job is done! Please, don't matter the backtrace below/above 🫡
 ```
 
 #### List of samples
-You can find various sample ink! smart-contracts in the `sample/` directory. For detailed descriptions of these samples and
+
+You can find various sample ink! smart-contracts in the `sample/` directory. For detailed descriptions of these samples
+and
 instructions on how to instrument them for testing with Phink, please refer to the [sample's README](sample/README.md)
 file.
 

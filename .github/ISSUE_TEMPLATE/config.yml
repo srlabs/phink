@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discord Chat
+    url: https://discord.gg/gAahQMGE
+    about: Ask questions about Phink on Discord
+  - name: Github issue
+    url: https://github.com/srlabs/phink/issues
+    about: Submit your issue (improvement idea, bug...) on Github
+  - name: Direct Mail
+    url: mailto:kevin@srlabs.de
+    about: Exchange a feedback via mail to the main maintainer
