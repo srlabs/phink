@@ -21,24 +21,20 @@ mod tests {
     };
     use walkdir::WalkDir;
 
-    // TODO: Test multi instrumentatino
-
     #[test]
-    fn test_instrument_respects_configuration() {
+    fn test_instrumentation_multifile_contract() {
         let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
-            "path_instrumented_contract_test_instrument_respects_configuration",
+            "test_instrumentation_multifile_contract_INSTRUMENTED_PATH",
         ));
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
-            fuzz_output: Some(PathBuf::from(
-                "fuzz_output_test_instrument_respects_configuration",
-            )),
+            fuzz_output: Some(PathBuf::from("test_instrumentation_multifile_contract")),
             ..Default::default()
         };
 
         let test = with_modified_phink_config(&config, || {
-            instrument(Sample::CrossMessageBug);
+            instrument(Sample::MultiContractCaller);
 
             ensure!(
                 fs::exists(path_instrumented_contract.path.clone()).is_ok(),
@@ -57,6 +53,60 @@ mod tests {
             ensure!(
                 cargo_toml_exists,
                 "Cargo.toml not found in the instrumented contract path"
+            );
+
+            Ok(())
+        });
+        assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn test_instrument_respects_configuration() {
+        let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
+            "path_instrumented_contract_test_instrument_respects_configuration",
+        ));
+
+        let config = Configuration {
+            instrumented_contract_path: Some(path_instrumented_contract.clone()),
+            fuzz_output: Some(PathBuf::from(
+                "fuzz_output_test_instrument_respects_configuration",
+            )),
+            ..Default::default()
+        };
+
+        let test = with_modified_phink_config(&config, || {
+            instrument(Sample::MultiContractCaller);
+
+            ensure!(
+                fs::exists(path_instrumented_contract.path.clone()).is_ok(),
+                "Instrumented contract not found"
+            );
+
+            let accumulator_contains_debug = find_string_in_rs_files(
+                &path_instrumented_contract.path.join("accumulator"),
+                "ink::env::debug_println!(\"COV={}\",",
+            );
+            ensure!(
+                accumulator_contains_debug,
+                "Expected to find a trace of instrumentation in Accumulator"
+            );
+
+            let subber_contains_debug = find_string_in_rs_files(
+                &path_instrumented_contract.path.join("subber"),
+                "ink::env::debug_println!(\"COV={}\",",
+            );
+            ensure!(
+                subber_contains_debug,
+                "Expected to find a trace of instrumentation in Subber"
+            );
+
+            let adder_contains_debug = find_string_in_rs_files(
+                &path_instrumented_contract.path.join("adder"),
+                "ink::env::debug_println!(\"COV={}\",",
+            );
+            ensure!(
+                adder_contains_debug,
+                "Expected to find a trace of instrumentation in Adder"
             );
 
             Ok(())
