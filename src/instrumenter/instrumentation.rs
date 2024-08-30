@@ -83,9 +83,7 @@ impl Instrumenter {
             })?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
-                if path.is_file()
-                    && path.extension().and_then(OsStr::to_str) == Some("wasm")
-                {
+                if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
                     Some(path)
                 } else {
                     None
@@ -94,8 +92,7 @@ impl Instrumenter {
             .next()
             .ok_or("🙅 No .wasm file found in target directory")?;
 
-        let specs_path =
-            PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
+        let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
         Ok(InkFilesPath {
             wasm_path,
@@ -221,10 +218,8 @@ impl ContractInstrumenter for Instrumenter {
             contract_cov_manager
         );
 
-        let modified_code =
-            Self::parse_and_visit(&code, contract_cov_manager).map_err(|_| {
-                format!("🙅 Failed to parse and visit code in {}", path.display())
-            })?;
+        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
+            .map_err(|_| format!("🙅 Failed to parse and visit code in {}", path.display()))?;
 
         Self::save_and_format(modified_code, PathBuf::from(path)).map_err(|e| {
             format!(
@@ -294,8 +289,7 @@ mod instrument {
             // borrowing issues
             let mut stmts = std::mem::take(&mut block.stmts);
             for mut stmt in stmts.drain(..) {
-                let line_lit =
-                    LitInt::new(self.line_id.to_string().as_str(), Span::call_site());
+                let line_lit = LitInt::new(self.line_id.to_string().as_str(), Span::call_site());
 
                 self.line_id = self.line_id + 1;
 
@@ -303,8 +297,7 @@ mod instrument {
                     ink::env::debug_println!("COV={}", #line_lit)
                 };
                 // Convert this expression into a statement
-                let pre_stmt: Stmt =
-                    Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
+                let pre_stmt: Stmt = Stmt::Expr(insert_expr, Some(Token![;](Span::call_site())));
                 new_stmts.push(pre_stmt);
                 // Use recursive visitation to handle nested blocks and other
                 // statement types

@@ -159,8 +159,7 @@ pub fn parse_input(
                 {
                     let is_payable: bool = is_message_payable(
                         &Selector::from(
-                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4])
-                                .unwrap(),
+                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4]).unwrap(),
                         ),
                         transcoder.get_mut().unwrap().metadata(),
                     );

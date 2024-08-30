@@ -40,9 +40,7 @@ impl PayloadCrafter {
             if entry.path().extension().map_or(false, |ext| ext == "json") {
                 if let Ok(contents) = fs::read_to_string(entry.path()) {
                     if let Ok(v) = serde_json::from_str::<Value>(&contents) {
-                        if let Ok(spec) =
-                            serde_json::from_value::<Spec>(v["spec"].clone())
-                        {
+                        if let Ok(spec) = serde_json::from_value::<Spec>(v["spec"].clone()) {
                             let selectors = Self::parse_selectors(&spec);
                             all_selectors.extend(selectors);
                         }
@@ -73,8 +71,7 @@ impl PayloadCrafter {
     /// # Arguments
     /// * `json_data`: The JSON specs of the smart-contract
     pub fn extract_invariants(json_data: &str) -> Option<Vec<Selector>> {
-        let data: Value =
-            serde_json::from_str(json_data).expect("JSON was not well-formatted");
+        let data: Value = serde_json::from_str(json_data).expect("JSON was not well-formatted");
 
         Some(
             data["spec"]["messages"]
@@ -245,8 +242,8 @@ mod test {
         }
 
         let hash_two: [u8; 32] = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 2,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 2,
         ];
 
         println!("{:?}", hex::encode(hash_two.encode()));
@@ -257,10 +254,9 @@ mod test {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
 
-        let encoded_bytes = hex::decode(
-            "229b553f9400000000000000000027272727272727272700002727272727272727272727",
-        )
-        .unwrap();
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .unwrap();
         let hex = transcoder.decode_contract_message(&mut &encoded_bytes[..]);
         assert_eq!(
             hex.unwrap().to_string(),

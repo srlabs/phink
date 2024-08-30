@@ -45,9 +45,7 @@ impl CoverageTracker {
         for (i, line) in lines.iter().enumerate() {
             let trimmed = line.trim();
 
-            if let Some(cov_num) =
-                trimmed.strip_prefix("ink::env::debug_println!(\"COV={}\", ")
-            {
+            if let Some(cov_num) = trimmed.strip_prefix("ink::env::debug_println!(\"COV={}\", ") {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {
                         if self.hit_lines.contains(&num) {
@@ -202,9 +200,7 @@ impl CoverageTracker {
 
         let filtered_lines: Vec<&str> = lines
             .into_iter()
-            .filter(|line| {
-                !(line.contains("ink::env::debug_println!") && line.contains("COV="))
-            })
+            .filter(|line| !(line.contains("ink::env::debug_println!") && line.contains("COV=")))
             .collect();
 
         *html = filtered_lines.join("\n");

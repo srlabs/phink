@@ -130,9 +130,7 @@ impl BugManager {
     }
 
     pub fn is_contract_trapped(&self, contract_response: &FullContractResponse) -> bool {
-        if let Err(DispatchError::Module(ModuleError { message, .. })) =
-            contract_response.result
-        {
+        if let Err(DispatchError::Module(ModuleError { message, .. })) = contract_response.result {
             if message == Some("ContractTrapped") {
                 return true;
             }

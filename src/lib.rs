@@ -89,8 +89,7 @@ pub fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
         if var("PHINK_FROM_ZIGGY").is_ok() {
-            Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone()))
-                .unwrap();
+            Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone())).unwrap();
         }
     } else {
         handle_cli();
@@ -140,10 +139,7 @@ fn handle_cli() {
                 .unwrap();
         }
         Commands::Coverage(contract_path) => {
-            CoverageTracker::generate(ZiggyConfig::new(
-                config,
-                contract_path.contract_path,
-            ));
+            CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path));
         }
         Commands::Clean => {
             InstrumentedPath::clean().unwrap();

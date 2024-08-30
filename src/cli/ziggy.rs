@@ -119,8 +119,7 @@ impl ZiggyConfig {
     }
 
     pub fn parse(config_str: String) -> Self {
-        let config: Self =
-            serde_json::from_str(&config_str).expect("❌ Failed to parse config");
+        let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
             println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {}", config_str);
         }

@@ -71,8 +71,7 @@ pub struct ContractBridge {
 }
 
 impl ContractBridge {
-    pub const DEFAULT_GAS_LIMIT: Weight =
-        Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
+    pub const DEFAULT_GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
     pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([1u8; 32]);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink!

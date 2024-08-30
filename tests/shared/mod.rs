@@ -43,8 +43,8 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 /// # Arguments
 ///
 /// * `config`: A `Configuration` struct, the same one used for CLI
-/// * `executed_test`: The function being executed that effectively performs the tests,
-///   i.e functions containing `ensure!`
+/// * `executed_test`: The function being executed that effectively performs the tests, i.e
+///   functions containing `ensure!`
 /// # Examples
 ///
 /// ```
@@ -53,20 +53,11 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 ///     Ok(())
 /// });
 /// ```
-pub fn with_modified_phink_config<F>(
-    config: &Configuration,
-    executed_test: F,
-) -> Result<()>
+pub fn with_modified_phink_config<F>(config: &Configuration, executed_test: F) -> Result<()>
 where
     F: FnOnce() -> Result<()>,
 {
-    let _ = fs::remove_dir_all(
-        &config
-            .instrumented_contract_path
-            .clone()
-            .unwrap_or_default()
-            .path,
-    );
+    try_cleanup_instrumented(config);
     let _ = fs::remove_dir_all(&config.fuzz_output.clone().unwrap_or_default());
 
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
@@ -77,13 +68,7 @@ where
     // We remove the temp config file
     let _ = fs::remove_file(DEFAULT_TEST_PHINK_TOML);
     // We clean the instrumented path
-    let _ = fs::remove_dir_all(
-        &config
-            .instrumented_contract_path
-            .clone()
-            .unwrap_or_default()
-            .path,
-    );
+    try_cleanup_instrumented(config);
     let _ = fs::remove_dir_all(config.fuzz_output.clone().unwrap_or_default());
 
     test_result
@@ -97,10 +82,10 @@ where
 /// # Arguments
 ///
 /// * `config`: A `Configuration` struct, the same one used for CLI
-/// * `timeout`: A timeout where the test would be considered as failed if the conditions
-///   inside `executed_test` couldn't be met (i.e, it couldn't `Ok(())`)
-/// * `executed_test`: The function being executed that effectively performs the tests,
-///   i.e functions containing `ensure`
+/// * `timeout`: A timeout where the test would be considered as failed if the conditions inside
+///   `executed_test` couldn't be met (i.e, it couldn't `Ok(())`)
+/// * `executed_test`: The function being executed that effectively performs the tests, i.e
+///   functions containing `ensure`
 ///
 /// returns: Result<(), Error>
 ///
@@ -121,6 +106,8 @@ pub fn ensure_while_fuzzing<F>(
 where
     F: FnMut() -> Result<()>,
 {
+    try_cleanup_instrumented(config);
+
     // We start the fuzzer
     let mut child = fuzz(
         config
@@ -136,20 +123,46 @@ where
     loop {
         if let Ok(_) = executed_test() {
             child.kill().context("Failed to kill Ziggy")?;
+            try_cleanup_instrumented(config);
             return Ok(());
         }
 
         if start_time.elapsed() > timeout {
             child.kill().context("Failed to kill Ziggy")?;
+            try_cleanup_instrumented(config);
             // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
             return Err(anyhow!(
                 "Couldn't check the assert within the given timeout"
             ));
         }
 
+        // We perform the tests every `1` second
         thread::sleep(Duration::from_secs(1));
     }
 }
+
+/// Try to clean up the path where the instrumented contract is. If it fails, it doesn't matter
+pub fn try_cleanup_instrumented(config: &Configuration) {
+    let _ = fs::remove_dir_all(config.clone().instrumented_contract_path.unwrap().path);
+}
+
+/// Try to clean up the path where the output of the fuzzing campaign is. If it fails, it doesn't
+/// matter
+pub fn try_cleanup_fuzzoutput(config: &Configuration) {
+    let output = config.clone().fuzz_output.unwrap_or_default();
+    match fs::remove_dir_all(&output) {
+        Ok(_) => {
+            println!("Removed {}", output.display())
+        }
+        Err(_) => {
+            println!("**DIDN'T** removed {}", output.display())
+        }
+    };
+}
+
+/// Simple `phink` bin pop from cargo to instrument `contract_path`
+/// ** Important **
+/// This should only be used in test !
 pub fn instrument(contract_path: Sample) {
     let mut cmd = Command::cargo_bin("phink").unwrap();
     let _binding = cmd
@@ -160,6 +173,9 @@ pub fn instrument(contract_path: Sample) {
         .success();
 }
 
+/// Simple `phink` bin pop from cargo to fuzz `path_instrumented_contract`
+/// ** Important **
+/// This should only be used in test !
 pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
     let mut child = NativeCommand::new("cargo")
         .arg("run")
@@ -175,6 +191,7 @@ pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
     child
 }
 
+/// Return `true` if `target` is found in any `*.rs` file of `dir`, otherwise `false`
 pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     fn file_contains_string(file_path: &Path, target: &str) -> bool {
         let mut file = fs::File::open(file_path).expect("Unable to open file");
@@ -202,6 +219,7 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     false
 }
 
+/// A  function to get all entries from the corpus directory
 pub fn get_corpus_files(corpus_path: &PathBuf) -> HashSet<PathBuf> {
     println!("Got corpus files in: {:?}", corpus_path);
     fs::read_dir(corpus_path)

@@ -247,8 +247,7 @@ fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) {
         write!(&mut acc, "\\x{:02X}", b).unwrap();
         acc
     });
-    writeln!(dict_file, "\"{}\"", selector_string)
-        .expect("😅 Failed to write to dict_file");
+    writeln!(dict_file, "\"{}\"", selector_string).expect("😅 Failed to write to dict_file");
 }
 
 fn execute_messages(
@@ -295,8 +294,7 @@ fn check_invariants(
             bug_manager.display_trap(decoded_msgs.messages[0].clone(), response.clone());
         });
 
-    if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin)
-    {
+    if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
         bug_manager.display_invariant(
             all_msg_responses.to_vec(),
             decoded_msgs.clone(),
@@ -320,10 +318,9 @@ mod tests {
                 .expect("Failed to load ContractMessageTranscoder"),
         );
 
-        let encoded_bytes = hex::decode(
-            "229b553f9400000000000000000027272727272727272700002727272727272727272727",
-        )
-        .expect("Failed to decode hex string");
+        let encoded_bytes =
+            hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
+                .expect("Failed to decode hex string");
 
         let hex = transcoder
             .lock()

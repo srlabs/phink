@@ -1,0 +1,42 @@
+
+If you see an error message like `shmget() failed` above, try running the following command:
+
+    cargo-afl afl system-config
+
+Note: You might be prompted to enter your password as root privileges are required and hence sudo is run within this command.
+ironment variable AFL_DEBUG with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_FAST_CAL with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_FINAL_SYNC with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_FORCE_UI with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_FORKSRV_INIT_TMOUT with value 10000000[0m
+[1;92m[+] [0mEnabled environment variable AFL_FUZZER_STATS_UPDATE_INTERVAL with value 10[0m
+[1;92m[+] [0mEnabled environment variable AFL_IGNORE_SEED_PROBLEMS with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_IMPORT_FIRST with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_NO_WARN_INSTABILITY with value 1[0m
+[1;92m[+] [0mEnabled environment variable AFL_TESTCACHE_SIZE with value 100[0m
+[0;36mafl-fuzz++4.21c[0m based on afl by Michal Zalewski and a large online community
+[1;94m[*] [0mDisabling cmplog again because of '-c -'.[0m
+[1;92m[+] [0mAFL++ is maintained by Marc "van Hauser" Heuse, Dominik Maier, Andrea Fioraldi and Heiko "hexcoder" Eißfeldt[0m
+[1;92m[+] [0mAFL++ is open source, get it at https://github.com/AFLplusplus/AFLplusplus[0m
+[1;92m[+] [0mNOTE: AFL++ >= v3 has changed defaults and behaviours - see README.md[0m
+[1;92m[+] [0mEnabled environment variable AFL_DISABLE_TRIM with value 1[0m
+[1;94m[*] [0mGetting to work...[0m
+[1;92m[+] [0mUsing exploration-based constant power schedule (EXPLORE)[0m
+[1;92m[+] [0mEnabled testcache with 100 MB[0m
+[1;92m[+] [0mGenerating fuzz data with a length of min=4 max=1048576[0m
+[1;94m[*] [0mChecking CPU scaling governor...[0m
+[1;93m[!] [1;97mWARNING: [0mCould not check CPU min frequency[0m
+[1;92m[+] [0mLooks like we're not running on a tty, so I'll be a bit less verbose.[0m
+[1;92m[+] [0mYou have 8 CPU cores and 13 runnable tasks (utilization: 162%).[0m
+[1;93m[!] [1;97mWARNING: [0mSystem under apparent load, performance may be spotty.[0m
+[1;94m[*] [0mSetting up output directories...[0m
+[1;94m[*] [0mScanning 'output_test_assert_output_created_when_fuzzing/phink/corpus/'...[0m
+[1;92m[+] [0mLoaded a total of 1 seeds.[0m
+[1;94m[*] [0mCreating hard links for all input files...[0m
+[1;94m[*] [0mValidating target binary...[0m
+[1;92m[+] [0m[1;95mPersistent mode binary detected.[0m
+[1;92m[+] [0m[1;95mDeferred forkserver binary detected.[0m
+[?25h[0m[1;91m
+[-]  SYSTEM ERROR : [0mshmget() failed, try running afl-system-config[1;91m
+    Stop location : [0mafl_shm_init(), src/afl-sharedmem.c:284
+[1;91m       OS message : [0mInvalid argument

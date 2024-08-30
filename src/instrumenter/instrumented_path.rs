@@ -43,10 +43,8 @@ impl InstrumentedPath {
     }
 
     pub fn clean() -> Result<(), io::Error> {
-        let dirs_to_remove = Self::get_dirs_to_remove(
-            Path::new("/tmp"),
-            DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH,
-        )?;
+        let dirs_to_remove =
+            Self::get_dirs_to_remove(Path::new("/tmp"), DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH)?;
 
         if dirs_to_remove.is_empty() {
             println!("❌  No directories found matching the pattern '{}'. There's nothing to be cleaned :)", DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH);
@@ -67,17 +65,12 @@ impl InstrumentedPath {
         Ok(())
     }
 
-    fn get_dirs_to_remove(
-        tmp_dir: &Path,
-        pattern: &str,
-    ) -> Result<Vec<PathBuf>, io::Error> {
+    fn get_dirs_to_remove(tmp_dir: &Path, pattern: &str) -> Result<Vec<PathBuf>, io::Error> {
         Ok(fs::read_dir(tmp_dir)?
             .filter_map(|entry| {
                 let entry = entry.ok()?;
                 let path = entry.path();
-                if path.is_dir()
-                    && path.file_name()?.to_string_lossy().starts_with(pattern)
-                {
+                if path.is_dir() && path.file_name()?.to_string_lossy().starts_with(pattern) {
                     Some(path)
                 } else {
                     None
