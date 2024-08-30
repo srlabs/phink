@@ -9,12 +9,15 @@ mod tests {
         instrument,
         samples::Sample,
         with_modified_phink_config,
+        DEFAULT_TEST_PHINK_TOML,
     };
     use anyhow::ensure;
+    use assert_cmd::Command as CommandAssertCmd;
     use phink_lib::{
         cli::config::Configuration,
         instrumenter::instrumented_path::InstrumentedPath,
     };
+    use predicates::prelude::predicate;
     use std::{
         fs,
         path::PathBuf,
@@ -22,7 +25,7 @@ mod tests {
     use walkdir::WalkDir;
 
     #[test]
-    fn test_instrumentation_multifile_contract() {
+    fn test_instrument_respects_configuration() {
         let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
             "test_instrumentation_multifile_contract_INSTRUMENTED_PATH",
         ));
@@ -61,7 +64,7 @@ mod tests {
     }
 
     #[test]
-    fn test_instrument_respects_configuration() {
+    fn test_instrumentation_multifile_contract() {
         let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
             "path_instrumented_contract_test_instrument_respects_configuration",
         ));
@@ -143,5 +146,19 @@ mod tests {
         });
 
         assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+    }
+
+    #[test]
+    fn test_instrument_help_terminates_correctly() {
+        CommandAssertCmd::cargo_bin("phink")
+            .unwrap()
+            .args(["--config", DEFAULT_TEST_PHINK_TOML])
+            .arg("instrument")
+            .arg(Sample::Dummy.path())
+            .arg("--help")
+            .assert()
+            .stdout(predicate::str::contains(
+                "Usage: phink instrument <CONTRACT_PATH>",
+            ));
     }
 }

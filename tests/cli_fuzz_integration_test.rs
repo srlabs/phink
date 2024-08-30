@@ -49,7 +49,6 @@ mod tests {
             // While fuzzing, let's perform the tests
             ensure!(
                 ensure_while_fuzzing(&config, Duration::from_secs(120), || {
-                    // We check that the output is properly created
                     let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
                     println!("Fuzz output created yet : {:?}", fuzz_created);
                     ensure!(fuzz_created, "Fuzz output directory wasn't created");

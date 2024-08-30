@@ -106,7 +106,8 @@ pub fn ensure_while_fuzzing<F>(
 where
     F: FnMut() -> Result<()>,
 {
-    try_cleanup_instrumented(config);
+    // Before fuzzing, we clean any output that would already exist
+    try_cleanup_fuzzoutput(&config);
 
     // We start the fuzzer
     let mut child = fuzz(
@@ -119,17 +120,20 @@ where
     let start_time = Instant::now();
 
     // When the fuzzer is popped, we check if the test pass. If it does, we kill Ziggy and
-    // we `Ok(())`
+    // we `Ok(())`, we don't need to fuzz furthermore.
     loop {
         if let Ok(_) = executed_test() {
             child.kill().context("Failed to kill Ziggy")?;
-            try_cleanup_instrumented(config);
+            try_cleanup_instrumented(&config);
+            try_cleanup_fuzzoutput(&config);
             return Ok(());
         }
 
         if start_time.elapsed() > timeout {
             child.kill().context("Failed to kill Ziggy")?;
-            try_cleanup_instrumented(config);
+            try_cleanup_instrumented(&config);
+            try_cleanup_fuzzoutput(&config);
+
             // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
             return Err(anyhow!(
                 "Couldn't check the assert within the given timeout"
