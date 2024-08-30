@@ -148,7 +148,6 @@ mod test {
         },
         fuzzer::parser::parse_input,
     };
-    use assert_cmd::Command;
     use contract_transcode::ContractMessageTranscoder;
     use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
@@ -158,7 +157,21 @@ mod test {
             Path,
             PathBuf,
         },
+        process::Command,
+        sync::Once,
     };
+
+    static BUILD: Once = Once::new();
+
+    pub fn build() {
+        BUILD.call_once(|| {
+            let status = Command::new("bash")
+                .current_dir("sample") // Change to the 'sample' directory
+                .arg("build.sh")
+                .status()
+                .expect("failed to execute process");
+        });
+    }
 
     #[test]
     fn fetch_good_invariants() {
@@ -175,14 +188,10 @@ mod test {
         assert_eq!(extracted, "2093daa4 ");
     }
 
-    fn build() {
-        let bash = Command::new("bash ./sample/build.sh");
-        todo!()
-        // bash.
-    }
-
     #[test]
     fn fetch_correct_selectors() {
+        build();
+
         let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns"))
             .iter()
             .map(|x| hex::encode(x) + " ")
@@ -197,6 +206,8 @@ mod test {
 
     #[test]
     fn fetch_correct_dns_constructor() {
+        build();
+
         let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
 
@@ -206,6 +217,8 @@ mod test {
 
     #[test]
     fn encode_works_good() {
+        build();
+
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
         let constructor = "set_address";
@@ -222,6 +235,8 @@ mod test {
 
     #[test]
     fn parse_one_input_with_two_messages() {
+        build();
+
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
 
         let encoded_bytes = hex::decode(
@@ -262,6 +277,8 @@ mod test {
 
     #[test]
     fn decode_works_good() {
+        build();
+
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
 
