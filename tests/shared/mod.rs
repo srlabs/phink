@@ -12,6 +12,7 @@ use phink_lib::{
     instrumenter::instrumented_path::InstrumentedPath,
 };
 
+use assert_cmd::assert::Assert;
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -57,7 +58,7 @@ where
     F: FnOnce() -> Result<()>,
 {
     try_cleanup_instrumented(config);
-    try_cleanup_fuzzoutput(&config);
+    try_cleanup_fuzzoutput(config);
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
     // Executing the actual test
@@ -67,7 +68,7 @@ where
     let _ = fs::remove_file(DEFAULT_TEST_PHINK_TOML);
     // We clean the instrumented path
     try_cleanup_instrumented(config);
-    try_cleanup_fuzzoutput(&config);
+    try_cleanup_fuzzoutput(config);
 
     test_result
 }
@@ -118,7 +119,7 @@ where
     // we `Ok(())`, we don't need to fuzz furthermore.
     loop {
         let test_result = executed_test();
-        if let Ok(_) = test_result {
+        if test_result.is_ok() {
             child.kill().context("Failed to kill Ziggy")?;
             return Ok(());
         }
@@ -136,7 +137,7 @@ where
     }
 }
 
-pub fn afl_log_didnt_fail(output: &PathBuf) -> bool {
+pub fn afl_log_didnt_fail(output: &Path) -> bool {
     let log_path = output.join("logs").join("afl.log");
 
     match fs::read_to_string(log_path) {
@@ -170,21 +171,20 @@ pub fn try_cleanup_fuzzoutput(config: &Configuration) {
 /// Simple `phink` bin pop from cargo to instrument `contract_path`
 /// ** Important **
 /// This should only be used in test !
-pub fn instrument(contract_path: Sample) {
+pub fn instrument(contract_path: Sample) -> Assert {
     let mut cmd = Command::cargo_bin("phink").unwrap();
-    let _binding = cmd
-        .args(["--config", DEFAULT_TEST_PHINK_TOML])
+    cmd.args(["--config", DEFAULT_TEST_PHINK_TOML])
         .arg("instrument")
         .arg(contract_path.path())
         .assert()
-        .success();
+        .success()
 }
 
 /// Simple `phink` bin pop from cargo to fuzz `path_instrumented_contract`
 /// ** Important **
 /// This should only be used in test !
 pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
-    let mut child = NativeCommand::new("cargo")
+    let child = NativeCommand::new("cargo")
         .arg("run")
         .arg("--")
         .args(["--config", DEFAULT_TEST_PHINK_TOML])
@@ -216,10 +216,9 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
             if find_string_in_rs_files(&path, target) {
                 return true;
             }
-        } else if path.extension() == Some(OsStr::new("rs")) {
-            if file_contains_string(&path, target) {
-                return true;
-            }
+        } else if path.extension() == Some(OsStr::new("rs")) && file_contains_string(&path, target)
+        {
+            return true;
         }
     }
 

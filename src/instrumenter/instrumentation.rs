@@ -17,10 +17,7 @@ use std::{
 
 use crate::{
     cli::ziggy::ZiggyConfig,
-    instrumenter::{
-        instrumentation::instrument::ContractCovUpdater,
-        instrumented_path::InstrumentedPath,
-    },
+    instrumenter::instrumentation::instrument::ContractCovUpdater,
 };
 use quote::quote;
 use syn::{
@@ -141,12 +138,11 @@ impl ContractForker for Instrumenter {
             .config
             .instrumented_contract_path
             .clone()
-            .unwrap_or(InstrumentedPath::default())
+            .unwrap_or_default()
             .path;
 
         println!("🏗️ Creating new directory: {:?}", new_dir);
-        fs::create_dir_all(&new_dir)
-            .map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
+        fs::create_dir_all(new_dir).map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
 
         println!(
             "📁 Starting to copy files from {:?}",
@@ -291,7 +287,7 @@ mod instrument {
             for mut stmt in stmts.drain(..) {
                 let line_lit = LitInt::new(self.line_id.to_string().as_str(), Span::call_site());
 
-                self.line_id = self.line_id + 1;
+                self.line_id += 1;
 
                 let insert_expr: Expr = parse_quote! {
                     ink::env::debug_println!("COV={}", #line_lit)

@@ -17,7 +17,7 @@ use std::{
 
 pub type CoverageTrace = Vec<u8>;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct InputCoverage {
     /// One input might contains multiple messages
     messages_coverage: Vec<MessageCoverage>,
@@ -44,13 +44,6 @@ impl Debug for InputCoverage {
 }
 
 impl InputCoverage {
-    pub fn new() -> Self {
-        InputCoverage {
-            messages_coverage: Vec::new(),
-            raw_from_debug: Vec::new(),
-        }
-    }
-
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = Self::parse_coverage(coverage);
         self.raw_from_debug.push(coverage.clone());

@@ -163,7 +163,7 @@ impl FuzzerEngine for Fuzzer {
         let mut chain = BasicExternalities::new(client.setup.genesis.clone());
         chain.execute_with(|| <Fuzzer as FuzzerEngine>::timestamp(0));
 
-        let mut coverage = InputCoverage::new();
+        let mut coverage: InputCoverage = Default::default();
 
         let all_msg_responses =
             execute_messages(&client.clone(), &decoded_msgs, &mut chain, &mut coverage);
@@ -252,7 +252,7 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
-    let file_path = PathBuf::from(corpus_dir).join(format!("selector_{}.bin", index));
+    let file_path = corpus_dir.join(format!("selector_{}.bin", index));
     fs::write(file_path, selector)
 }
 

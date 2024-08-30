@@ -12,7 +12,6 @@ mod tests {
         get_corpus_files,
         instrument,
         samples::Sample,
-        try_cleanup_fuzzoutput,
         with_modified_phink_config,
     };
     use anyhow::{
@@ -61,7 +60,7 @@ mod tests {
 
                     ensure!(
                         initial_corpus_len > 0,
-                        "Corpus directory is empty after creation: {:?}",
+                        "Corpus directory is empty after creation: {:?} files",
                         initial_corpus_len
                     );
 
@@ -132,7 +131,6 @@ mod tests {
 
         with_modified_phink_config(&config, || {
             instrument(Sample::Dummy);
-            let phink_output = fuzz_output.join("phink");
 
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();

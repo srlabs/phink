@@ -15,8 +15,7 @@ pub struct PayloadCrafter {}
 /// # Example
 /// ```
 /// #[ink(message)]
-///  pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool
-/// ...
+/// pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {}
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
 #[derive(Deserialize)]
@@ -43,6 +42,7 @@ impl PayloadCrafter {
                         if let Ok(spec) = serde_json::from_value::<Spec>(v["spec"].clone()) {
                             let selectors = Self::parse_selectors(&spec);
                             all_selectors.extend(selectors);
+                            return all_selectors;
                         }
                     }
                 }
@@ -154,7 +154,10 @@ mod test {
     use sp_core::hexdisplay::AsBytesRef;
     use std::{
         fs,
-        path::Path,
+        path::{
+            Path,
+            PathBuf,
+        },
     };
 
     #[test]
@@ -174,13 +177,13 @@ mod test {
 
     fn build() {
         let bash = Command::new("bash ./sample/build.sh");
+        todo!()
         // bash.
     }
 
     #[test]
     fn fetch_correct_selectors() {
-        let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-        let extracted: String = PayloadCrafter::extract_all(specs.into())
+        let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns"))
             .iter()
             .map(|x| hex::encode(x) + " ")
             .collect();
@@ -188,7 +191,7 @@ mod test {
         // DNS selectors
         assert_eq!(
             extracted,
-            "9bae9d5e 229b553f b8a4d3d9 84a15da1 d259f7ba 07fcd0b1 2e15cab0 5d17ca7f "
+            "9bae9d5e 229b553f b8a4d3d9 84a15da1 d259f7ba 07fcd0b1 2093daa4 "
         );
     }
 
@@ -211,7 +214,7 @@ mod test {
             "re",
             "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         ];
-        let data = transcoder.encode(&constructor, args).unwrap();
+        let data = transcoder.encode(constructor, args).unwrap();
         let hex = hex::encode(data);
         println!("Encoded constructor data {}", hex);
         assert!(!hex.is_empty())

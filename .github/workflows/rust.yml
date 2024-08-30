@@ -39,7 +39,8 @@ jobs:
       - name: Run afl-system-config
         run: |
           curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
-          chmod +x afl-system-config.sh && bash afl-system-config.sh
+          chmod +x afl-system-config.sh
+          bash afl-system-config.sh
 
       - name: Run rustfmt checks
         run: cargo fmt -- --check
@@ -55,3 +56,6 @@ jobs:
 
       - name: Run integration test for fuzzing
         run: cargo test --release --test cli_fuzz_integration_test
+
+      - name: Run unit test
+        run: cargo test

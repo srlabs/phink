@@ -163,6 +163,6 @@ impl Configuration {
         // Currently, TOML & Serde don't handle parsing `u128` 🤡
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)
-        value.and_then(|s| s.parse::<u128>().ok()).map(|v| v)
+        value.and_then(|s| s.parse::<u128>().ok())
     }
 }

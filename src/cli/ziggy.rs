@@ -24,8 +24,6 @@ use std::{
         Stdio,
     },
     sync::mpsc,
-    thread,
-    time::Duration,
 };
 
 use crate::cli::config::{
@@ -93,8 +91,8 @@ impl App {
         }
     }
 }
-pub const AFL_DEBUG: &'static str = "1";
-pub const AFL_FORKSRV_INIT_TMOUT: &'static str = "10000000";
+pub const AFL_DEBUG: &str = "1";
+pub const AFL_FORKSRV_INIT_TMOUT: &str = "10000000";
 
 #[derive(Copy, Clone, Debug)]
 pub enum ZiggyCommand {
@@ -259,9 +257,8 @@ impl ZiggyConfig {
             .path(CoverageTracePath);
 
         // We clean up the old one first
-        match fs::remove_file(covpath) {
-            Ok(_) => println!("💨 Removed previous coverage file"),
-            Err(_) => {}
+        if fs::remove_file(covpath).is_ok() {
+            println!("💨 Removed previous coverage file")
         }
 
         self.start(
