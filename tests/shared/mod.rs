@@ -16,7 +16,6 @@ use std::{
     collections::HashSet,
     ffi::OsStr,
     fs,
-    io,
     io::Read,
     path::{
         Path,

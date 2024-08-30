@@ -37,7 +37,9 @@ jobs:
           cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
 
       - name: Run afl-system-config
-        run: sudo cargo-afl afl system-config
+        run: |
+          curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
+          chmod +x afl-system-config.sh && bash afl-system-config.sh
 
       - name: Run rustfmt checks
         run: cargo fmt -- --check

@@ -74,6 +74,7 @@ mod tests {
                         afl_log_didnt_fail(&config),
                         "'logs/afl.log' didn't return a successfull backlog "
                     );
+
                     // We don't use allowlist for macos
                     if cfg!(not(target_os = "macos")) {
                         ensure!(

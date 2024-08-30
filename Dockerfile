@@ -31,10 +31,12 @@ RUN rustup default nightly-2024-08-13 \
 WORKDIR /phink
 RUN git clone https://github.com/srlabs/phink . \
     && cargo update \
-    && cargo afl config --build --plugins --verbose --force \
     && cargo build --release
 
-RUN cargo afl system-config
+RUN cargo afl config --build --plugins --verbose --force
+
+RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
+RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
 
 ENTRYPOINT ["phink"]
 
