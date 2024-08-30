@@ -17,7 +17,7 @@ package-lock.json
 just_a_random_path/
 phink_temp_test.toml
 instrumented_output/
-output/
+output*/
 
 # Compilation targets
 target
