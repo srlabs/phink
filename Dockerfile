@@ -25,7 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set up Rust
 RUN rustup default nightly-2024-08-13 \
     && rustup component add rust-src \
-    && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
+    && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract \
+    && rustup component add clippy
 
 # Clone and build the project
 WORKDIR /phink
