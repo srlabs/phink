@@ -9,27 +9,30 @@
 </div>
 
 <br>
+
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
+If you have any question, would like to share feedback, discuss features, and connect with other ink! developers, join
+our [Discord community](https://discord.gg/gAahQMGE)
 
 > ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
 > and feedback are welcome!
 
-If you have any question, would like to share feedback, discuss features, and connect with other ink! developers, join
-our [Discord community](https://discord.gg/gAahQMGE)
-
 ## Install
 
-### Manual Installation
+### Building from source
 
 If you prefer to install Phink manually, follow these steps:
 
 ```bash
-cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
-cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
 git clone https://github.com/kevin-valerio/phink
 cd phink/
+cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
+cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
+sudo cargo-afl afl system-config
+cargo build --release
+./target/release/phink --help
 ```
 
 ### Using Docker
@@ -40,7 +43,7 @@ instructions are available in [README.Docker.md](README.Docker.md).
 To build the Docker image:
 
 ```bash
-docker build -t phink .docker/
+docker build -t phink .
 ```
 
 ## Usage

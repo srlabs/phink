@@ -1,3 +1,7 @@
+use crate::cli::config::{
+    PFiles::CoverageTracePath,
+    PhinkFiles,
+};
 use std::{
     collections::HashSet,
     fmt,
@@ -8,10 +12,10 @@ use std::{
     fs::OpenOptions,
     hint::black_box,
     io::Write,
+    path::PathBuf,
 };
 
 pub type CoverageTrace = Vec<u8>;
-pub const COVERAGE_PATH: &str = "./output/phink/traces.cov";
 
 #[derive(Clone)]
 pub struct InputCoverage {
@@ -79,7 +83,7 @@ impl InputCoverage {
         cleaned_str.into_bytes()
     }
 
-    pub fn save(&self) -> std::io::Result<()> {
+    pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
         // Create a HashSet to store unique coverage IDs
         let mut unique_cov_ids = HashSet::new();
 
@@ -100,7 +104,7 @@ impl InputCoverage {
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
-            .open(COVERAGE_PATH)?;
+            .open(PhinkFiles::new(output).path(CoverageTracePath))?;
 
         // Write each unique ID to the file, one per line
         writeln!(file, "{}", trace_strings.join("\n"))?;

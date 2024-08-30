@@ -62,8 +62,8 @@ pub struct Configuration {
     /// instrument mycontract` By default, we create a random folder in
     /// `/tmp/ink_fuzzed_XXXX`
     pub instrumented_contract_path: Option<InstrumentedPath>,
-    /// Path where Ziggy will drop everything (logs, corpus, etc). If None, it'll be
-    /// output/ by default
+    /// Path where Ziggy will drop everything (logs, corpus, etc). If `None`, it'll be
+    /// `output/` by default
     pub fuzz_output: Option<PathBuf>,
 }
 
@@ -92,6 +92,31 @@ pub enum OriginFuzzingOption {
     EnableOriginFuzzing,
     #[default]
     DisableOriginFuzzing,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum PFiles {
+    CoverageTracePath,
+    AllowListPath,
+    DictPath,
+    CorpusPath,
+}
+pub struct PhinkFiles {
+    output: PathBuf,
+}
+impl PhinkFiles {
+    pub fn new(output: PathBuf) -> Self {
+        Self { output }
+    }
+    pub fn path(&self, file: PFiles) -> PathBuf {
+        const PHINK_PATH: &str = "phink";
+        match file {
+            PFiles::CoverageTracePath => self.output.join(PHINK_PATH).join("traces.cov"),
+            PFiles::AllowListPath => self.output.join(PHINK_PATH).join("allowlist.txt"),
+            PFiles::DictPath => self.output.join(PHINK_PATH).join("selectors.dict"),
+            PFiles::CorpusPath => self.output.join(PHINK_PATH).join("corpus"),
+        }
+    }
 }
 
 impl TryFrom<String> for Configuration {

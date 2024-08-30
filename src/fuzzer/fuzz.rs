@@ -17,7 +17,15 @@ use sp_core::hexdisplay::AsBytesRef;
 
 use crate::{
     cli::{
-        config::Configuration,
+        config::{
+            Configuration,
+            PFiles::{
+                CorpusPath,
+                CoverageTracePath,
+                DictPath,
+            },
+            PhinkFiles,
+        },
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -45,8 +53,6 @@ use crate::{
     },
 };
 
-pub const CORPUS_DIR: &str = "./output/phink/corpus";
-pub const DICT_FILE: &str = "./output/phink/selectors.dict";
 pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages.
 
 pub enum FuzzingMode {
@@ -80,11 +86,11 @@ impl Fuzzer {
                 fuzzer.fuzz();
             }
             ExecuteOneInput(seed_path) => {
-                // We also reset the cov map
-                match fs::remove_file(crate::cover::coverage::COVERAGE_PATH) {
-                    Ok(_) => println!("💨 Removed previous coverage file"),
-                    Err(_) => {}
-                }
+                let covpath =
+                    PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
+                        .path(CoverageTracePath);
+                // We also reset the cov map, doesn't matter if it fails
+                let _ = fs::remove_file(covpath);
                 fuzzer.exec_seed(seed_path);
             }
         }
@@ -92,14 +98,17 @@ impl Fuzzer {
         Ok(())
     }
 
-    fn build_corpus_and_dict(selectors: &[Selector]) -> io::Result<()> {
-        fs::create_dir_all(CORPUS_DIR)?;
-        let mut dict_file = fs::File::create(DICT_FILE)?;
+    fn build_corpus_and_dict(self, selectors: &[Selector]) -> io::Result<()> {
+        let phink_file =
+            PhinkFiles::new(self.fuzzing_config.fuzz_output.clone().unwrap_or_default());
+
+        fs::create_dir_all(phink_file.path(CorpusPath))?;
+        let mut dict_file = fs::File::create(phink_file.path(DictPath))?;
 
         write_dict_header(&mut dict_file)?;
 
         for (i, selector) in selectors.iter().enumerate() {
-            write_corpus_file(i, selector)?;
+            write_corpus_file(i, selector, phink_file.path(CorpusPath))?;
             write_dict_entry(&mut dict_file, selector);
         }
 
@@ -174,7 +183,9 @@ impl FuzzerEngine for Fuzzer {
         #[cfg(not(fuzzing))]
         {
             println!("[🚧UPDATE] Adding to the coverage file...");
-            coverage.save().expect("🙅 Cannot save the coverage");
+            coverage
+                .save(client.fuzzing_config.fuzz_output.unwrap_or_default())
+                .expect("🙅 Cannot save the coverage");
 
             <Fuzzer as FuzzerEngine>::pretty_print(all_msg_responses, decoded_msgs);
         }
@@ -196,31 +207,35 @@ impl FuzzerEngine for Fuzzer {
 }
 
 fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager) {
+    let contract_bridge = fuzzer.setup.clone();
     let transcoder_loader = Mutex::new(
-        ContractMessageTranscoder::load(Path::new(&fuzzer.setup.path_to_specs))
+        ContractMessageTranscoder::load(Path::new(&contract_bridge.path_to_specs))
             .expect("🙅 Failed to load `ContractMessageTranscoder`"),
     );
 
-    let specs = &fuzzer.setup.json_specs;
-    let selectors = PayloadCrafter::extract_all(fuzzer.contract_path);
-    let invariants = PayloadCrafter::extract_invariants(specs)
+    let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
         .expect("🙅 No invariants found, check your contract");
 
-    let selectors_without_invariants: Vec<Selector> = selectors
-        .into_iter()
-        .filter(|s| !invariants.contains(s))
-        .collect();
+    let selectors_without_invariants: Vec<Selector> =
+        PayloadCrafter::extract_all(fuzzer.contract_path.clone())
+            .into_iter()
+            .filter(|s| !invariants.contains(s))
+            .collect();
 
-    let invariant_manager =
-        BugManager::from(invariants, fuzzer.setup.clone(), fuzzer.fuzzing_config);
+    let invariant_manager = BugManager::new(
+        invariants,
+        contract_bridge.clone(),
+        fuzzer.fuzzing_config.clone(),
+    );
 
-    Fuzzer::build_corpus_and_dict(&selectors_without_invariants)
+    fuzzer
+        .build_corpus_and_dict(&selectors_without_invariants)
         .expect("🙅 Failed to create initial corpus");
 
     println!(
         "\n🚀  Now fuzzing `{}` ({})!\n",
-        fuzzer.setup.path_to_specs.as_os_str().to_str().unwrap(),
-        fuzzer.setup.contract_address
+        &contract_bridge.path_to_specs.as_os_str().to_str().unwrap(),
+        &contract_bridge.contract_address
     );
 
     (transcoder_loader, invariant_manager)
@@ -236,8 +251,8 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
     writeln!(dict_file, "delimiter=\"\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\"")
 }
 
-fn write_corpus_file(index: usize, selector: &Selector) -> io::Result<()> {
-    let file_path = PathBuf::from(CORPUS_DIR).join(format!("selector_{}.bin", index));
+fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
+    let file_path = PathBuf::from(corpus_dir).join(format!("selector_{}.bin", index));
     fs::write(file_path, selector)
 }
 

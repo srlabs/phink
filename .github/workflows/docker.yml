@@ -1,0 +1,26 @@
+name: Docker build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_TEST_THREADS: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t phink .
+
+      - name: Run Docker Phink with --help
+        run: docker run --rm phink --help  #just checking if phink works properly
+
+      # TODO: `docker run` for tests

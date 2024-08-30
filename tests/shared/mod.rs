@@ -58,8 +58,7 @@ where
     F: FnOnce() -> Result<()>,
 {
     try_cleanup_instrumented(config);
-    let _ = fs::remove_dir_all(&config.fuzz_output.clone().unwrap_or_default());
-
+    try_cleanup_fuzzoutput(&config);
     config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
 
     // Executing the actual test
@@ -69,7 +68,7 @@ where
     let _ = fs::remove_file(DEFAULT_TEST_PHINK_TOML);
     // We clean the instrumented path
     try_cleanup_instrumented(config);
-    let _ = fs::remove_dir_all(config.fuzz_output.clone().unwrap_or_default());
+    try_cleanup_fuzzoutput(&config);
 
     test_result
 }
@@ -106,9 +105,6 @@ pub fn ensure_while_fuzzing<F>(
 where
     F: FnMut() -> Result<()>,
 {
-    // Before fuzzing, we clean any output that would already exist
-    try_cleanup_fuzzoutput(&config);
-
     // We start the fuzzer
     let mut child = fuzz(
         config
@@ -122,26 +118,44 @@ where
     // When the fuzzer is popped, we check if the test pass. If it does, we kill Ziggy and
     // we `Ok(())`, we don't need to fuzz furthermore.
     loop {
-        if let Ok(_) = executed_test() {
+        let test_result = executed_test();
+        if let Ok(_) = test_result {
             child.kill().context("Failed to kill Ziggy")?;
-            try_cleanup_instrumented(&config);
-            try_cleanup_fuzzoutput(&config);
             return Ok(());
         }
 
         if start_time.elapsed() > timeout {
             child.kill().context("Failed to kill Ziggy")?;
-            try_cleanup_instrumented(&config);
-            try_cleanup_fuzzoutput(&config);
-
             // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
             return Err(anyhow!(
-                "Couldn't check the assert within the given timeout"
+                "Couldn't check the assert within the given timeout. Here is the latest error we've got: {:?}", test_result.unwrap_err()
             ));
         }
 
         // We perform the tests every `1` second
         thread::sleep(Duration::from_secs(1));
+    }
+}
+
+pub fn afl_log_didnt_fail(conf: &Configuration) -> bool {
+    let log_path = conf
+        .clone()
+        .fuzz_output
+        .unwrap_or_default()
+        .join("phink")
+        .join("logs")
+        .join("afl.log");
+
+    match fs::read_to_string(log_path) {
+        Ok(content) => {
+            // this is a string that is present in AFL dashboard
+            if content.contains("findings in depth") {
+                true
+            } else {
+                false
+            }
+        }
+        Err(_) => false,
     }
 }
 
@@ -223,12 +237,15 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     false
 }
 
-/// A  function to get all entries from the corpus directory
-pub fn get_corpus_files(corpus_path: &PathBuf) -> HashSet<PathBuf> {
-    println!("Got corpus files in: {:?}", corpus_path);
-    fs::read_dir(corpus_path)
-        .unwrap()
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .collect()
+/// A function to get all entries from the corpus directory
+pub fn get_corpus_files(corpus_path: &PathBuf) -> Result<HashSet<PathBuf>> {
+    println!(
+        "Got corpus files in: {:?}",
+        corpus_path.canonicalize()?.to_str().unwrap()
+    );
+    let corpus_files = fs::read_dir(corpus_path)?
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .collect::<HashSet<PathBuf>>();
+
+    Ok(corpus_files)
 }

@@ -37,7 +37,7 @@ pub struct BugManager {
 }
 
 impl BugManager {
-    pub fn from(
+    pub fn new(
         invariant_selectors: Vec<Selector>,
         contract_bridge: ContractBridge,
         configuration: Configuration,

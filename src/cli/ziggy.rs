@@ -1,10 +1,6 @@
 use crate::{
     cli::config::Configuration,
-    cover::coverage::COVERAGE_PATH,
-    fuzzer::{
-        fuzz::DICT_FILE,
-        parser::MIN_SEED_LEN,
-    },
+    fuzzer::parser::MIN_SEED_LEN,
 };
 
 use serde_derive::{
@@ -15,10 +11,7 @@ use std::{
     fs,
     fs::File,
     io::Write,
-    path::{
-        Path,
-        PathBuf,
-    },
+    path::PathBuf,
 };
 
 use std::{
@@ -35,6 +28,14 @@ use std::{
     time::Duration,
 };
 
+use crate::cli::config::{
+    PFiles::{
+        AllowListPath,
+        CoverageTracePath,
+        DictPath,
+    },
+    PhinkFiles,
+};
 use crossterm::{
     event::{
         self,
@@ -92,7 +93,10 @@ impl App {
         }
     }
 }
+pub const AFL_DEBUG: &'static str = "1";
+pub const AFL_FORKSRV_INIT_TMOUT: &'static str = "10000000";
 
+#[derive(Copy, Clone, Debug)]
 pub enum ZiggyCommand {
     Run,
     Cover,
@@ -107,10 +111,6 @@ pub struct ZiggyConfig {
 }
 
 impl ZiggyConfig {
-    pub const ALLOWLIST_PATH: &'static str = "./output/phink/allowlist.txt";
-    pub const AFL_DEBUG: &'static str = "1";
-    pub const AFL_FORKSRV_INIT_TMOUT: &'static str = "10000000";
-
     pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
         Self {
             config,
@@ -128,18 +128,30 @@ impl ZiggyConfig {
 
     /// This function executes `cargo ziggy 'command' 'args'`
     fn start(
+        &self,
         command: ZiggyCommand,
         args: Vec<String>,
         env: Vec<(String, String)>,
     ) -> io::Result<()> {
-        let command_arg = Self::command_to_arg(&command)?;
+        let command_arg: String = match command {
+            ZiggyCommand::Run => "run",
+            ZiggyCommand::Cover => "cover",
+            ZiggyCommand::Fuzz => "fuzz",
+            ZiggyCommand::Build => {
+                self.build_llvm_allowlist()?;
+                "build"
+            }
+        }
+        .parse()
+        .unwrap();
+
         let mut binding = Command::new("cargo");
         let mut command_builder = binding
             .arg("ziggy")
             .arg(command_arg)
             .env("PHINK_FROM_ZIGGY", "1")
-            .env("AFL_FORKSRV_INIT_TMOUT", Self::AFL_FORKSRV_INIT_TMOUT)
-            .env("AFL_DEBUG", Self::AFL_DEBUG)
+            .env("AFL_FORKSRV_INIT_TMOUT", AFL_FORKSRV_INIT_TMOUT)
+            .env("AFL_DEBUG", AFL_DEBUG)
             .stdout(Stdio::null())
             .stderr(Stdio::null());
 
@@ -147,12 +159,12 @@ impl ZiggyConfig {
         // See https://github.com/rust-lang/rust/issues/127573
         // See https://github.com/rust-lang/rust/issues/127577
         if cfg!(not(target_os = "macos")) {
+            let allowlist = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
+                .path(AllowListPath);
+
             command_builder = command_builder.env(
                 "AFL_LLVM_ALLOWLIST",
-                Path::new(Self::ALLOWLIST_PATH)
-                    .canonicalize()?
-                    .to_str()
-                    .unwrap(),
+                allowlist.canonicalize()?.to_str().unwrap(),
             );
         }
 
@@ -191,43 +203,34 @@ impl ZiggyConfig {
         .block(Block::default().borders(Borders::ALL).title("Ziggy Output"));
         f.render_widget(ziggy_output, chunks[1]);
     }
-    fn command_to_arg(command: &ZiggyCommand) -> Result<String, io::Error> {
-        let command_arg = match command {
-            ZiggyCommand::Run => "run",
-            ZiggyCommand::Cover => "cover",
-            ZiggyCommand::Fuzz => "fuzz",
-            ZiggyCommand::Build => {
-                Self::build_llvm_allowlist()?;
-                "build"
-            }
-        };
-        Ok(command_arg.parse().unwrap())
-    }
 
     pub fn ziggy_fuzz(&self) -> io::Result<()> {
+        let fuzzoutput = &self.config.fuzz_output;
+        let dict = PhinkFiles::new(fuzzoutput.clone().unwrap_or_default()).path(DictPath);
+
         let build_args = if !self.config.use_honggfuzz {
             vec!["--no-honggfuzz".parse().unwrap()]
         } else {
             vec!["".parse().unwrap()]
         };
 
-        Self::start(ZiggyCommand::Build, build_args, vec![])?;
+        self.start(ZiggyCommand::Build, build_args, vec![])?;
 
         println!("🏗️ Ziggy Build completed");
 
         let mut fuzzing_args = vec![
             format!("--jobs={}", self.config.cores.unwrap_or_default()),
-            format!("--dict={}", DICT_FILE),
+            format!("--dict={}", dict.to_str().unwrap()),
             format!("--minlength={}", MIN_SEED_LEN),
         ];
         if !self.config.use_honggfuzz {
             fuzzing_args.push("--no-honggfuzz".parse().unwrap())
         }
 
-        if self.config.fuzz_output.is_some() {
+        if fuzzoutput.is_some() {
             fuzzing_args.push(format!(
                 "--ziggy-output={}",
-                self.config.fuzz_output.clone().unwrap().to_str().unwrap()
+                fuzzoutput.clone().unwrap().to_str().unwrap()
             ))
         }
 
@@ -236,11 +239,11 @@ impl ZiggyConfig {
             serde_json::to_string(self)?,
         )];
 
-        Self::start(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
+        self.start(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
     }
 
     pub fn ziggy_cover(&self) -> io::Result<()> {
-        Self::start(
+        self.start(
             ZiggyCommand::Cover,
             vec![],
             vec![(
@@ -252,13 +255,16 @@ impl ZiggyConfig {
     }
 
     pub fn ziggy_run(&self) -> io::Result<()> {
+        let covpath = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
+            .path(CoverageTracePath);
+
         // We clean up the old one first
-        match fs::remove_file(COVERAGE_PATH) {
+        match fs::remove_file(covpath) {
             Ok(_) => println!("💨 Removed previous coverage file"),
             Err(_) => {}
         }
 
-        Self::start(
+        self.start(
             ZiggyCommand::Run,
             vec![],
             vec![(
@@ -270,16 +276,17 @@ impl ZiggyConfig {
     }
 
     /// Builds the LLVM allowlist if it doesn't already exist.
-    fn build_llvm_allowlist() -> Result<(), io::Error> {
-        let path = Path::new(Self::ALLOWLIST_PATH);
+    fn build_llvm_allowlist(&self) -> io::Result<()> {
+        let allowlist_path = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
+            .path(AllowListPath);
 
-        if path.exists() {
+        if allowlist_path.exists() {
             println!("❗ AFL_LLVM_ALLOWLIST already exists... skipping");
             return Ok(());
         }
 
-        fs::create_dir_all(path.parent().unwrap())?;
-        let mut allowlist_file = File::create(path)?;
+        fs::create_dir_all(allowlist_path.parent().unwrap())?;
+        let mut allowlist_file = File::create(allowlist_path)?;
 
         let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
         for func in &functions {

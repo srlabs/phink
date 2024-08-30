@@ -1,8 +1,9 @@
-use crate::{
-    cli::ziggy::ZiggyConfig,
-    cover::coverage::COVERAGE_PATH,
-};
+use crate::cli::ziggy::ZiggyConfig;
 
+use crate::cli::config::{
+    PFiles::CoverageTracePath,
+    PhinkFiles,
+};
 use std::{
     collections::{
         HashMap,
@@ -162,7 +163,10 @@ impl CoverageTracker {
     }
 
     pub fn generate(config: ZiggyConfig) {
-        let mut coverage_trace = match File::open(COVERAGE_PATH) {
+        let cov_trace_path = PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
+            .path(CoverageTracePath);
+
+        let mut coverage_trace = match File::open(cov_trace_path) {
             Ok(file) => file,
             Err(_) => {
                 println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");

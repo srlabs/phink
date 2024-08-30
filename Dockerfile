@@ -29,28 +29,13 @@ RUN rustup default nightly-2024-08-13 \
 
 # Clone and build the project
 WORKDIR /phink
-RUN git clone https://github.com/kevin-valerio/phink . \
+RUN git clone https://github.com/srlabs/phink . \
     && cargo update \
     && cargo afl config --build --plugins --verbose --force \
     && cargo build --release
 
-# Runtime stage
-FROM debian:bookworm-slim
+RUN cargo afl system-config
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy the built binary and necessary files from the builder stage
-COPY --from=builder /phink/target/release/phink /usr/local/bin/phink
-COPY --from=builder /phink/phink.toml /phink/phink.toml
-COPY --from=builder /phink/sample /phink/sample
-
-WORKDIR /phink
-
-# Set the entrypoint
 ENTRYPOINT ["phink"]
 
 # Default command: instrument a contract

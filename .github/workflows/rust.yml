@@ -1,4 +1,4 @@
-name: Rust (fmt, test, build)
+name: Rust (build, integration tests, formating)
 
 on:
   push:
@@ -15,36 +15,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install LLVM and Clang
-      run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-        sudo apt-get update
-        sudo apt-get install -y llvm-19 llvm-19-dev clang-19 libclang-19-dev
+      - name: Install LLVM and Clang
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y llvm-19 llvm-19-dev clang-19 libclang-19-dev
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: nightly-2024-08-13
-        components: rustfmt, rust-src
-        override: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly-2024-08-13
+          components: rustfmt, rust-src
+          override: true
 
-    - name: Install additional tools
-      run: |
-        cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
+      - name: Install required tools
+        run: |
+          cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
 
-    - name: Run rustfmt
-      run: cargo fmt -- --check
+      - name: Run afl-system-config
+        run: sudo cargo-afl afl system-config
 
-    - name: Build
-      run: cargo build --release --verbose
-      
-    - name: Run AFL configuration
-      run: cargo afl config --build --plugins --verbose --force
-      
-    - name: Run tests
-      run: cargo test --release --test cli_instrument_integration_test
+      - name: Run rustfmt checks
+        run: cargo fmt -- --check
 
+      - name: Build in release mode
+        run: cargo build --release --verbose
+
+      - name: Run AFL++ configuration
+        run: cargo afl config --build --plugins --verbose --force
+
+      - name: Run integration test for instrumentation
+        run: cargo test --release --test cli_instrument_integration_test
+
+      - name: Run integration test for fuzzing
+        run: cargo test --release --test cli_fuzz_integration_test

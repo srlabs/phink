@@ -26,14 +26,10 @@ includes:
     - Phink is cloned from the `srlabs/phink`
     - The project is built in release mode.
 
-### Runtime Stage
-
-The runtime stage uses a lightweight `debian:bookworm-slim` base image. This stage is optimized to run Phink:
-
-1. **Setting the Entry Point**:
+4. **Setting the Entry Point**:
     - The entry point is set to execute the Phink binary directly
 
-2. **Default Command**:
+5. **Default Command**:
     - The default command provided is for instrumenting a sample contract located in `sample/multi-contract-caller/`.
 
 ### How to Use the Docker Image
