@@ -172,7 +172,7 @@ mod test {
     #[test]
     fn fetch_correct_selectors() {
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-        let extracted: String = PayloadCrafter::extract_all(&specs)
+        let extracted: String = PayloadCrafter::extract_all(specs.into())
             .iter()
             .map(|x| hex::encode(x) + " ")
             .collect();
