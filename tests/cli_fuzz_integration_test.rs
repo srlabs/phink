@@ -67,10 +67,10 @@ mod tests {
                     let selector = phink_output.join("selectors.dict");
                     ensure!(selector.exists(), "selectors.dict doesn't exist");
 
-                    /// The content of selecotors.dict should be
-                    ///
-                    ///
-                    /// # Dictionary file for selectors
+                    // The content of selectors.dict should be
+                    //
+                    //
+                    // # Dictionary file for selectors
                     // # Lines starting with '#' and empty lines are ignored.
                     // delimiter="********"
                     // "\x9B\xAE\x9D\x5E"

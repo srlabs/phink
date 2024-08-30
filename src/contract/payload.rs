@@ -13,9 +13,9 @@ pub struct PayloadCrafter {}
 
 /// This prefix defines the way a property start with
 /// # Example
-/// ```
-/// #[ink(message)]
-/// pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {}
+// ```rust
+// #[ink(message)]
+// pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {}
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
 #[derive(Deserialize)]
@@ -157,7 +157,10 @@ mod test {
             Path,
             PathBuf,
         },
-        process::Command,
+        process::{
+            Command,
+            Stdio,
+        },
         sync::Once,
     };
 
@@ -168,7 +171,9 @@ mod test {
             let status = Command::new("bash")
                 .current_dir("sample") // Change to the 'sample' directory
                 .arg("build.sh")
-                .status()
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+            .status()
                 .expect("failed to execute process");
         });
     }
