@@ -65,14 +65,26 @@ mod tests {
                         initial_corpus_len
                     );
 
+                    let selector = phink_output.join("selectors.dict");
+                    ensure!(selector.exists(), "selectors.dict doesn't exist");
+
+                    /// The content of selecotors.dict should be
+                    ///
+                    ///
+                    /// # Dictionary file for selectors
+                    // # Lines starting with '#' and empty lines are ignored.
+                    // delimiter="********"
+                    // "\x9B\xAE\x9D\x5E"
+                    // "\xFA\x80\xC2\xF6"
+
                     ensure!(
-                        phink_output.join("selectors.dict").exists(),
-                        "selectors.dict doesn't exist"
+                        fs::read_to_string(selector).unwrap().lines().count() == 5,
+                        "There should be 5 lines in selectors, 2 for crash_with_invariant and phink_assert_dangerous_number, 1 for demimiter, and two comments"
                     );
 
                     ensure!(
-                        afl_log_didnt_fail(&config),
-                        "'logs/afl.log' didn't return a successfull backlog "
+                        afl_log_didnt_fail(&phink_output),
+                        "'logs/afl.log' didn't return a successfull dashboard"
                     );
 
                     // We don't use allowlist for macos

@@ -136,25 +136,15 @@ where
     }
 }
 
-pub fn afl_log_didnt_fail(conf: &Configuration) -> bool {
-    let log_path = conf
-        .clone()
-        .fuzz_output
-        .unwrap_or_default()
-        .join("phink")
-        .join("logs")
-        .join("afl.log");
+pub fn afl_log_didnt_fail(output: &PathBuf) -> bool {
+    let log_path = output.join("logs").join("afl.log");
 
     match fs::read_to_string(log_path) {
         Ok(content) => {
             // this is a string that is present in AFL dashboard
-            if content.contains("findings in depth") {
-                true
-            } else {
-                false
-            }
+            content.contains("findings in depth")
         }
-        Err(_) => false,
+        _ => false,
     }
 }
 

@@ -2,7 +2,13 @@
 
 #[ink::contract]
 mod dummy {
-    use ink::{prelude::vec::Vec, storage::Mapping, storage::StorageVec};
+    use ink::{
+        prelude::vec::Vec,
+        storage::{
+            Mapping,
+            StorageVec,
+        },
+    };
     use ink_prelude::string::String;
 
     #[ink(storage)]
@@ -46,7 +52,6 @@ mod dummy {
             Ok(())
         }
     }
-
     #[cfg(feature = "phink")]
     #[ink(impl)]
     impl MyBuggedContract {

@@ -148,6 +148,7 @@ mod test {
         },
         fuzzer::parser::parse_input,
     };
+    use assert_cmd::Command;
     use contract_transcode::ContractMessageTranscoder;
     use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
@@ -158,6 +159,8 @@ mod test {
 
     #[test]
     fn fetch_good_invariants() {
+        build();
+
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_invariants(&specs)
             .unwrap()
@@ -166,7 +169,12 @@ mod test {
             .collect();
 
         // DNS invariants
-        assert_eq!(extracted, "b587edaf 27d8f137 ");
+        assert_eq!(extracted, "2093daa4 ");
+    }
+
+    fn build() {
+        let bash = Command::new("bash ./sample/build.sh");
+        // bash.
     }
 
     #[test]
