@@ -65,6 +65,8 @@ pub struct Configuration {
     /// Path where Ziggy will drop everything (logs, corpus, etc). If `None`, it'll be
     /// `output/` by default
     pub fuzz_output: Option<PathBuf>,
+    /// Use the Phink UI. If set to `false`, the Ziggy native UI will be used.
+    pub show_ui: bool,
 }
 
 impl Default for Configuration {
@@ -83,6 +85,7 @@ impl Default for Configuration {
             verbose: true,
             instrumented_contract_path: Some(InstrumentedPath::default()),
             fuzz_output: None,
+            show_ui: true,
         }
     }
 }

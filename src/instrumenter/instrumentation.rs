@@ -1,3 +1,9 @@
+use crate::{
+    cli::ziggy::ZiggyConfig,
+    instrumenter::instrumentation::instrument::ContractCovUpdater,
+};
+use anyhow::bail;
+use quote::quote;
 use regex::Regex;
 use std::{
     ffi::OsStr,
@@ -14,12 +20,6 @@ use std::{
     },
     process::Command,
 };
-
-use crate::{
-    cli::ziggy::ZiggyConfig,
-    instrumenter::instrumentation::instrument::ContractCovUpdater,
-};
-use quote::quote;
 use syn::{
     parse_file,
     visit_mut::VisitMut,
@@ -99,34 +99,25 @@ impl Instrumenter {
     }
 }
 pub trait ContractBuilder {
-    fn build(&self) -> Result<InkFilesPath, String>;
+    fn build(&self) -> anyhow::Result<()>;
 }
 
 impl ContractBuilder for Instrumenter {
-    fn build(&self) -> Result<InkFilesPath, String> {
+    fn build(&self) -> anyhow::Result<()> {
         let status = Command::new("cargo")
             .current_dir(&self.z_config.contract_path)
             .args(["contract", "build", "--features=phink"])
-            .status()
-            .map_err(|e| {
-                format!(
-                    "🙅 Failed to execute cargo command: {}.\
-            The command was simply 'cargo contract build --features=phink",
-                    e
-                )
-            })?;
+            .status()?;
 
-        if status.success() {
-            self.find()
-        } else {
-            Err(format!(
+        if !status.success() {
+            bail!(
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
                 Please go to {}, edit the `lib.rs` file, and run cargo contract build again.\
-                (more infos: {})",
-                &self.z_config.contract_path.display(),
-                status
-            ))
+                (more infos: {status})",
+                &self.z_config.contract_path.display()
+            )
         }
+        Ok(())
     }
 }
 pub trait ContractForker {

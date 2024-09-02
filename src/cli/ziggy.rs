@@ -27,25 +27,7 @@ use crossterm::{
     event::Event,
 };
 use ratatui::{
-    layout::{
-        Constraint,
-        Direction,
-        Layout,
-    },
-    style::{
-        Color,
-        Style,
-    },
-    text::{
-        Line,
-        Span,
-        Text,
-    },
-    widgets::{
-        Block,
-        Borders,
-        Paragraph,
-    },
+    text::Text,
     Frame,
 };
 use std::{
@@ -58,22 +40,6 @@ use std::{
     },
 };
 
-enum AppEvent {
-    Tick,
-    ZiggyOutput(String),
-}
-
-struct App {
-    ziggy_output: Vec<String>,
-}
-
-impl App {
-    fn new() -> App {
-        App {
-            ziggy_output: Vec::new(),
-        }
-    }
-}
 pub const AFL_DEBUG: &str = "1";
 pub const AFL_FORKSRV_INIT_TMOUT: &str = "10000000";
 
@@ -82,7 +48,7 @@ pub enum ZiggyCommand {
     Run,
     Cover,
     Build,
-    Fuzz,
+    Fuzz(bool),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -102,10 +68,12 @@ impl ZiggyConfig {
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
-            println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {}", config_str);
+            println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {config_str}",);
         }
         config
     }
+
+    /// Basic hello world for TUI
     fn initialize_tui() -> Result<(), Box<dyn std::error::Error>> {
         let mut terminal = ratatui::init();
         loop {
@@ -118,41 +86,55 @@ impl ZiggyConfig {
                 break;
             }
         }
-        Ok(ratatui::restore())
+        ratatui::restore();
+        Ok(())
     }
+
     /// This function executes `cargo ziggy 'command' 'args'`
     fn start(
         &self,
         command: ZiggyCommand,
         args: Vec<String>,
         env: Vec<(String, String)>,
-    ) -> io::Result<()> {
-        let command_arg: String = match command {
+    ) -> anyhow::Result<()> {
+        let use_ui: bool;
+        let ziggy_command: String = match command {
             ZiggyCommand::Run => "run",
             ZiggyCommand::Cover => "cover",
-            ZiggyCommand::Fuzz => {
-                Self::initialize_tui();
-
-                "fuzz"
-            }
             ZiggyCommand::Build => {
                 self.build_llvm_allowlist()?;
                 "build"
             }
+            ZiggyCommand::Fuzz(ui) => {
+                use_ui = ui;
+                "fuzz"
+            }
         }
-        .parse()
-        .unwrap();
+        .parse()?;
 
         let mut binding = Command::new("cargo");
-        let mut command_builder = binding
+        let command_builder = binding
             .arg("ziggy")
-            .arg(command_arg)
+            .arg(ziggy_command)
             .env("PHINK_FROM_ZIGGY", "1")
             .env("AFL_FORKSRV_INIT_TMOUT", AFL_FORKSRV_INIT_TMOUT)
             .env("AFL_DEBUG", AFL_DEBUG)
             .stdout(Stdio::null())
             .stderr(Stdio::null());
 
+        self.with_allowlist(command_builder)?;
+
+        // If there are additional arguments, pass them to the command
+        command_builder.args(args.iter());
+        command_builder.envs(env);
+        command_builder.spawn()?;
+
+        // let status = ziggy_child.wait()?;
+
+        Ok(())
+    }
+
+    fn with_allowlist(&self, mut command_builder: &mut Command) -> anyhow::Result<()> {
         // Add `AFL_LLVM_ALLOWLIST` if not on macOS
         // See https://github.com/rust-lang/rust/issues/127573
         // See https://github.com/rust-lang/rust/issues/127577
@@ -165,48 +147,17 @@ impl ZiggyConfig {
                 allowlist.canonicalize()?.to_str().unwrap(),
             );
         }
-
-        // If there are additional arguments, pass them to the command
-        command_builder.args(args.iter());
-
-        for (key, value) in env {
-            command_builder.env(key, value);
-        }
-
-        command_builder.spawn()?;
-
-        // let status = ziggy_child.wait()?;
-
         Ok(())
     }
 
-    fn ui(f: &mut Frame, app: &App) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-            .split(f.size());
-
-        let hello_world = Paragraph::new("Hello World!")
-            .style(Style::default().fg(Color::Cyan))
-            .block(Block::default().borders(Borders::ALL).title("Greeting"));
-        f.render_widget(hello_world, chunks[0]);
-
-        let ziggy_output = Paragraph::new(Line::from(
-            app.ziggy_output.iter().map(Span::raw).collect::<Vec<_>>(),
-        ))
-        .scroll((app.ziggy_output.len() as u16, 0))
-        .block(Block::default().borders(Borders::ALL).title("Ziggy Output"));
-        f.render_widget(ziggy_output, chunks[1]);
-    }
-
-    pub fn ziggy_fuzz(&self) -> io::Result<()> {
+    pub fn ziggy_fuzz(&self) -> anyhow::Result<()> {
         let fuzzoutput = &self.config.fuzz_output;
         let dict = PhinkFiles::new(fuzzoutput.clone().unwrap_or_default()).path(DictPath);
 
         let build_args = if !self.config.use_honggfuzz {
-            vec!["--no-honggfuzz".parse().unwrap()]
+            vec!["--no-honggfuzz".parse()?]
         } else {
-            vec!["".parse().unwrap()]
+            vec!["".parse()?]
         };
 
         self.start(ZiggyCommand::Build, build_args, vec![])?;
@@ -219,7 +170,7 @@ impl ZiggyConfig {
             format!("--minlength={}", MIN_SEED_LEN),
         ];
         if !self.config.use_honggfuzz {
-            fuzzing_args.push("--no-honggfuzz".parse().unwrap())
+            fuzzing_args.push("--no-honggfuzz".parse()?)
         }
 
         if fuzzoutput.is_some() {
@@ -234,10 +185,14 @@ impl ZiggyConfig {
             serde_json::to_string(self)?,
         )];
 
-        self.start(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
+        self.start(
+            ZiggyCommand::Fuzz(self.config.show_ui),
+            fuzzing_args,
+            fuzz_config,
+        )
     }
 
-    pub fn ziggy_cover(&self) -> io::Result<()> {
+    pub fn ziggy_cover(&self) -> anyhow::Result<()> {
         self.start(
             ZiggyCommand::Cover,
             vec![],
@@ -249,7 +204,7 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    pub fn ziggy_run(&self) -> io::Result<()> {
+    pub fn ziggy_run(&self) -> anyhow::Result<()> {
         let covpath = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
             .path(CoverageTracePath);
 

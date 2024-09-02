@@ -92,11 +92,11 @@ pub fn main() {
             Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone())).unwrap();
         }
     } else {
-        handle_cli();
+        handle_cli().unwrap(); // TODO: Handle this unwrap
     }
 }
 
-fn handle_cli() {
+fn handle_cli() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let config: Configuration = Configuration::try_from(&cli.config).unwrap();
 
@@ -105,23 +105,20 @@ fn handle_cli() {
             let z_config: ZiggyConfig =
                 ZiggyConfig::new(config.clone(), contract_path.contract_path.clone());
             let mut engine = Instrumenter::new(z_config);
-            engine.instrument().unwrap().build().unwrap();
+            engine.instrument().unwrap().build()?;
 
             println!(
                 "🤞 Contract '{}' has been instrumented and compiled! You can find the instrumented contract in '{}/'",
                 contract_path.contract_path.display(),
                 config.instrumented_contract_path.unwrap_or_default().path.display()
             );
+            Ok(())
         }
         Commands::Fuzz(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
-                .ziggy_fuzz()
-                .unwrap();
+            ZiggyConfig::new(config, contract_path.contract_path).ziggy_fuzz()
         }
         Commands::Run(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
-                .ziggy_run()
-                .unwrap();
+            ZiggyConfig::new(config, contract_path.contract_path).ziggy_run()
         }
         Commands::Execute {
             seed,
@@ -131,18 +128,13 @@ fn handle_cli() {
                 ExecuteOneInput(seed),
                 ZiggyConfig::new(config, contract_path),
             )
-            .unwrap();
         }
         Commands::HarnessCover(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
-                .ziggy_cover()
-                .unwrap();
+            ZiggyConfig::new(config, contract_path.contract_path).ziggy_cover()
         }
         Commands::Coverage(contract_path) => {
-            CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path));
+            CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path))
         }
-        Commands::Clean => {
-            InstrumentedPath::clean().unwrap();
-        }
+        Commands::Clean => InstrumentedPath::clean(),
     }
 }

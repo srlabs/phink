@@ -13,7 +13,6 @@ mod tests {
         instrument,
         samples::Sample,
         with_modified_phink_config,
-        DEFAULT_TEST_PHINK_TOML,
     };
     use anyhow::{
         ensure,

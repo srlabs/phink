@@ -4,6 +4,7 @@ use crate::cli::config::{
     PFiles::CoverageTracePath,
     PhinkFiles,
 };
+use anyhow::bail;
 use std::{
     collections::{
         HashMap,
@@ -162,20 +163,19 @@ impl CoverageTracker {
         Ok(())
     }
 
-    pub fn generate(config: ZiggyConfig) {
+    pub fn generate(config: ZiggyConfig) -> anyhow::Result<()> {
         let cov_trace_path = PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
             .path(CoverageTracePath);
 
         let mut coverage_trace = match File::open(cov_trace_path) {
             Ok(file) => file,
             Err(_) => {
-                println!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.");
-                return;
+                bail!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.")
             }
         };
 
         let mut contents = String::new();
-        coverage_trace.read_to_string(&mut contents).unwrap();
+        coverage_trace.read_to_string(&mut contents)?;
         println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
@@ -197,6 +197,7 @@ impl CoverageTracker {
             "📊 Coverage report generated at: {}",
             config.config.report_path.unwrap().display()
         );
+        Ok(())
     }
 
     pub fn remove_debug_statement(html: &mut String) {

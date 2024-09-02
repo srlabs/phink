@@ -42,13 +42,13 @@ impl InstrumentedPath {
         InstrumentedPath { path }
     }
 
-    pub fn clean() -> Result<(), io::Error> {
+    pub fn clean() -> anyhow::Result<()> {
         let dirs_to_remove =
             Self::get_dirs_to_remove(Path::new("/tmp"), DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH)?;
 
         if dirs_to_remove.is_empty() {
-            println!("❌  No directories found matching the pattern '{}'. There's nothing to be cleaned :)", DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH);
-            return Ok(());
+            println!("❌  No directories found matching the pattern '{DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH}'. There's nothing to be cleaned :)" );
+            return Ok(())
         }
 
         println!("🔍 Found the following instrumented ink! contracts:");

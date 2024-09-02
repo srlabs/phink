@@ -76,7 +76,7 @@ impl Fuzzer {
         }
     }
 
-    pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> io::Result<()> {
+    pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> anyhow::Result<()> {
         let setup = ContractBridge::initialize_wasm(config.clone());
         let mut fuzzer = Fuzzer::new(setup, config.contract_path);
 
