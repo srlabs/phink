@@ -42,7 +42,7 @@ RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
 
 RUN cp target/release/phink /usr/local/bin/phink
 
-ENTRYPOINT ["phink"]
+RUN bash sample/build.sh
 
 # Default command: instrument a contract
-CMD ["instrument", "sample/multi-contract-caller/"]
+CMD ["phink", "instrument", "sample/dummy/"]

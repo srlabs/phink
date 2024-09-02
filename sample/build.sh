@@ -1,30 +1,31 @@
 #!/bin/bash
 
-echo "We're building every contract :-) see ya! "
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+
+cd "$SCRIPT_DIR" || exit
+
+echo "We're building every contract :-) see ya!"
 for dir in */; do
     # Remove trailing slash from directory name
     dir=${dir%/}
 
-    # Change to the directory
-    cd "$dir"
-
     echo "Building $dir..."
 
-    # Check if the current directory is multi-contract-caller
-    if [ "$dir" = "multi-contract-caller" ]; then
-        # Execute build-all.sh for multi-contract-caller
-        ./build-all.sh
+    # Ensure we have a Cargo.toml file in the directory before proceeding
+    if [ -f "$dir/Cargo.toml" ]; then
+        if [ "$dir" = "multi-contract-caller" ]; then
+            # Execute build-all.sh for multi-contract-caller
+            (cd "$dir" && ./build-all.sh)
+        else
+            # Execute cargo contract build for other directories
+            (cd "$dir" && cargo contract build --features phink)
+        fi
+        echo "Finished building $dir"
     else
-        # Execute cargo contract build for other directories
-        cargo contract build --features phink
+        echo "Skipping $dir: Cargo.toml not found."
     fi
 
-    # Change back to the parent directory
-    cd ..
-
-    echo "Finished building $dir"
     echo
 done
 
 echo "All builds completed."
-

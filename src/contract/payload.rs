@@ -169,12 +169,12 @@ mod test {
     pub fn build() {
         println!("executing build.sh");
         BUILD.call_once(|| {
-            let status = Command::new("bash")
+            let _status = Command::new("bash")
                 .current_dir("sample") // Change to the 'sample' directory
                 .arg("build.sh")
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
-            .status()
+                .status()
                 .expect("failed to execute process");
         });
     }
