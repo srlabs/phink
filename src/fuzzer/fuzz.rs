@@ -321,29 +321,55 @@ fn check_invariants(
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
-
     use super::*;
 
+    use std::{
+        path::Path,
+        process::{
+            Command,
+            Stdio,
+        },
+        sync::Once,
+    };
+
+    static BUILD: Once = Once::new();
+
+    pub fn build() {
+        println!("executing build.sh");
+        BUILD.call_once(|| {
+            let _status = Command::new("bash")
+                .current_dir("sample") // Change to the 'sample' directory
+                .arg("build.sh")
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .expect("failed to execute process");
+        });
+    }
     #[test]
     fn test_parse_input() {
+        build();
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = Mutex::new(
             ContractMessageTranscoder::load(metadata_path)
-                .expect("Failed to load ContractMessageTranscoder"),
+                .expect("Failed to load `ContractMessageTranscoder`"),
         );
 
         let encoded_bytes =
             hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
                 .expect("Failed to decode hex string");
 
-        let hex = transcoder
-            .lock()
-            .unwrap()
-            .decode_contract_message(&mut &encoded_bytes[..])
-            .expect("Failed to decode contract message");
+        assert!(
+            transcoder
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &encoded_bytes[..])
+                .is_ok(),
+            "Failed to decode contract message"
+        );
 
         let binding = transcoder.lock().unwrap();
         let messages = binding.metadata().spec().messages();
+        assert!(!messages.is_empty(), "Ther should be some messages here");
     }
 }

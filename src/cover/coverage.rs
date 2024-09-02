@@ -126,11 +126,12 @@ impl InputCoverage {
             );
         }
 
+        #[allow(clippy::unnecessary_cast)]
         /// We assume that the instrumentation will never insert more than
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
-            if flattened_cov.contains(&(x as u64)) {
+            if flattened_cov.contains(&(x)) {
                 let _ = black_box(x + 1);
             }
         });

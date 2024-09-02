@@ -20,7 +20,7 @@ echo
 
 echo 'Fixing clippy (might need a "git commit" and a rerun, if "cargo fix" changed the source)'
 
-cargo +nightly clippy --fix --tests --examples --benches --all-features --allow-dirty --allow-staged
+cargo +nightly clippy --fix --examples --benches --all-features --allow-dirty --allow-staged
 
 echo "[+] Done fixing clippy"
 echo

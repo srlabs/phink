@@ -33,6 +33,7 @@ use std::{
         Instant,
     },
 };
+#[allow(clippy::too_long_first_doc_paragraph)]
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 

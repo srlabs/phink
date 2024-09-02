@@ -27,6 +27,7 @@ use syn::{
 use walkdir::WalkDir;
 
 /// The objective of this `struct` is to assist Phink in instrumenting ink!
+///
 /// smart contracts. In a fuzzing context, instrumenting a smart contract
 /// involves modifying the target (i.e., the WASM blob), for example, by adding
 /// additional code to branches to obtain a coverage map during the execution of

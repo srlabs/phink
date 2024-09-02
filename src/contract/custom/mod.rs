@@ -1,4 +1,4 @@
-mod custom;
+pub mod custom;
 
 use sp_core::storage::Storage;
 pub struct Preferences {}

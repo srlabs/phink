@@ -171,10 +171,7 @@ impl ZiggyConfig {
         f.render_widget(hello_world, chunks[0]);
 
         let ziggy_output = Paragraph::new(Line::from(
-            app.ziggy_output
-                .iter()
-                .map(|line| Span::raw(line))
-                .collect::<Vec<_>>(),
+            app.ziggy_output.iter().map(Span::raw).collect::<Vec<_>>(),
         ))
         .scroll((app.ziggy_output.len() as u16, 0))
         .block(Block::default().borders(Borders::ALL).title("Ziggy Output"));

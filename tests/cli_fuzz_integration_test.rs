@@ -68,7 +68,6 @@ mod tests {
 
                     // The content of selectors.dict should be
                     //
-                    //
                     // # Dictionary file for selectors
                     // # Lines starting with '#' and empty lines are ignored.
                     // delimiter="********"
