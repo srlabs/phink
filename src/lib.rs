@@ -98,7 +98,7 @@ pub fn main() {
 
 fn handle_cli() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let config: Configuration = Configuration::try_from(&cli.config).unwrap();
+    let config: Configuration = Configuration::try_from(&cli.config).unwrap_or_default();
 
     match cli.command {
         Commands::Instrument(contract_path) => {
