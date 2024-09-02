@@ -3,6 +3,7 @@ pub mod samples;
 use crate::shared::samples::Sample;
 use anyhow::{
     anyhow,
+    bail,
     ensure,
     Context,
     Result,
@@ -172,7 +173,7 @@ pub fn try_cleanup_fuzzoutput(config: &Configuration) {
             println!("Removed {}", output.display());
         }
         Err(_) => {
-            println!("**DIDN'T** removed {}", output.display());
+            println!("*DIDN'T* removed {}", output.display());
         }
     };
 }

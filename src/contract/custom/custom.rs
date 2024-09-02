@@ -9,7 +9,10 @@ use crate::contract::{
         RuntimeGenesisConfig,
     },
 };
-use anyhow::bail;
+use anyhow::{
+    bail,
+    Context,
+};
 use pallet_contracts::Determinism;
 use sp_core::{
     crypto::AccountId32,
@@ -46,7 +49,8 @@ impl DevelopperPreferences for Preferences {
 
         let adder = Contracts::bare_upload_code(
             AccountId32::new([1; 32]),
-            fs::read(format!("{ink_fuzzed_path}/target/ink/adder/adder.wasm"))?,
+            fs::read(format!("{ink_fuzzed_path}/target/ink/adder/adder.wasm"))
+                .with_context(|| "❌ Error reading adder wasm file")?,
             None,
             Determinism::Enforced,
         );
@@ -60,7 +64,8 @@ impl DevelopperPreferences for Preferences {
             AccountId32::new([1; 32]),
             fs::read(format!(
                 "{ink_fuzzed_path}/target/ink/accumulator/accumulator.wasm",
-            ))?,
+            ))
+            .with_context(|| "❌ Error reading accumulator wasm file")?,
             None,
             Determinism::Enforced,
         );
@@ -72,7 +77,8 @@ impl DevelopperPreferences for Preferences {
 
         let subber = Contracts::bare_upload_code(
             AccountId32::new([1; 32]),
-            fs::read(format!("{ink_fuzzed_path}/target/ink/subber/subber.wasm"))?,
+            fs::read(format!("{ink_fuzzed_path}/target/ink/subber/subber.wasm"))
+                .with_context(|| "❌ Error reading accumulator wasm file")?,
             None,
             Determinism::Enforced,
         );

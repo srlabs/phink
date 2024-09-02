@@ -136,7 +136,8 @@ impl ContractForker for Instrumenter {
             .path;
 
         println!("🏗️ Creating new directory: {:?}", new_dir);
-        fs::create_dir_all(new_dir)?;
+        fs::create_dir_all(new_dir)
+            .with_context(|| format!("🙅 Failed to create directory: {}", new_dir.display()))?;
 
         println!(
             "📁 Starting to copy files from {:?}",
@@ -145,15 +146,21 @@ impl ContractForker for Instrumenter {
 
         for entry in WalkDir::new(&self.z_config.contract_path) {
             let entry = entry?;
-            let target_path =
-                new_dir.join(entry.path().strip_prefix(&self.z_config.contract_path)?);
+            let target_path = new_dir.join(
+                entry
+                    .path()
+                    .strip_prefix(&self.z_config.contract_path)
+                    .with_context(|| "Couldn't `strip_prefix`")?,
+            );
 
             if entry.path().is_dir() {
                 println!("📂 Creating subdirectory: {:?}", target_path);
                 fs::create_dir_all(&target_path)?;
             } else {
                 println!("📄 Copying file: {:?} -> {:?}", entry.path(), target_path);
-                copy(entry.path(), &target_path)?;
+                copy(entry.path(), &target_path).with_context(|| {
+                    format!("🙅 Failed to copy file to {}", target_path.display())
+                })?;
             }
         }
 
@@ -199,7 +206,8 @@ impl ContractInstrumenter for Instrumenter {
             path.display(),
         );
 
-        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)?;
+        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
+            .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
 
         Self::save_and_format(modified_code, PathBuf::from(path))?;
 
