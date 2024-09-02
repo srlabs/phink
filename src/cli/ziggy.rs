@@ -16,7 +16,7 @@ use std::{
 
 use crate::cli::config::{
     PFiles::{
-        AllowListPath,
+        AllowlistPath,
         CoverageTracePath,
         DictPath,
     },
@@ -105,10 +105,7 @@ impl ZiggyConfig {
                 self.build_llvm_allowlist()?;
                 "build"
             }
-            ZiggyCommand::Fuzz(ui) => {
-                use_ui = ui;
-                "fuzz"
-            }
+            ZiggyCommand::Fuzz(ui) => "fuzz",
         }
         .parse()?;
 
@@ -134,16 +131,19 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    fn with_allowlist(&self, mut command_builder: &mut Command) -> anyhow::Result<()> {
-        // Add `AFL_LLVM_ALLOWLIST` if not on macOS
-        // See https://github.com/rust-lang/rust/issues/127573
-        // See https://github.com/rust-lang/rust/issues/127577
+    /// Add the ALLOWLIST file to a `Command`. This will be done only in not on macOS
+    ///     - see https://github.com/rust-lang/rust/issues/127573
+    ///     - see https://github.com/rust-lang/rust/issues/127577
+    /// # Arguments
+    ///
+    /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
+    ///
+    /// returns: Result<(), Error>
+    fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
-                .path(AllowListPath);
-
-            command_builder =
-                command_builder.env("AFL_LLVM_ALLOWLIST", allowlist.canonicalize()?.to_str());
+                .path(AllowlistPath);
+            command_builder.env("AFL_LLVM_ALLOWLIST", allowlist.canonicalize()?);
         }
         Ok(())
     }
@@ -165,7 +165,7 @@ impl ZiggyConfig {
         let mut fuzzing_args = vec![
             format!("--jobs={}", self.config.cores.unwrap_or_default()),
             format!("--dict={}", dict.to_str().unwrap()),
-            format!("--minlength={}", MIN_SEED_LEN),
+            format!("--minlength={MIN_SEED_LEN}"),
         ];
         if !self.config.use_honggfuzz {
             fuzzing_args.push("--no-honggfuzz".parse()?)
@@ -225,7 +225,7 @@ impl ZiggyConfig {
     /// Builds the LLVM allowlist if it doesn't already exist.
     fn build_llvm_allowlist(&self) -> io::Result<()> {
         let allowlist_path = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
-            .path(AllowListPath);
+            .path(AllowlistPath);
 
         if allowlist_path.exists() {
             println!("❗ AFL_LLVM_ALLOWLIST already exists... skipping");

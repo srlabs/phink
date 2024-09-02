@@ -2,7 +2,10 @@ use crate::{
     cli::ziggy::ZiggyConfig,
     instrumenter::instrumentation::instrument::ContractCovUpdater,
 };
-use anyhow::bail;
+use anyhow::{
+    bail,
+    Context,
+};
 use quote::quote;
 use regex::Regex;
 use std::{
@@ -12,7 +15,6 @@ use std::{
         copy,
         File,
     },
-    io,
     io::Write,
     path::{
         Path,
@@ -50,16 +52,16 @@ pub struct InkFilesPath {
 }
 
 pub trait ContractInstrumenter {
-    fn instrument(&mut self) -> Result<&mut Self, String>
+    fn instrument(&mut self) -> anyhow::Result<&mut Self>
     where
         Self: Sized;
     fn instrument_file(
         &self,
         path: &Path,
         contract_cov_manager: &mut ContractCovUpdater,
-    ) -> Result<(), String>;
-    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> Result<String, ()>;
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> Result<(), io::Error>;
+    ) -> anyhow::Result<()>;
+    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> anyhow::Result<String>;
+    fn save_and_format(source_code: String, lib_rs: PathBuf) -> anyhow::Result<()>;
     fn already_instrumented(code: &str) -> bool;
 }
 
@@ -68,15 +70,15 @@ impl Instrumenter {
         Self { z_config }
     }
 
-    pub fn find(&self) -> Result<InkFilesPath, String> {
+    pub fn find(&self) -> anyhow::Result<InkFilesPath> {
         let wasm_path = fs::read_dir(self.z_config.contract_path.join("target/ink/"))
-            .map_err(|e| {
+            .with_context(|| {
                 format!(
                     "🙅 It seems that your contract is not compiled into `target/ink`. \
-             Please, ensure that your the WASM blob and the JSON specs are stored into \
-             '{}target/ink/' (more infos: {})",
+                Please, ensure that your WASM blob and the JSON specs are stored in \
+                '{}target/ink/' (more info: {})",
                     self.z_config.contract_path.to_str().unwrap(),
-                    e
+                    self.z_config.contract_path.to_str().unwrap(),
                 )
             })?
             .filter_map(|entry| {
@@ -88,7 +90,7 @@ impl Instrumenter {
                 }
             })
             .next()
-            .ok_or("🙅 No .wasm file found in target directory")?;
+            .ok_or_else(|| anyhow::anyhow!("🙅 No .wasm file found in target directory"))?;
 
         let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
@@ -121,10 +123,10 @@ impl ContractBuilder for Instrumenter {
     }
 }
 pub trait ContractForker {
-    fn fork(&self) -> Result<PathBuf, String>;
+    fn fork(&self) -> anyhow::Result<PathBuf>;
 }
 impl ContractForker for Instrumenter {
-    fn fork(&self) -> Result<PathBuf, String> {
+    fn fork(&self) -> anyhow::Result<PathBuf> {
         let new_dir = &self
             .z_config
             .config
@@ -134,7 +136,7 @@ impl ContractForker for Instrumenter {
             .path;
 
         println!("🏗️ Creating new directory: {:?}", new_dir);
-        fs::create_dir_all(new_dir).map_err(|e| format!("🙅 Failed to create directory: {}", e))?;
+        fs::create_dir_all(new_dir)?;
 
         println!(
             "📁 Starting to copy files from {:?}",
@@ -142,22 +144,16 @@ impl ContractForker for Instrumenter {
         );
 
         for entry in WalkDir::new(&self.z_config.contract_path) {
-            let entry = entry.map_err(|e| format!("🙅 Failed to read entry: {}", e))?;
-            let target_path = new_dir.join(
-                entry
-                    .path()
-                    .strip_prefix(&self.z_config.contract_path)
-                    .map_err(|e| format!("🙅 Failed to strip prefix: {}", e))?,
-            );
+            let entry = entry?;
+            let target_path =
+                new_dir.join(entry.path().strip_prefix(&self.z_config.contract_path)?);
 
             if entry.path().is_dir() {
                 println!("📂 Creating subdirectory: {:?}", target_path);
-                fs::create_dir_all(&target_path)
-                    .map_err(|e| format!("🙅 Failed to create subdirectory: {}", e))?;
+                fs::create_dir_all(&target_path)?;
             } else {
                 println!("📄 Copying file: {:?} -> {:?}", entry.path(), target_path);
-                copy(entry.path(), &target_path)
-                    .map_err(|e| format!("🙅 Failed to copy file: {}", e))?;
+                copy(entry.path(), &target_path)?;
             }
         }
 
@@ -170,10 +166,9 @@ impl ContractForker for Instrumenter {
 }
 
 impl ContractInstrumenter for Instrumenter {
-    fn instrument(&mut self) -> Result<&mut Instrumenter, String> {
+    fn instrument(&mut self) -> anyhow::Result<&mut Instrumenter> {
         let new_working_dir = self.fork()?;
         // self.z_config.contract_path = new_working_dir.clone(); //todo probably bugged
-        // here
         let mut contract_cov_manager = ContractCovUpdater { line_id: 0 };
         for entry in WalkDir::new(&new_working_dir)
             .into_iter()
@@ -192,45 +187,34 @@ impl ContractInstrumenter for Instrumenter {
         &self,
         path: &Path,
         contract_cov_manager: &mut ContractCovUpdater,
-    ) -> Result<(), String> {
-        let code = fs::read_to_string(path)
-            .map_err(|e| format!("🙅 Failed to read {}: {:?}", path.display(), e))?;
+    ) -> anyhow::Result<()> {
+        let code = fs::read_to_string(path)?;
 
         if Self::already_instrumented(&code) {
-            return Ok(());
+            return Ok(())
         }
 
         println!(
-            "📝 Instrumenting file: {} with {:?}",
+            "📝 Instrumenting file: {} with {contract_cov_manager:?}",
             path.display(),
-            contract_cov_manager
         );
 
-        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
-            .map_err(|_| format!("🙅 Failed to parse and visit code in {}", path.display()))?;
+        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)?;
 
-        Self::save_and_format(modified_code, PathBuf::from(path)).map_err(|e| {
-            format!(
-                "🙅 Failed to save and format code in {}: {:?}",
-                path.display(),
-                e
-            )
-        })?;
+        Self::save_and_format(modified_code, PathBuf::from(path))?;
 
         Ok(())
     }
 
-    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> Result<String, ()> {
-        let mut ast = parse_file(code).expect(
-            "⚠️ This is most likely that your ink! contract \
-        contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.",
-        );
+    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> anyhow::Result<String> {
+        let mut ast = parse_file(code)?;
+
         visitor.visit_file_mut(&mut ast);
 
         Ok(quote!(#ast).to_string())
     }
 
-    fn save_and_format(source_code: String, rust_file: PathBuf) -> Result<(), io::Error> {
+    fn save_and_format(source_code: String, rust_file: PathBuf) -> anyhow::Result<()> {
         let mut file = File::create(rust_file.clone())?;
         file.write_all(source_code.as_bytes())?;
         println!("✍️ Writing instrumented source code");

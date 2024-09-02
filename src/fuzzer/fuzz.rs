@@ -77,7 +77,7 @@ impl Fuzzer {
     }
 
     pub fn execute_harness(mode: FuzzingMode, config: ZiggyConfig) -> anyhow::Result<()> {
-        let setup = ContractBridge::initialize_wasm(config.clone());
+        let setup = ContractBridge::initialize_wasm(config.clone())?;
         let mut fuzzer = Fuzzer::new(setup, config.contract_path);
 
         match mode {
@@ -252,7 +252,7 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
-    let file_path = corpus_dir.join(format!("selector_{}.bin", index));
+    let file_path = corpus_dir.join(format!("selector_{index}.bin"));
     fs::write(file_path, selector)
 }
 
@@ -262,7 +262,7 @@ fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) {
         write!(&mut acc, "\\x{:02X}", b).unwrap();
         acc
     });
-    writeln!(dict_file, "\"{}\"", selector_string).expect("😅 Failed to write to dict_file");
+    writeln!(dict_file, "\"{selector_string}\"").expect("😅 Failed to write to dict_file");
 }
 
 fn execute_messages(

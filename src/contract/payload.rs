@@ -235,7 +235,7 @@ mod test {
         ];
         let data = transcoder.encode(constructor, args).unwrap();
         let hex = hex::encode(data);
-        println!("Encoded constructor data {}", hex);
+        println!("Encoded constructor data {hex}");
         assert!(!hex.is_empty())
     }
 

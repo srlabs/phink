@@ -135,9 +135,9 @@ where
         if start_time.elapsed() > timeout {
             child.kill().context("Failed to kill Ziggy")?;
             // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
-            return Err(anyhow!(
+            return bail!(
                 "Couldn't check the assert within the given timeout. Here is the latest error we've got: {:?}", test_result.unwrap_err()
-            ));
+            );
         }
 
         // We perform the tests every `1` second

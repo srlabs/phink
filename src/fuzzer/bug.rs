@@ -103,7 +103,7 @@ impl BugManager {
         {
             println!("\n🤯 An invariant got caught! Let's dive into it");
 
-            println!("\n🫵  This was caused by `{}`\n", hex);
+            println!("\n🫵  This was caused by `{hex}`\n");
 
             println!("🎉 Find below the trace that caused that invariant");
             <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);

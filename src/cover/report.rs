@@ -105,19 +105,18 @@ impl CoverageTracker {
 
         for (file_path, coverage) in &self.coverage {
             let sanitized_path = file_path.replace("/", "_").replace("\\", "_");
-            let report_path = format!("{}/{}.html", output_dir, sanitized_path);
+            let report_path = format!("{output_dir}/{sanitized_path}.html");
 
             self.generate_file_report(file_path, coverage, &report_path)?;
 
             index_html.push_str(&format!(
-                "<li><a href='{}.html'>- {}</a></li>",
-                sanitized_path, file_path
+                "<li><a href='{sanitized_path}.html'>- {file_path}</a></li>",
             ));
         }
 
         index_html.push_str("</ul></body></html>");
 
-        fs::write(format!("{}/index.html", output_dir), index_html)?;
+        fs::write(format!("{output_dir}/index.html"), index_html)?;
 
         Ok(())
     }
@@ -138,7 +137,7 @@ impl CoverageTracker {
             </style></head><body>",
         );
 
-        html.push_str(&format!("<h1>Coverage for {}</h1><pre>", file_path));
+        html.push_str(&format!("<h1>Coverage for {file_path}</h1><pre>"));
         html.push_str("<h3>This is a beta version of the code visualizer. \
         <br>You can assume that if a line is green, it has been executed. <br>\
         If the green line represents a block (e.g., green `if`), it means that the `if` condition was met, and we got inside the condition.<br>\

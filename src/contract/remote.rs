@@ -35,7 +35,7 @@ use crate::{
         ziggy::ZiggyConfig,
     },
     contract::{
-        custom::{
+        custom::preferences::{
             DevelopperPreferences,
             Preferences,
         },
@@ -76,9 +76,9 @@ impl ContractBridge {
 
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
-    pub fn initialize_wasm(config: ZiggyConfig) -> ContractBridge {
-        let finder = Instrumenter::new(config.clone()).find().unwrap();
-        let wasm_bytes = fs::read(&finder.wasm_path).unwrap();
+    pub fn initialize_wasm(config: ZiggyConfig) -> anyhow::Result<ContractBridge> {
+        let finder = Instrumenter::new(config.clone()).find()?;
+        let wasm_bytes = fs::read(&finder.wasm_path)?;
 
         let mut contract_addr: AccountIdOf<Runtime> = config
             .config
@@ -91,14 +91,13 @@ impl ContractBridge {
             contract_addr
         );
 
-        let json_specs = fs::read_to_string(finder.specs_path.clone()).unwrap();
+        let json_specs = fs::read_to_string(finder.specs_path.clone())?;
         let genesis_storage: Storage = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
 
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
-
-              <Preferences as DevelopperPreferences>::on_contract_initialize();
+                let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can Err easily, so we use `let _`
 
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
 
@@ -123,13 +122,13 @@ impl ContractBridge {
             chain.into_storages()
         };
 
-        Self {
+        Ok(Self {
             genesis: genesis_storage,
             contract_address: contract_addr,
             json_specs,
             path_to_specs: finder.specs_path.to_path_buf(),
             contract_path: config.contract_path.clone(),
-        }
+        })
     }
 
     /// Execute a function `payload` from the instantiated contract

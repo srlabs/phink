@@ -100,7 +100,7 @@ pub enum OriginFuzzingOption {
 #[derive(Copy, Clone, Debug)]
 pub enum PFiles {
     CoverageTracePath,
-    AllowListPath,
+    AllowlistPath,
     DictPath,
     CorpusPath,
 }
@@ -115,7 +115,7 @@ impl PhinkFiles {
         const PHINK_PATH: &str = "phink";
         match file {
             PFiles::CoverageTracePath => self.output.join(PHINK_PATH).join("traces.cov"),
-            PFiles::AllowListPath => self.output.join(PHINK_PATH).join("allowlist.txt"),
+            PFiles::AllowlistPath => self.output.join(PHINK_PATH).join("allowlist.txt"),
             PFiles::DictPath => self.output.join(PHINK_PATH).join("selectors.dict"),
             PFiles::CorpusPath => self.output.join(PHINK_PATH).join("corpus"),
         }
