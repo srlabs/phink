@@ -37,7 +37,7 @@ mod tests {
         };
 
         let test = with_modified_phink_config(&config, || {
-            instrument(Sample::MultiContractCaller);
+            let _ = instrument(Sample::MultiContractCaller);
 
             ensure!(
                 fs::exists(path_instrumented_contract.path.clone()).is_ok(),
@@ -78,7 +78,7 @@ mod tests {
         };
 
         let test = with_modified_phink_config(&config, || {
-            instrument(Sample::MultiContractCaller);
+            let _ = instrument(Sample::MultiContractCaller);
 
             ensure!(
                 fs::exists(path_instrumented_contract.path.clone()).is_ok(),
@@ -132,7 +132,7 @@ mod tests {
         };
 
         let test = with_modified_phink_config(&config, || {
-            instrument(Sample::Dummy);
+            let _ = instrument(Sample::Dummy);
 
             let contains_instrumented_code = find_string_in_rs_files(
                 &path_instrumented_contract.path,

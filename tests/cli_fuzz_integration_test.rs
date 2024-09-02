@@ -41,7 +41,7 @@ mod tests {
         };
 
         with_modified_phink_config(&config, || {
-            instrument(Sample::Dummy);
+            let _ = instrument(Sample::Dummy);
             let mut initial_corpus_len = 0_usize;
             let phink_output = fuzz_output.join("phink");
 
@@ -129,7 +129,7 @@ mod tests {
         };
 
         with_modified_phink_config(&config, || {
-            instrument(Sample::Dummy);
+            let _ = instrument(Sample::Dummy);
 
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
