@@ -3,6 +3,7 @@ pub mod samples;
 use crate::shared::samples::Sample;
 use anyhow::{
     anyhow,
+    ensure,
     Context,
     Result,
 };
@@ -64,6 +65,12 @@ where
 
     // Executing the actual test
     let test_result = executed_test();
+
+    // Ensure the config file wasn't removed by the tests (it shouldn't)
+    ensure!(
+        PathBuf::from(DEFAULT_TEST_PHINK_TOML).exists(),
+        "{DEFAULT_TEST_PHINK_TOML} doesn't exist"
+    );
 
     // We remove the temp config file
     let _ = fs::remove_file(DEFAULT_TEST_PHINK_TOML);

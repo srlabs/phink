@@ -13,6 +13,7 @@ mod tests {
         instrument,
         samples::Sample,
         with_modified_phink_config,
+        DEFAULT_TEST_PHINK_TOML,
     };
     use anyhow::{
         ensure,
@@ -42,6 +43,7 @@ mod tests {
 
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
+
             let mut initial_corpus_len = 0_usize;
             let phink_output = fuzz_output.join("phink");
 

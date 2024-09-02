@@ -43,7 +43,7 @@ pub mod instrumenter;
     long_about = None
 )]
 struct Cli {
-    /// Order to execute (if you start here, instrument then fuzz suggested) 🚀
+    /// Order to execute (if you start here, instrument then fuzz suggested)
     #[clap(subcommand)]
     command: Commands,
 
