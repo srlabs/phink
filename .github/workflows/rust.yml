@@ -51,11 +51,5 @@ jobs:
       - name: Run AFL++ configuration
         run: cargo afl config --build --plugins --verbose --force
 
-      - name: Run integration test for instrumentation
-        run: cargo test --release --test cli_instrument_integration_test
-
-      - name: Run integration test for fuzzing
-        run: cargo test --release --test cli_fuzz_integration_test
-
-      - name: Run unit test
+      - name: Run unit & integration tests
         run: cargo test --verbose
