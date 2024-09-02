@@ -17,13 +17,11 @@ use std::{
 use std::{
     io::{
         self,
-        Read,
     },
     process::{
         Command,
         Stdio,
     },
-    sync::mpsc,
 };
 
 use crate::cli::config::{
@@ -34,24 +32,7 @@ use crate::cli::config::{
     },
     PhinkFiles,
 };
-use crossterm::{
-    event::{
-        self,
-        DisableMouseCapture,
-        EnableMouseCapture,
-        Event,
-        KeyCode,
-    },
-    execute,
-    terminal::{
-        disable_raw_mode,
-        enable_raw_mode,
-        EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
-};
 use ratatui::{
-    backend::CrosstermBackend,
     layout::{
         Constraint,
         Direction,
@@ -59,7 +40,6 @@ use ratatui::{
     },
     style::{
         Color,
-        Modifier,
         Style,
     },
     text::{
@@ -72,7 +52,6 @@ use ratatui::{
         Paragraph,
     },
     Frame,
-    Terminal,
 };
 
 enum AppEvent {
