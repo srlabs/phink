@@ -142,10 +142,8 @@ impl ZiggyConfig {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
                 .path(AllowListPath);
 
-            command_builder = command_builder.env(
-                "AFL_LLVM_ALLOWLIST",
-                allowlist.canonicalize()?.to_str().unwrap(),
-            );
+            command_builder =
+                command_builder.env("AFL_LLVM_ALLOWLIST", allowlist.canonicalize()?.to_str());
         }
         Ok(())
     }
@@ -198,7 +196,7 @@ impl ZiggyConfig {
             vec![],
             vec![(
                 "PHINK_START_FUZZING_WITH_CONFIG".into(),
-                serde_json::to_string(self).unwrap(),
+                serde_json::to_string(self)?,
             )],
         )?;
         Ok(())
@@ -218,7 +216,7 @@ impl ZiggyConfig {
             vec![],
             vec![(
                 "PHINK_START_FUZZING_WITH_CONFIG".into(),
-                serde_json::to_string(self).unwrap(),
+                serde_json::to_string(self)?,
             )],
         )?;
         Ok(())

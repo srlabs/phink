@@ -156,10 +156,11 @@ impl Configuration {
         }
     }
 
-    pub fn save_as_toml(&self, to: &str) {
-        let toml_str = toml::to_string(self).unwrap();
-        let mut file = File::create(to).unwrap();
-        file.write_all(toml_str.as_bytes()).unwrap();
+    pub fn save_as_toml(&self, to: &str) -> anyhow::Result<()> {
+        let toml_str = toml::to_string(self)?;
+        let mut file = File::create(to)?;
+        file.write_all(toml_str.as_bytes())?;
+        Ok(())
     }
 
     pub fn parse_balance(value: Option<String>) -> Option<BalanceOf<Runtime>> {

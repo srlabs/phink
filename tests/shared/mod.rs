@@ -61,7 +61,7 @@ where
 {
     try_cleanup_instrumented(config);
     try_cleanup_fuzzoutput(config);
-    config.save_as_toml(DEFAULT_TEST_PHINK_TOML);
+    config.save_as_toml(DEFAULT_TEST_PHINK_TOML)?;
 
     // Executing the actual test
     let test_result = executed_test();
