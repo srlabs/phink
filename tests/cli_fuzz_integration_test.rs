@@ -48,7 +48,6 @@ mod tests {
             // While fuzzing, let's perform the tests
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = phink_output.exists();
-                println!("Fuzz output created yet : {:?}", fuzz_created);
                 ensure!(fuzz_created, "Fuzz output directory wasn't created");
 
                 if fuzz_created {
@@ -107,7 +106,7 @@ mod tests {
             let corpus_len = get_corpus_files(&phink_output.join("corpus"))
                 .unwrap()
                 .len();
-            println!("After a bit of fuzzing, we get {} corpus entries, when we had {} entries at the begining", corpus_len, initial_corpus_len);
+            println!("After a bit of fuzzing, we get {corpus_len} corpus entries, when we had {initial_corpus_len} entries at the begining");
             ensure!(
                 corpus_len > initial_corpus_len,
                 "There was no new corpus while fuzzing"

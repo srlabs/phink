@@ -7,7 +7,7 @@ pub enum Sample {
     Transfer,
 }
 impl Sample {
-    pub fn path(&self) -> &str {
+    #[must_use] pub fn path(&self) -> &str {
         match self {
             Sample::CrossMessageBug => "sample/cross_message_bug",
             Sample::DNS => "sample/dns",

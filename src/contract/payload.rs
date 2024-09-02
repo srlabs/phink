@@ -167,6 +167,7 @@ mod test {
     static BUILD: Once = Once::new();
 
     pub fn build() {
+        println!("executing build.sh");
         BUILD.call_once(|| {
             let status = Command::new("bash")
                 .current_dir("sample") // Change to the 'sample' directory

@@ -137,7 +137,7 @@ where
     }
 }
 
-pub fn afl_log_didnt_fail(output: &Path) -> bool {
+#[must_use] pub fn afl_log_didnt_fail(output: &Path) -> bool {
     let log_path = output.join("logs").join("afl.log");
 
     match fs::read_to_string(log_path) {
@@ -159,11 +159,11 @@ pub fn try_cleanup_instrumented(config: &Configuration) {
 pub fn try_cleanup_fuzzoutput(config: &Configuration) {
     let output = config.clone().fuzz_output.unwrap_or_default();
     match fs::remove_dir_all(&output) {
-        Ok(_) => {
-            println!("Removed {}", output.display())
+        Ok(()) => {
+            println!("Removed {}", output.display());
         }
         Err(_) => {
-            println!("**DIDN'T** removed {}", output.display())
+            println!("**DIDN'T** removed {}", output.display());
         }
     };
 }
@@ -171,7 +171,7 @@ pub fn try_cleanup_fuzzoutput(config: &Configuration) {
 /// Simple `phink` bin pop from cargo to instrument `contract_path`
 /// ** Important **
 /// This should only be used in test !
-pub fn instrument(contract_path: Sample) -> Assert {
+#[must_use] pub fn instrument(contract_path: Sample) -> Assert {
     let mut cmd = Command::cargo_bin("phink").unwrap();
     cmd.args(["--config", DEFAULT_TEST_PHINK_TOML])
         .arg("instrument")
@@ -183,7 +183,7 @@ pub fn instrument(contract_path: Sample) -> Assert {
 /// Simple `phink` bin pop from cargo to fuzz `path_instrumented_contract`
 /// ** Important **
 /// This should only be used in test !
-pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
+#[must_use] pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
     let child = NativeCommand::new("cargo")
         .arg("run")
         .arg("--")
@@ -199,7 +199,7 @@ pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
 }
 
 /// Return `true` if `target` is found in any `*.rs` file of `dir`, otherwise `false`
-pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
+#[must_use] pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
     fn file_contains_string(file_path: &Path, target: &str) -> bool {
         let mut file = fs::File::open(file_path).expect("Unable to open file");
         let mut content = String::new();

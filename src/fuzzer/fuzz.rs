@@ -343,10 +343,7 @@ mod tests {
             .decode_contract_message(&mut &encoded_bytes[..])
             .expect("Failed to decode contract message");
 
-        println!("{:#?}", hex);
-
         let binding = transcoder.lock().unwrap();
         let messages = binding.metadata().spec().messages();
-        println!("{:#?}", messages);
     }
 }

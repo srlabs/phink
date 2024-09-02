@@ -48,7 +48,7 @@ mod tests {
             // `path_instrumented_contract`
             let cargo_toml_exists = WalkDir::new(path_instrumented_contract.path)
                 .into_iter()
-                .filter_map(|e| e.ok()) // Filter out errors
+                .filter_map(std::result::Result::ok) // Filter out errors
                 .any(|entry| {
                     entry.file_name() == "Cargo.toml"
                 });
