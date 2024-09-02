@@ -23,4 +23,3 @@ jobs:
       - name: Run Docker Phink with --help
         run: docker run --rm phink --help  #just checking if phink works properly
 
-      # TODO: `docker run` for tests

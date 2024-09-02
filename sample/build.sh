@@ -4,7 +4,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 cd "$SCRIPT_DIR" || exit
 
-echo "We're building every contract :-) see ya!"
+echo "We're building every contract :-)"
 for dir in */; do
     # Remove trailing slash from directory name
     dir=${dir%/}
@@ -18,7 +18,7 @@ for dir in */; do
             (cd "$dir" && ./build-all.sh)
         else
             # Execute cargo contract build for other directories
-            (cd "$dir" && cargo contract build --features phink)
+            (cd "$dir" && cargo contract build --skip-wasm-validation --features phink)
         fi
         echo "Finished building $dir"
     else
