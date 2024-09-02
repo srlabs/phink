@@ -16,9 +16,8 @@ package-lock.json
 # This is for testing purposes
 just_a_random_path/
 phink_temp_test.toml
-instrumented_output/
+instrumented_*/
 output*/
-
 # Compilation targets
 target
 debug/

@@ -41,8 +41,9 @@ RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-sy
 RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
 
 RUN cp target/release/phink /usr/local/bin/phink
-RUN bash sample/build.sh
+RUN chmod 777 ./sample/build.sh && ./sample/build.sh
 
+# TODO: we temporarily use cargo test just for debug purposes
 #ENTRYPOINT ["phink"]
 # Default command: instrument a contract
 CMD ["cargo", "test"]
