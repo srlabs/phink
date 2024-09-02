@@ -5,7 +5,8 @@
 ![Build Status](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
 [![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
-[![Discord](https://img.shields.io/discord/1276519988349374587.svg?label=&logo=discord&logoColor=ffffff&color=7289DA&labelColor=2C2F33)](https://discord.gg/gAahQMGE)
+![Discord](https://img.shields.io/discord/1276519988349374587?label=Discord)
+
 </div>
 
 <br>
@@ -14,7 +15,7 @@
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 If you have any question, would like to share feedback, discuss features, and connect with other ink! developers, join
-our [Discord community](https://discord.gg/gAahQMGE)
+our [Discord community]([https://discord.gg/gAahQMGE](https://discord.gg/4MakDGwFEK))
 
 > ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
 > and feedback are welcome!
