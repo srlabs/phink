@@ -46,5 +46,5 @@ WORKDIR /phink/sample
 RUN chmod 777 build.sh && bash build.sh
 
 WORKDIR /phink
-
-CMD ["sleep", "infinity"]
+ENV RUST_BACKTRACE=1
+CMD ["cargo", "test", "--no-fail-fast", "--", "--show-output", "--test-threads=1"]

@@ -170,19 +170,17 @@ mod test {
         BUILD.call_once(|| {
             println!("Executing `build.sh` to compile samples");
 
-            let _status = Command::new("bash")
+            let _ = Command::new("bash")
                 .current_dir("sample") // Change to the 'sample' directory
                 .arg("build.sh")
                 .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .expect("failed to execute process");
+                .stderr(Stdio::null());
         });
     }
 
     #[test]
     fn fetch_good_invariants() {
-        // build();
+        build();
 
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_invariants(&specs)

@@ -370,6 +370,6 @@ mod tests {
 
         let binding = transcoder.lock().unwrap();
         let messages = binding.metadata().spec().messages();
-        assert!(!messages.is_empty(), "Ther should be some messages here");
+        assert!(!messages.is_empty(), "There should be some messages here");
     }
 }
