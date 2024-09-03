@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🐙 Phink
+# Phink
+
+<img src="assets/phink.png" alt="phink" width="200"/>
 
 ![Build Status](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)

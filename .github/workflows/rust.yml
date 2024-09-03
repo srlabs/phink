@@ -51,8 +51,9 @@ jobs:
       - name: Run AFL++ configuration
         run: cargo afl config --build --plugins --verbose --force
 
-      - name: Build samples
-        run: bash sample/build.sh
+      - name: Compile samples in `sample`
+        working-directory: sample
+        run: bash build.sh
 
       - name: Run unit & integration tests
         run: cargo test --verbose
