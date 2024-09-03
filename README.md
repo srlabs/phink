@@ -1,17 +1,16 @@
 <div align="center">
 
-# Phink
+<img src="assets/phink.png" alt="phink" width="250"/>
+</br>
+</br>
 
-<img src="assets/phink.png" alt="phink" width="200"/>
 
 ![Build Status](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
 [![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
 ![Discord](https://img.shields.io/discord/1276519988349374587?label=Discord)
-
 </div>
-
-<br>
+</br>
 
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
