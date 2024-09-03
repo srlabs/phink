@@ -128,7 +128,10 @@ where
     loop {
         let test_result = executed_test();
         if test_result.is_ok() {
-            println!("Fuzzing test passed in {start_time} seconds");
+            println!(
+                "Fuzzing test passed in {} seconds",
+                start_time.elapsed().as_secs()
+            );
             child.kill().with_context(|| "Failed to kill Ziggy")?;
             return Ok(())
         }
