@@ -14,21 +14,16 @@ use std::{
     path::PathBuf,
 };
 
-use crate::cli::config::{
-    PFiles::{
-        AllowlistPath,
-        CoverageTracePath,
-        DictPath,
+use crate::cli::{
+    config::{
+        PFiles::{
+            AllowlistPath,
+            CoverageTracePath,
+            DictPath,
+        },
+        PhinkFiles,
     },
-    PhinkFiles,
-};
-use crossterm::{
-    event,
-    event::Event,
-};
-use ratatui::{
-    text::Text,
-    Frame,
+    ui,
 };
 use std::{
     io::{
@@ -73,23 +68,6 @@ impl ZiggyConfig {
         config
     }
 
-    /// Basic hello world for TUI
-    fn initialize_tui() -> Result<(), Box<dyn std::error::Error>> {
-        let mut terminal = ratatui::init();
-        loop {
-            terminal
-                .draw(|frame: &mut Frame| {
-                    frame.render_widget(Text::raw("Hello World!"), frame.area())
-                })
-                .expect("Failed to draw");
-            if matches!(event::read().expect("failed to read event"), Event::Key(_)) {
-                break;
-            }
-        }
-        ratatui::restore();
-        Ok(())
-    }
-
     /// This function executes `cargo ziggy 'command' 'args'`
     fn start(
         &self,
@@ -97,7 +75,6 @@ impl ZiggyConfig {
         args: Vec<String>,
         env: Vec<(String, String)>,
     ) -> anyhow::Result<()> {
-        let use_ui: bool;
         let ziggy_command: String = match command {
             ZiggyCommand::Run => "run",
             ZiggyCommand::Cover => "cover",
@@ -105,7 +82,12 @@ impl ZiggyConfig {
                 self.build_llvm_allowlist()?;
                 "build"
             }
-            ZiggyCommand::Fuzz(ui) => "fuzz",
+            ZiggyCommand::Fuzz(ui) => {
+                if ui {
+                    ui::tui::initialize_tui().unwrap();
+                }
+                "fuzz"
+            }
         }
         .parse()?;
 

@@ -12,15 +12,12 @@ if [ "$1" != "--no-clean" ]; then
 fi
 echo
 
-echo "[+] Fixing build"
+echo "[+] Clippying everything"
 cargo +nightly fix --release --workspace --all-features --allow-dirty --allow-staged
-
-echo "[+] Done fixing build"
-echo 'Fixing clippy (might need a "git commit" and a rerun, if "cargo fix" changed the source)'
-
 cargo +nightly clippy --fix --examples --benches --all-features --allow-dirty --allow-staged
-
+cargo +nightly clippy --all-targets -- -D warnings
 echo "[+] Done fixing clippy"
+
 echo "[+] Formatting all"
 
 cargo +nightly fmt --all

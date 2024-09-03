@@ -149,7 +149,6 @@ mod test {
         fuzzer::parser::parse_input,
     };
     use contract_transcode::ContractMessageTranscoder;
-    use parity_scale_codec::Encode;
     use sp_core::hexdisplay::AsBytesRef;
     use std::{
         fs,
@@ -157,11 +156,6 @@ mod test {
             Path,
             PathBuf,
         },
-        process::{
-            Command,
-            Stdio,
-        },
-        sync::Once,
     };
 
     #[test]
@@ -237,7 +231,7 @@ mod test {
             Configuration::default(),
         )
         .messages;
-        assert!(msg.len() > 0, "No messages decoded");
+        assert!(!msg.is_empty(), "No messages decoded");
 
         for i in 0..msg.len() {
             let hex = transcoder_loader

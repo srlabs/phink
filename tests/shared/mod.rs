@@ -34,7 +34,6 @@ use std::{
         Instant,
     },
 };
-#[allow(clippy::too_long_first_doc_paragraph)]
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 
@@ -242,14 +241,14 @@ fn find_string_in_rs_files(dir: &Path, matching_string: &str) -> bool {
     false
 }
 
-pub fn is_instrumented(path_instrumented_contract: &PathBuf) -> bool {
+pub fn is_instrumented(path_instrumented_contract: &Path) -> bool {
     find_string_in_rs_files(
         path_instrumented_contract,
         "ink::env::debug_println!(\"COV={}\",",
     )
 }
 
-pub fn is_compiled(path_instrumented_contract: &PathBuf) -> bool {
+pub fn is_compiled(path_instrumented_contract: &Path) -> bool {
     let target_dir = path_instrumented_contract.join("target");
 
     if !target_dir.exists() {

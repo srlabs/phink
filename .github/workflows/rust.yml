@@ -56,4 +56,4 @@ jobs:
         run: bash build.sh
 
       - name: Run unit tests and integration tests
-        run: cargo test no-fail-fast -- --show-output
+        run: cargo test --no-fail-fast -- --show-output --test-threads=1
