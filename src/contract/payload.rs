@@ -182,7 +182,7 @@ mod test {
 
     #[test]
     fn fetch_good_invariants() {
-        build();
+        // build();
 
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_invariants(&specs)

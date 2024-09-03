@@ -128,14 +128,15 @@ where
     loop {
         let test_result = executed_test();
         if test_result.is_ok() {
-            child.kill().context("Failed to kill Ziggy")?;
-            return Ok(());
+            println!("Fuzzing test passed in {start_time} seconds");
+            child.kill().with_context(|| "Failed to kill Ziggy")?;
+            return Ok(())
         }
 
         if start_time.elapsed() > timeout {
-            child.kill().context("Failed to kill Ziggy")?;
+            child.kill().with_context(|| "Failed to kill Ziggy")?;
             // If we haven't return `Ok(())` early on, we `Err()` because we timeout.
-            return bail!(
+            bail!(
                 "Couldn't check the assert within the given timeout. Here is the latest error we've got: {:?}", test_result.unwrap_err()
             );
         }
@@ -256,13 +257,15 @@ pub fn is_compiled(path_instrumented_contract: &PathBuf) -> bool {
 
 /// A function to get all entries from the corpus directory
 pub fn get_corpus_files(corpus_path: &PathBuf) -> Result<HashSet<PathBuf>> {
-    println!(
-        "Got corpus files in: {:?}",
-        corpus_path.canonicalize()?.to_str().unwrap()
-    );
     let corpus_files = fs::read_dir(corpus_path)?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .collect::<HashSet<PathBuf>>();
+
+    println!(
+        "Got {} corpus files in {:?}",
+        corpus_files.len(),
+        corpus_path.canonicalize()?.to_str().unwrap()
+    );
 
     Ok(corpus_files)
 }

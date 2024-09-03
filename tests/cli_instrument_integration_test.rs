@@ -6,6 +6,7 @@ mod tests {
     use super::*;
     use crate::shared::{
         instrument,
+        is_compiled,
         is_instrumented,
         samples::Sample,
         with_modified_phink_config,
@@ -46,7 +47,7 @@ mod tests {
 
             // Verify that a Cargo.toml exists somewhere under
             // `path_instrumented_contract`
-            let cargo_toml_exists = WalkDir::new(path_instrumented_contract.path)
+            let cargo_toml_exists = WalkDir::new(&path_instrumented_contract.path)
                 .into_iter()
                 .filter_map(Result::ok) // Filter out errors
                 .any(|entry| {
@@ -56,6 +57,11 @@ mod tests {
             ensure!(
                 cargo_toml_exists,
                 "Cargo.toml not found in the instrumented contract path"
+            );
+
+            ensure!(
+                is_compiled(&path_instrumented_contract.path),
+                "Target wasn't compiled properly"
             );
 
             Ok(())
@@ -85,19 +91,28 @@ mod tests {
                 "Instrumented contract not found"
             );
 
+            let accu = &path_instrumented_contract.path.join("accumulator");
             ensure!(
-                is_instrumented(&path_instrumented_contract.path.join("accumulator")),
+                is_instrumented(accu),
                 "Expected to find a trace of instrumentation in Accumulator"
             );
 
+            let subber = &path_instrumented_contract.path.join("subber");
             ensure!(
-                is_instrumented(&path_instrumented_contract.path.join("subber")),
+                is_instrumented(subber),
                 "Expected to find a trace of instrumentation in Subber"
             );
 
+            let adder = &path_instrumented_contract.path.join("adder");
+
             ensure!(
-                is_instrumented(&path_instrumented_contract.path.join("adder")),
+                is_instrumented(adder),
                 "Expected to find a trace of instrumentation in Adder"
+            );
+
+            ensure!(
+                is_compiled(&path_instrumented_contract.path),
+                "Target wasn't compiled properly"
             );
 
             Ok(())

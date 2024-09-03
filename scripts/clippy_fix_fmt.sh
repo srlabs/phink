@@ -1,10 +1,10 @@
 #!/bin/bash
-# Inspired from LibAFL scripts
+# Inspired from LibAFL script
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 # Goto the root of the project
 cd "$SCRIPT_DIR" || exit
-echo "[-] Use '--no-clean' if you don't want to 'cargo clean' Phink"
+echo "[+] Use --no-clean if you don't want to cargo clean"
 if [ "$1" != "--no-clean" ]; then
    # Usually, we want to clean, since clippy won't work otherwise.
    echo "[+] Cleaning up previous builds..."
