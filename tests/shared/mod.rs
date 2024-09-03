@@ -2,7 +2,6 @@ pub mod samples;
 
 use crate::shared::samples::Sample;
 use anyhow::{
-    anyhow,
     bail,
     ensure,
     Context,
@@ -210,9 +209,9 @@ pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
     child
 }
 
-/// Return `true` if `target` is found in any `*.rs` file of `dir`, otherwise `false`
+/// Returns `true` if `matching_string` is found in any `*.rs` file of `dir`, otherwise `false`
 #[must_use]
-pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
+fn find_string_in_rs_files(dir: &Path, matching_string: &str) -> bool {
     fn file_contains_string(file_path: &Path, target: &str) -> bool {
         let mut file = fs::File::open(file_path).expect("Unable to open file");
         let mut content = String::new();
@@ -226,16 +225,33 @@ pub fn find_string_in_rs_files(dir: &Path, target: &str) -> bool {
         let path = entry.path();
 
         if path.is_dir() {
-            if find_string_in_rs_files(&path, target) {
+            if find_string_in_rs_files(&path, matching_string) {
                 return true;
             }
-        } else if path.extension() == Some(OsStr::new("rs")) && file_contains_string(&path, target)
+        } else if path.extension() == Some(OsStr::new("rs"))
+            && file_contains_string(&path, matching_string)
         {
             return true;
         }
     }
 
     false
+}
+
+pub fn is_instrumented(path_instrumented_contract: &PathBuf) -> bool {
+    find_string_in_rs_files(
+        path_instrumented_contract,
+        "ink::env::debug_println!(\"COV={}\",",
+    )
+}
+
+pub fn is_compiled(path_instrumented_contract: &PathBuf) -> bool {
+    let target_dir = path_instrumented_contract.join("target");
+
+    if !target_dir.exists() {
+        return false
+    }
+    target_dir.join("debug").exists() || target_dir.join("release").exists()
 }
 
 /// A function to get all entries from the corpus directory

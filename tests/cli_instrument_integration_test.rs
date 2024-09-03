@@ -5,8 +5,8 @@ pub mod shared;
 mod tests {
     use super::*;
     use crate::shared::{
-        find_string_in_rs_files,
         instrument,
+        is_instrumented,
         samples::Sample,
         with_modified_phink_config,
         DEFAULT_TEST_PHINK_TOML,
@@ -48,7 +48,7 @@ mod tests {
             // `path_instrumented_contract`
             let cargo_toml_exists = WalkDir::new(path_instrumented_contract.path)
                 .into_iter()
-                .filter_map(std::result::Result::ok) // Filter out errors
+                .filter_map(Result::ok) // Filter out errors
                 .any(|entry| {
                     entry.file_name() == "Cargo.toml"
                 });
@@ -85,30 +85,18 @@ mod tests {
                 "Instrumented contract not found"
             );
 
-            let accumulator_contains_debug = find_string_in_rs_files(
-                &path_instrumented_contract.path.join("accumulator"),
-                "ink::env::debug_println!(\"COV={}\",",
-            );
             ensure!(
-                accumulator_contains_debug,
+                is_instrumented(&path_instrumented_contract.path.join("accumulator")),
                 "Expected to find a trace of instrumentation in Accumulator"
             );
 
-            let subber_contains_debug = find_string_in_rs_files(
-                &path_instrumented_contract.path.join("subber"),
-                "ink::env::debug_println!(\"COV={}\",",
-            );
             ensure!(
-                subber_contains_debug,
+                is_instrumented(&path_instrumented_contract.path.join("subber")),
                 "Expected to find a trace of instrumentation in Subber"
             );
 
-            let adder_contains_debug = find_string_in_rs_files(
-                &path_instrumented_contract.path.join("adder"),
-                "ink::env::debug_println!(\"COV={}\",",
-            );
             ensure!(
-                adder_contains_debug,
+                is_instrumented(&path_instrumented_contract.path.join("adder")),
                 "Expected to find a trace of instrumentation in Adder"
             );
 
@@ -134,12 +122,8 @@ mod tests {
         let test = with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
 
-            let contains_instrumented_code = find_string_in_rs_files(
-                &path_instrumented_contract.path,
-                "ink::env::debug_println!(\"COV={}\",",
-            );
             ensure!(
-                contains_instrumented_code,
+                is_instrumented(&path_instrumented_contract.path),
                 "Expected to find a trace of instrumentation in at least one .rs file"
             );
             Ok(())

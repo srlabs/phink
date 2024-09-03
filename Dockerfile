@@ -50,5 +50,5 @@ RUN cp target/release/phink /usr/local/bin/phink
 
 WORKDIR /phink
 ENTRYPOINT ["phink"]
-# Default command: instrument a contract
+# If nothing is provided, we just start an instrumentumentation of a sampled contract
 CMD ["instrument", "sample/dummy/"]

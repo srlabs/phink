@@ -11,6 +11,8 @@ mod tests {
         ensure_while_fuzzing,
         get_corpus_files,
         instrument,
+        is_compiled,
+        is_instrumented,
         samples::Sample,
         with_modified_phink_config,
     };
@@ -57,6 +59,16 @@ mod tests {
                         Ok(_) => corpus_res.iter().len(),
                         _ => 0,
                     };
+
+                    let path_contract = &config
+                        .clone()
+                        .instrumented_contract_path
+                        .unwrap_or_default()
+                        .path;
+
+                    ensure!(is_instrumented(path_contract), "Dummy wasn't instrumented ");
+
+                    ensure!(is_compiled(path_contract), "Dummy wasn't compiled properly");
 
                     ensure!(
                         initial_corpus_len > 0,
