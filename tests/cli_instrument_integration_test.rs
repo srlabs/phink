@@ -27,9 +27,8 @@ mod tests {
 
     #[test]
     fn test_instrument_respects_configuration() {
-        let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
-            "test_instrumentation_multifile_contract_INSTRUMENTED_PATH",
-        ));
+        let path_instrumented_contract =
+            InstrumentedPath::new(PathBuf::from("contract_path_test_3"));
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
@@ -71,9 +70,8 @@ mod tests {
 
     #[test]
     fn test_instrumentation_multifile_contract() {
-        let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
-            "path_instrumented_contract_test_instrument_respects_configuration",
-        ));
+        let path_instrumented_contract =
+            InstrumentedPath::new(PathBuf::from("contract_path_test_4"));
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
@@ -122,9 +120,8 @@ mod tests {
 
     #[test]
     fn test_instrument_contains_instrumented_code() {
-        let path_instrumented_contract = InstrumentedPath::new(PathBuf::from(
-            "path_instrumented_contract_test_instrument_contains_instrumented_code",
-        ));
+        let path_instrumented_contract =
+            InstrumentedPath::new(PathBuf::from("contract_path_test_5"));
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),

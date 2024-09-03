@@ -56,7 +56,7 @@ pub struct Configuration {
     /// involved the four first bytes of the constructor' selector,
     /// followed by the payload.
     pub constructor_payload: Option<String>,
-    /// Make Phink verbose to stdout
+    /// Make Phink more verbose
     pub verbose: bool,
     /// Path where the instrumented contract will be stored after running `phink
     /// instrument mycontract` By default, we create a random folder in

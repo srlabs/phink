@@ -48,12 +48,11 @@ pub struct Message {
 #[derive(Debug, Clone)]
 pub struct OneInput {
     pub messages: Vec<Message>,
-    pub origin: Origin,
     pub fuzz_option: OriginFuzzingOption,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Origin(u8);
+pub struct Origin(pub u8);
 impl Default for Origin {
     fn default() -> Self {
         Origin(1)
@@ -128,7 +127,6 @@ pub fn parse_input(
 
     let mut input = OneInput {
         messages: vec![],
-        origin: Default::default(),
         fuzz_option: config.should_fuzz_origin(),
     };
 
@@ -140,10 +138,10 @@ pub fn parse_input(
         );
 
         let encoded_message: &[u8];
-
+        let mut origin = Origin::default();
         match input.fuzz_option {
             EnableOriginFuzzing => {
-                input.origin = Origin(decoded_payloads[4]);
+                origin = Origin(decoded_payloads[4]);
                 encoded_message = &decoded_payloads[5..];
             }
             DisableOriginFuzzing => encoded_message = &decoded_payloads[4..],
@@ -169,7 +167,7 @@ pub fn parse_input(
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
                         message_metadata: decoded_msg.unwrap(),
-                        origin: input.origin,
+                        origin,
                     });
                 }
             }

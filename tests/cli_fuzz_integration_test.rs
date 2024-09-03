@@ -32,10 +32,10 @@ mod tests {
 
     #[test]
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
-        let fuzz_output = PathBuf::from("output_test_assert_output_created_when_fuzzing");
+        let fuzz_output = PathBuf::from("output_test_1");
         let config = Configuration {
             instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
-                "test_assert_output_created_when_fuzzing_instrumented",
+                "contract_path_test_1",
             ))),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
@@ -130,10 +130,10 @@ mod tests {
 
     #[test]
     fn test_fuzz_two_cores_work() -> Result<()> {
-        let fuzz_output = PathBuf::from("output_test_assert_output_created_when_fuzzing");
+        let fuzz_output = PathBuf::from("output_test_2");
         let config = Configuration {
             instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
-                "test_assert_output_created_when_fuzzing_instrumented",
+                "contract_path_test_2",
             ))),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(2),

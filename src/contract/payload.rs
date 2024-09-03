@@ -146,7 +146,10 @@ mod test {
             PayloadCrafter,
             Selector,
         },
-        fuzzer::parser::parse_input,
+        fuzzer::parser::{
+            parse_input,
+            Origin,
+        },
     };
     use contract_transcode::ContractMessageTranscoder;
     use sp_core::hexdisplay::AsBytesRef;
@@ -206,7 +209,10 @@ mod test {
         ];
         let data = transcoder.encode(constructor, args).unwrap();
         let hex = hex::encode(data);
-        assert!(!hex.is_empty())
+        assert_eq!(
+            hex,
+            "b8a4d3d9d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+        );
     }
 
     #[test]
@@ -214,10 +220,9 @@ mod test {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
 
         let encoded_bytes = hex::decode(
-            "\
-            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000\
+            "00000000229b553f9400000000000000000027272727272727272700002727272727272727272727\
             2a2a2a2a2a2a2a2a\
-            3007fcd09e3707fcd0b13038ff7f00304d302f3030d259f7ba303000042438ff7fe4fcd09e3763000000",
+            00000000229b553f9400000000000000000027272727272727272700002727272727272727272727",
         )
         .unwrap();
 
@@ -225,13 +230,18 @@ mod test {
             ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
         );
 
-        let msg = parse_input(
+        let input = parse_input(
             encoded_bytes.as_bytes_ref(),
             &mut transcoder_loader,
             Configuration::default(),
-        )
-        .messages;
-        assert!(!msg.is_empty(), "No messages decoded");
+        );
+        let msg = input.messages;
+        assert_eq!(msg.len(), 2, "No messages decoded");
+        assert_eq!(
+            msg.get(0).unwrap().origin,
+            Origin::default(),
+            "Origin is supposed to be the default one"
+        );
 
         for i in 0..msg.len() {
             let hex = transcoder_loader

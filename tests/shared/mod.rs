@@ -37,17 +37,17 @@ use std::{
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 
-/// This function is a helper used to run tests, it mainly checks that the instrumented
-/// folder doesn't exist yet, same for the fuzzing output, remove the temporary forked
-/// Phink configuration file, executes the tests and then clean everything again
+/// Helper used to run tests, mainly checking that the instrumented
+/// folder/fuzzing output doesn't exist and removes the temporary forked
+/// Phink config file, executes the tests and then clean everything again.
 ///
 /// # Arguments
 ///
 /// * `config`: A `Configuration` struct, the same one used for CLI
 /// * `executed_test`: The function being executed that effectively performs the tests, i.e
 ///   functions containing `ensure!`
-/// # Examples
 ///
+/// # Example
 /// ```
 /// with_modified_phink_config(config.clone(), || {
 ///     instrument(Sample::Dummy);
@@ -118,6 +118,7 @@ where
             .clone()
             .instrumented_contract_path
             .unwrap_or_default(),
+        false,
     );
 
     let start_time = Instant::now();
@@ -197,18 +198,29 @@ pub fn instrument(contract_path: Sample) -> Assert {
 /// ** Important **
 /// This should only be used in test !
 #[must_use]
-pub fn fuzz(path_instrumented_contract: InstrumentedPath) -> Child {
+pub fn fuzz(path_instrumented_contract: InstrumentedPath, verbose: bool) -> Child {
+    let stdio_stdout = if verbose {
+        Stdio::inherit()
+    } else {
+        Stdio::null()
+    };
+
+    let stdio_stderr = if verbose {
+        Stdio::inherit()
+    } else {
+        Stdio::null()
+    };
     let child = NativeCommand::new("cargo")
         .arg("run")
         .arg("--")
         .args(["--config", DEFAULT_TEST_PHINK_TOML])
         .arg("fuzz")
         .arg(path_instrumented_contract.path.to_str().unwrap())
-        .stdout(Stdio::null())
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(stdio_stdout)
+        .stderr(stdio_stderr)
         .spawn()
         .expect("Failed to start the process");
+
     child
 }
 

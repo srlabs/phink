@@ -283,7 +283,7 @@ fn execute_messages(
 
             let result: FullContractResponse = client.setup.clone().call(
                 &message.payload,
-                decoded_msgs.origin.into(),
+                message.origin.into(),
                 transfer_value,
                 client.fuzzing_config.clone(),
             );
@@ -309,7 +309,9 @@ fn check_invariants(
             bug_manager.display_trap(decoded_msgs.messages[0].clone(), response.clone());
         });
 
-    if let Err(invariant_tested) = bug_manager.are_invariants_passing(decoded_msgs.origin) {
+    if let Err(invariant_tested) =
+        bug_manager.are_invariants_passing(decoded_msgs.messages[0].origin)
+    {
         bug_manager.display_invariant(
             all_msg_responses.to_vec(),
             decoded_msgs.clone(),

@@ -74,7 +74,6 @@ impl BugManager {
                 vec![response],
                 OneInput {
                     messages: vec![message.clone()],
-                    origin: message.origin,
                     fuzz_option: self.configuration.should_fuzz_origin(),
                 },
             );
@@ -112,8 +111,7 @@ impl BugManager {
         panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");
     }
 
-    /// This function aims to call every invariant function via
-    /// `invariant_selectors`.
+    /// This function aims to call every invariants via `invariant_selectors`.
     pub fn are_invariants_passing(&self, origin: Origin) -> Result<(), Selector> {
         for invariant in &self.invariant_selectors {
             let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
