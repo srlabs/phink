@@ -164,24 +164,8 @@ mod test {
         sync::Once,
     };
 
-    static BUILD: Once = Once::new();
-
-    pub fn build() {
-        BUILD.call_once(|| {
-            println!("Executing `build.sh` to compile samples");
-
-            let _ = Command::new("bash")
-                .current_dir("sample") // Change to the 'sample' directory
-                .arg("build.sh")
-                .stdout(Stdio::null())
-                .stderr(Stdio::null());
-        });
-    }
-
     #[test]
     fn fetch_good_invariants() {
-        build();
-
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let extracted: String = PayloadCrafter::extract_invariants(&specs)
             .unwrap()
@@ -195,8 +179,6 @@ mod test {
 
     #[test]
     fn fetch_correct_selectors() {
-        build();
-
         let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns"))
             .iter()
             .map(|x| hex::encode(x) + " ")
@@ -211,8 +193,6 @@ mod test {
 
     #[test]
     fn fetch_correct_dns_constructor() {
-        build();
-
         let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
         let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
 
@@ -222,8 +202,6 @@ mod test {
 
     #[test]
     fn encode_works_good() {
-        build();
-
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
         let constructor = "set_address";
@@ -234,14 +212,11 @@ mod test {
         ];
         let data = transcoder.encode(constructor, args).unwrap();
         let hex = hex::encode(data);
-        println!("Encoded constructor data {hex}");
         assert!(!hex.is_empty())
     }
 
     #[test]
     fn parse_one_input_with_two_messages() {
-        build();
-
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
 
         let encoded_bytes = hex::decode(
@@ -262,28 +237,19 @@ mod test {
             Configuration::default(),
         )
         .messages;
-        println!("{:?}", msg);
+        assert!(msg.len() > 0, "No messages decoded");
 
         for i in 0..msg.len() {
             let hex = transcoder_loader
                 .lock()
                 .unwrap()
                 .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
-            println!("{:?}", hex);
+            assert!(hex.is_ok(), "Decoding wasn't Ok")
         }
-
-        let hash_two: [u8; 32] = [
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 2,
-        ];
-
-        println!("{:?}", hex::encode(hash_two.encode()));
     }
 
     #[test]
     fn decode_works_good() {
-        build();
-
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
 

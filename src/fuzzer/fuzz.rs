@@ -323,32 +323,10 @@ fn check_invariants(
 mod tests {
     use super::*;
 
-    use std::{
-        path::Path,
-        process::{
-            Command,
-            Stdio,
-        },
-        sync::Once,
-    };
+    use std::path::Path;
 
-    static BUILD: Once = Once::new();
-
-    pub fn build() {
-        println!("executing build.sh");
-        BUILD.call_once(|| {
-            let _status = Command::new("bash")
-                .current_dir("sample") // Change to the 'sample' directory
-                .arg("build.sh")
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .expect("failed to execute process");
-        });
-    }
     #[test]
     fn test_parse_input() {
-        build();
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = Mutex::new(
             ContractMessageTranscoder::load(metadata_path)
