@@ -90,7 +90,7 @@ impl Default for Configuration {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum OriginFuzzingOption {
     EnableOriginFuzzing,
     #[default]
@@ -168,5 +168,150 @@ impl Configuration {
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)
         value.and_then(|s| s.parse::<u128>().ok())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    fn create_test_config() -> Configuration {
+        Configuration {
+            cores: Some(2),
+            use_honggfuzz: true,
+            deployer_address: Some(
+                AccountId32::from_str("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY").unwrap(),
+            ),
+            max_messages_per_exec: Some(10),
+            report_path: Some(PathBuf::from("/tmp/report")),
+            fuzz_origin: true,
+            default_gas_limit: Some(Weight::from_parts(100_000_000_000, 0)),
+            storage_deposit_limit: Some("1000000000".into()),
+            instantiate_initial_value: Some("500".into()),
+            constructor_payload: Some("0x1234".into()),
+            verbose: true,
+            instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
+                "/tmp/instrumented",
+            ))),
+            fuzz_output: Some(PathBuf::from("/tmp/fuzz_output")),
+            show_ui: false,
+        }
+    }
+
+    #[test]
+    fn test_default_configuration() {
+        let default_config = Configuration::default();
+        assert_eq!(default_config.cores, Some(1));
+        assert_eq!(default_config.use_honggfuzz, false);
+        assert_eq!(default_config.fuzz_origin, false);
+        assert_eq!(
+            default_config.max_messages_per_exec,
+            Some(MAX_MESSAGES_PER_EXEC)
+        );
+        assert_eq!(
+            default_config.report_path,
+            Some(PathBuf::from("output/coverage_report"))
+        );
+        assert_eq!(
+            default_config.default_gas_limit,
+            Some(ContractBridge::DEFAULT_GAS_LIMIT)
+        );
+        assert_eq!(
+            default_config.storage_deposit_limit,
+            Some("100000000000".into())
+        );
+        assert_eq!(default_config.show_ui, true);
+    }
+
+    #[test]
+    fn test_should_fuzz_origin() {
+        let mut config = create_test_config();
+        assert_eq!(config.should_fuzz_origin(), EnableOriginFuzzing);
+
+        config.fuzz_origin = false;
+        assert_eq!(config.should_fuzz_origin(), DisableOriginFuzzing);
+    }
+
+    #[test]
+    fn test_parse_balance() {
+        assert_eq!(Configuration::parse_balance(Some("100".into())), Some(100));
+        assert_eq!(Configuration::parse_balance(Some("0".into())), Some(0));
+        assert_eq!(
+            Configuration::parse_balance(Some("18446744073709551615".into())),
+            Some(18446744073709551615)
+        );
+        assert_eq!(Configuration::parse_balance(None), None);
+        assert_eq!(Configuration::parse_balance(Some("invalid".into())), None);
+    }
+
+    #[test]
+    fn test_try_from_string() {
+        let config_str = r#"
+            cores = 4
+            use_honggfuzz = true
+            fuzz_origin = true
+            max_messages_per_exec = 20
+            storage_deposit_limit = "200000000000"
+            verbose = false
+            show_ui = true
+        "#;
+
+        let config: Configuration = config_str.to_string().try_into().unwrap();
+        assert_eq!(config.cores, Some(4));
+        assert_eq!(config.use_honggfuzz, true);
+        assert_eq!(config.fuzz_origin, true);
+        assert_eq!(config.max_messages_per_exec, Some(20));
+        assert_eq!(config.storage_deposit_limit, Some("200000000000".into()));
+        assert_eq!(config.verbose, false);
+        assert_eq!(config.show_ui, true);
+    }
+
+    #[test]
+    fn test_try_from_string_invalid_config() {
+        let invalid_config_str = r#"
+            cores = "invalid"
+            storage_deposit_limit = "not_a_number"
+        "#;
+
+        let result: Result<Configuration, String> = invalid_config_str.to_string().try_into();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_phink_files() {
+        let output = PathBuf::from("/tmp/phink_output");
+        let phink_files = PhinkFiles::new(output.clone());
+
+        assert_eq!(
+            phink_files.path(PFiles::CoverageTracePath),
+            output.join("phink").join("traces.cov")
+        );
+        assert_eq!(
+            phink_files.path(PFiles::AllowlistPath),
+            output.join("phink").join("allowlist.txt")
+        );
+        assert_eq!(
+            phink_files.path(PFiles::DictPath),
+            output.join("phink").join("selectors.dict")
+        );
+        assert_eq!(
+            phink_files.path(PFiles::CorpusPath),
+            output.join("phink").join("corpus")
+        );
+    }
+
+    #[test]
+    fn test_save_as_toml() {
+        use tempfile::tempdir;
+
+        let config = create_test_config();
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("config.toml");
+
+        assert!(config.save_as_toml(file_path.to_str().unwrap()).is_ok());
+
+        let saved_config: Configuration = Configuration::try_from(&file_path).unwrap();
+        assert_eq!(saved_config, config);
     }
 }
