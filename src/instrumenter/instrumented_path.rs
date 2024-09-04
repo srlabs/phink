@@ -1,7 +1,3 @@
-use rand::{
-    distributions::Alphanumeric,
-    Rng,
-};
 use serde::Deserialize;
 use serde_derive::Serialize;
 use std::{
@@ -21,19 +17,24 @@ pub struct InstrumentedPath {
     pub path: PathBuf,
 }
 
+impl From<PathBuf> for InstrumentedPath {
+    fn from(path: PathBuf) -> Self {
+        Self { path }
+    }
+}
+impl From<&str> for InstrumentedPath {
+    fn from(path: &str) -> Self {
+        Self {
+            path: PathBuf::from(path),
+        }
+    }
+}
 impl Default for InstrumentedPath {
-    /// By default, we create a random folder in /tmp/ink_fuzzed_XXXX
+    /// By default, we create a random folder in `/tmp/ink_fuzzed_1`
     fn default() -> Self {
-        let random_string: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(5)
-            .map(char::from)
-            .collect();
-
-        let new_dir = Path::new("/tmp")
-            .join(DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH.to_string() + &random_string);
-
-        Self { path: new_dir }
+        Self {
+            path: Path::new("/tmp").join(DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH.to_string() + "1"),
+        }
     }
 }
 

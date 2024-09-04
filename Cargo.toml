@@ -40,6 +40,8 @@ assert_cmd = { version = "2.0.16" }
 toml_edit = { version = "0.22.20" }
 predicates = { version = "3.1.2" }
 tempfile = { version = "3.12.0" }
+mockall = { version = "0.13.0" }
+
 
 [dependencies]
 # Standard crates
@@ -84,8 +86,9 @@ ink_metadata = { version = "*" }
 ink_env = { version = "*" }
 contract-transcode = { version = "*" }
 contract-metadata = { version = "*" }
-predicates = "3.1.2"
-tempfile = "3.12.0"
+predicates = { version = "3.1.2" }
+colored = { version = "2.1.0" }
+thiserror = "1.0.63"
 
 
 [lints.rust]

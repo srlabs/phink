@@ -13,6 +13,7 @@ use crate::{
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
     instrumenter::instrumented_path::InstrumentedPath,
 };
+use anyhow::Context;
 use frame_support::weights::Weight;
 use serde_derive::{
     Deserialize,
@@ -157,8 +158,9 @@ impl Configuration {
     }
 
     pub fn save_as_toml(&self, to: &str) -> anyhow::Result<()> {
-        let toml_str = toml::to_string(self)?;
-        let mut file = File::create(to)?;
+        let toml_str =
+            toml::to_string(self).with_context(|| "Couldn't serialize to toml".to_string())?;
+        let mut file = File::create(to).with_context(|| format!("Couldn't create file {}", to))?;
         file.write_all(toml_str.as_bytes())?;
         Ok(())
     }
@@ -203,8 +205,8 @@ mod tests {
     fn test_default_configuration() {
         let default_config = Configuration::default();
         assert_eq!(default_config.cores, Some(1));
-        assert_eq!(default_config.use_honggfuzz, false);
-        assert_eq!(default_config.fuzz_origin, false);
+        assert!(!default_config.use_honggfuzz);
+        assert!(!default_config.fuzz_origin);
         assert_eq!(
             default_config.max_messages_per_exec,
             Some(MAX_MESSAGES_PER_EXEC)
@@ -221,7 +223,7 @@ mod tests {
             default_config.storage_deposit_limit,
             Some("100000000000".into())
         );
-        assert_eq!(default_config.show_ui, true);
+        assert!(default_config.show_ui);
     }
 
     #[test]
@@ -259,12 +261,12 @@ mod tests {
 
         let config: Configuration = config_str.to_string().try_into().unwrap();
         assert_eq!(config.cores, Some(4));
-        assert_eq!(config.use_honggfuzz, true);
-        assert_eq!(config.fuzz_origin, true);
+        assert!(config.use_honggfuzz);
+        assert!(config.fuzz_origin);
         assert_eq!(config.max_messages_per_exec, Some(20));
         assert_eq!(config.storage_deposit_limit, Some("200000000000".into()));
-        assert_eq!(config.verbose, false);
-        assert_eq!(config.show_ui, true);
+        assert!(!config.verbose);
+        assert!(config.show_ui);
     }
 
     #[test]

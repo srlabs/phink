@@ -14,7 +14,6 @@ verbose = true
 #instrumented_contract_path.path = "instrumented_output" #commented, we want it in /tmp/
 show_ui = false
 
-
 [default_gas_limit]
 ref_time = 100000000000
 proof_size = 3145728  # 3 * 1024 * 1024

@@ -14,19 +14,19 @@ use crate::{
             Fuzz,
         },
     },
-    instrumenter::instrumentation::{
-        ContractBuilder,
-        ContractInstrumenter,
-        Instrumenter,
+    instrumenter::{
+        instrumentation::Instrumenter,
+        instrumented_path::InstrumentedPath,
     },
 };
+use clap::Parser;
+use colored::Colorize;
 use std::{
+    backtrace::BacktraceStatus,
     env::var,
     path::PathBuf,
+    process,
 };
-
-use crate::instrumenter::instrumented_path::InstrumentedPath;
-use clap::Parser;
 
 pub mod cli;
 pub mod contract;
@@ -89,10 +89,16 @@ pub fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
         if var("PHINK_FROM_ZIGGY").is_ok() {
-            Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str.clone())).unwrap();
+            if let Err(e) = Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str)) {
+                eprintln!("{}", format_error(e));
+                process::exit(1);
+            }
         }
     } else {
-        handle_cli().unwrap(); // TODO: Handle this unwrap
+        if let Err(e) = handle_cli() {
+            eprintln!("{}", format_error(e));
+            process::exit(1);
+        }
     }
 }
 
@@ -103,14 +109,16 @@ fn handle_cli() -> anyhow::Result<()> {
     match cli.command {
         Commands::Instrument(contract_path) => {
             let z_config: ZiggyConfig =
-                ZiggyConfig::new(config.clone(), contract_path.contract_path.clone());
-            let mut engine = Instrumenter::new(z_config);
-            engine.instrument().unwrap().build()?;
+                ZiggyConfig::new(config.to_owned(), contract_path.contract_path.to_owned());
+
+            let engine = Instrumenter::new(z_config.to_owned());
+            engine.to_owned().instrument()?;
+            engine.build()?;
 
             println!(
                 "🤞 Contract '{}' has been instrumented and compiled! You can find the instrumented contract in '{}/'",
                 contract_path.contract_path.display(),
-                config.instrumented_contract_path.unwrap_or_default().path.display()
+                z_config.instrumented_path().display()
             );
             Ok(())
         }
@@ -137,4 +145,28 @@ fn handle_cli() -> anyhow::Result<()> {
         }
         Commands::Clean => InstrumentedPath::clean(),
     }
+}
+
+fn format_error(e: anyhow::Error) -> String {
+    let mut message = format!("\n{}: {}\n", "Phink got an error...".red().bold(), e);
+
+    match e.backtrace().status() {
+        BacktraceStatus::Captured => {
+            message = format!(
+                "{}\n{}\n{}\n",
+                message,
+                "Backtrace ->".yellow(),
+                e.backtrace()
+            )
+        }
+        _ => {}
+    }
+
+    let mut source = e.source();
+    while let Some(cause) = source {
+        message = format!("{}\n\n{}: {}", message, "Caused by".cyan().bold(), cause);
+        source = cause.source();
+    }
+
+    message
 }

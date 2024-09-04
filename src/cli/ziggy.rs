@@ -60,6 +60,12 @@ impl ZiggyConfig {
         }
     }
 
+    pub fn instrumented_path(self) -> PathBuf {
+        self.config
+            .instrumented_contract_path
+            .unwrap_or_default()
+            .path
+    }
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
@@ -247,9 +253,9 @@ mod tests {
     #[test]
     fn test_ziggy_config_new() {
         let config = create_test_config();
-        assert_eq!(config.config.verbose, true);
+        assert!(config.config.verbose);
         assert_eq!(config.config.cores, Some(4));
-        assert_eq!(config.config.use_honggfuzz, false);
+        assert!(!config.config.use_honggfuzz);
         assert_eq!(
             config.config.fuzz_output,
             Some(PathBuf::from("/tmp/fuzz_output"))
@@ -282,9 +288,9 @@ mod tests {
                 }
         "#;
         let config = ZiggyConfig::parse(config_str.to_string());
-        assert_eq!(config.config.verbose, true);
-        assert_eq!(config.config.show_ui, true);
-        assert_eq!(config.config.use_honggfuzz, false);
+        assert!(config.config.verbose);
+        assert!(config.config.show_ui);
+        assert!(!config.config.use_honggfuzz);
         assert_eq!(
             config.config.storage_deposit_limit,
             Some("100000000000".into())

@@ -140,6 +140,7 @@ impl PayloadCrafter {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use crate::{
         cli::config::Configuration,
         contract::payload::{
@@ -160,7 +161,123 @@ mod test {
             PathBuf,
         },
     };
+    use tempfile::TempDir;
 
+    #[test]
+    fn test_parse_selectors() {
+        let spec = Spec {
+            constructors: vec![SelectorEntry {
+                selector: "0x12345678".to_string(),
+            }],
+            messages: vec![
+                SelectorEntry {
+                    selector: "0xabcdef01".to_string(),
+                },
+                SelectorEntry {
+                    selector: "0x23456789".to_string(),
+                },
+            ],
+        };
+
+        let selectors = PayloadCrafter::parse_selectors(&spec);
+
+        assert_eq!(selectors.len(), 3);
+        assert_eq!(selectors[0], [0x12, 0x34, 0x56, 0x78]);
+        assert_eq!(selectors[1], [0xab, 0xcd, 0xef, 0x01]);
+        assert_eq!(selectors[2], [0x23, 0x45, 0x67, 0x89]);
+    }
+
+    #[test]
+    fn test_extract_invariants() {
+        let json_data = r#"
+        {
+            "spec": {
+                "messages": [
+                    {
+                        "label": "phink_test_invariant",
+                        "selector": "0x12345678"
+                    },
+                    {
+                        "label": "normal_function",
+                        "selector": "0xabcdef01"
+                    },
+                    {
+                        "label": "phink_another_invariant",
+                        "selector": "0x23456789"
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let invariants = PayloadCrafter::extract_invariants(json_data).unwrap();
+
+        assert_eq!(invariants.len(), 2);
+        assert_eq!(invariants[0], [0x12, 0x34, 0x56, 0x78]);
+        assert_eq!(invariants[1], [0x23, 0x45, 0x67, 0x89]);
+    }
+
+    #[test]
+    fn test_get_constructor() {
+        let json_data = r#"
+        {
+            "spec": {
+                "constructors": [
+                    {
+                        "label": "new",
+                        "selector": "0x12345678",
+                        "args": []
+                    },
+                    {
+                        "label": "new_with_value",
+                        "selector": "0xabcdef01",
+                        "args": [
+                            {
+                                "label": "value",
+                                "type": {
+                                    "displayName": ["u128"],
+                                    "type": 0
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        "#;
+
+        let constructor = PayloadCrafter::get_constructor(json_data).unwrap();
+        assert_eq!(constructor, [0x12, 0x34, 0x56, 0x78]);
+    }
+
+    #[test]
+    fn test_extract_all() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("contract.json");
+        let json_content = r#"
+        {
+            "spec": {
+                "constructors": [
+                    {
+                        "selector": "0x12345678"
+                    }
+                ],
+                "messages": [
+                    {
+                        "selector": "0xabcdef01"
+                    }
+                ]
+            }
+        }
+        "#;
+        fs::write(&file_path, json_content).unwrap();
+
+        let selectors = PayloadCrafter::extract_all(temp_dir.path().to_path_buf());
+
+        assert_eq!(selectors.len(), 2);
+        assert_eq!(selectors[0], [0x12, 0x34, 0x56, 0x78]);
+        assert_eq!(selectors[1], [0xab, 0xcd, 0xef, 0x01]);
+    }
     #[test]
     fn fetch_good_invariants() {
         let specs = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
@@ -238,7 +355,7 @@ mod test {
         let msg = input.messages;
         assert_eq!(msg.len(), 2, "No messages decoded");
         assert_eq!(
-            msg.get(0).unwrap().origin,
+            msg.first().unwrap().origin,
             Origin::default(),
             "Origin is supposed to be the default one"
         );

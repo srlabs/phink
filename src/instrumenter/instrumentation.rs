@@ -3,6 +3,7 @@ use crate::{
     instrumenter::instrumentation::instrument::ContractCovUpdater,
 };
 use anyhow::{
+    anyhow,
     bail,
     Context,
 };
@@ -45,24 +46,10 @@ pub struct Instrumenter {
     pub z_config: ZiggyConfig,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InkFilesPath {
     pub wasm_path: PathBuf,
     pub specs_path: PathBuf,
-}
-
-pub trait ContractInstrumenter {
-    fn instrument(&mut self) -> anyhow::Result<&mut Self>
-    where
-        Self: Sized;
-    fn instrument_file(
-        &self,
-        path: &Path,
-        contract_cov_manager: &mut ContractCovUpdater,
-    ) -> anyhow::Result<()>;
-    fn parse_and_visit(code: &str, visitor: impl VisitMut) -> anyhow::Result<String>;
-    fn save_and_format(source_code: String, lib_rs: PathBuf) -> anyhow::Result<()>;
-    fn already_instrumented(code: &str) -> bool;
 }
 
 impl Instrumenter {
@@ -90,7 +77,7 @@ impl Instrumenter {
                 }
             })
             .next()
-            .ok_or_else(|| anyhow::anyhow!("🙅 No .wasm file found in target directory"))?;
+            .ok_or_else(|| anyhow!("🙅 No .wasm file found in target directory"))?;
 
         let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
 
@@ -99,41 +86,34 @@ impl Instrumenter {
             specs_path,
         })
     }
-}
-pub trait ContractBuilder {
-    fn build(&self) -> anyhow::Result<()>;
-}
 
-impl ContractBuilder for Instrumenter {
-    fn build(&self) -> anyhow::Result<()> {
+    /// Go to the instrumented path and compile the contract with the phink feature.
+    /// # Important
+    /// This function needs to be called after once `instrument()` succeded !
+    pub fn build(self) -> anyhow::Result<()> {
+        let path = self.to_owned().z_config.instrumented_path();
+        let p_display = path.display();
+        if !path.exists() {
+            bail!("There was probably a fork issue, as {p_display} doesn't exist.")
+        }
+
         let status = Command::new("cargo")
-            .current_dir(&self.z_config.contract_path)
+            .current_dir(path.to_owned())
             .args(["contract", "build", "--features=phink"])
             .status()?;
 
         if !status.success() {
             bail!(
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
-                Please go to {}, edit the `lib.rs` file, and run cargo contract build again.\
+                Please go to {p_display}, edit the source code, and run cargo contract build again.\
                 (more infos: {status})",
-                &self.z_config.contract_path.display()
             )
         }
         Ok(())
     }
-}
-pub trait ContractForker {
-    fn fork(&self) -> anyhow::Result<PathBuf>;
-}
-impl ContractForker for Instrumenter {
-    fn fork(&self) -> anyhow::Result<PathBuf> {
-        let new_dir = &self
-            .z_config
-            .config
-            .instrumented_contract_path
-            .clone()
-            .unwrap_or_default()
-            .path;
+
+    fn fork(self) -> anyhow::Result<PathBuf> {
+        let new_dir = &self.to_owned().z_config.instrumented_path();
 
         println!("🏗️ Creating new directory: {:?}", new_dir);
         fs::create_dir_all(new_dir)
@@ -170,12 +150,13 @@ impl ContractForker for Instrumenter {
         );
         Ok(new_dir.clone())
     }
-}
 
-impl ContractInstrumenter for Instrumenter {
-    fn instrument(&mut self) -> anyhow::Result<&mut Instrumenter> {
-        let new_working_dir = self.fork()?;
-        // self.z_config.contract_path = new_working_dir.clone(); //todo probably bugged
+    pub(crate) fn instrument(self) -> anyhow::Result<()> {
+        let new_working_dir = self
+            .to_owned()
+            .fork()
+            .with_context(|| "Forking the project to a new directory failed".to_string())?;
+
         let mut contract_cov_manager = ContractCovUpdater { line_id: 0 };
         for entry in WalkDir::new(&new_working_dir)
             .into_iter()
@@ -185,9 +166,15 @@ impl ContractInstrumenter for Instrumenter {
         // Don't instrument anything inside target
         {
             let path = entry.path();
-            self.instrument_file(path, &mut contract_cov_manager)?;
+            self.instrument_file(path, &mut contract_cov_manager)
+                .with_context(|| {
+                    format!(
+                        "Instrumenting the file {} wasn't possible",
+                        path.to_str().unwrap()
+                    )
+                })?;
         }
-        Ok(self)
+        Ok(())
     }
 
     fn instrument_file(
@@ -201,10 +188,7 @@ impl ContractInstrumenter for Instrumenter {
             return Ok(())
         }
 
-        println!(
-            "📝 Instrumenting file: {} with {contract_cov_manager:?}",
-            path.display(),
-        );
+        println!("📝 Instrumenting {}", path.display(),);
 
         let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
             .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
@@ -237,10 +221,10 @@ impl ContractInstrumenter for Instrumenter {
 
     /// Checks if the given code string is already instrumented.
     /// This function looks for the presence of the pattern
-    /// `ink::env::debug_println!("COV=abc")` where `abc` can be any number. If
+    /// `ink::env::debug_println!("COV={}", 123)` where `123` can be any number. If
     /// this pattern is found, it means the code is instrumented.
     fn already_instrumented(code: &str) -> bool {
-        Regex::new(r#"\bink::env::debug_println!\("COV=\d+"\)"#)
+        Regex::new(r#"ink::env::debug_println!\("COV=\{}", \d+\);"#)
             .unwrap()
             .is_match(code)
     }
@@ -257,7 +241,7 @@ mod instrument {
         Token,
     };
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct ContractCovUpdater {
         pub line_id: u64,
     }
@@ -286,5 +270,185 @@ mod instrument {
             }
             block.stmts = new_stmts;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        cli::config::Configuration,
+        instrumenter::instrumented_path::InstrumentedPath,
+    };
+    use std::{
+        default::Default,
+        fs::{
+            self,
+            File,
+        },
+        io::Read,
+    };
+    use tempfile::{
+        tempdir,
+        Builder,
+    };
+    use walkdir::WalkDir;
+
+    // Helper function to create a temporary `ZiggyConfig` for testing. If `keep` is set to `true`,
+    // the folder (instrumented contract and fuzzing output) won't be deleted once the test passed
+    fn create_temp_ziggy_config(keep: bool) -> ZiggyConfig {
+        let fuzz_output = Some(Builder::new().keep(keep).tempdir().unwrap().into_path());
+        let instrumented_contract_path = Some(InstrumentedPath::from(
+            Builder::new().keep(keep).tempdir().unwrap().into_path(),
+        ));
+
+        ZiggyConfig {
+            config: Configuration {
+                fuzz_output,
+                instrumented_contract_path,
+                ..Default::default()
+            },
+            contract_path: PathBuf::from("sample/dummy"),
+        }
+    }
+
+    #[test]
+    fn test_find_wasm_and_specs_paths_success() {
+        let config = create_temp_ziggy_config(false);
+        let wasm_file = config.contract_path.join("target/ink/test_contract.wasm");
+        let specs_file = config.contract_path.join("target/ink/test_contract.json");
+
+        // Create a fake .wasm file and corresponding .json spec file
+        fs::create_dir_all(wasm_file.parent().unwrap()).unwrap();
+        File::create(&wasm_file).unwrap();
+        File::create(&specs_file).unwrap();
+
+        let instrumenter = Instrumenter::new(config);
+
+        let result = instrumenter.find().unwrap();
+
+        assert_eq!(result.wasm_path, wasm_file);
+        assert_eq!(result.specs_path, specs_file);
+    }
+
+    #[test]
+    fn test_find_wasm_file_not_found() {
+        let config = ZiggyConfig {
+            config: Configuration {
+                fuzz_output: Some(tempdir().unwrap().into_path()),
+                instrumented_contract_path: Some(InstrumentedPath::from(
+                    tempdir().unwrap().into_path(),
+                )),
+                ..Default::default()
+            },
+            contract_path: PathBuf::from("rezrzerze/dummy"),
+        };
+        let instrumenter = Instrumenter::new(config);
+        let result = instrumenter.find();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_instrumentation_already_instrumented() {
+        let code = r#"ink::env::debug_println!("COV={}", 123);"#;
+        assert!(Instrumenter::already_instrumented(code));
+    }
+
+    #[test]
+    fn test_instrumentation_fullcode_instrumented() {
+        let code = r#"
+        fn main() {
+            ink::env::debug_println!("COV={}", 123);
+            println!("Hello, World!");
+        }"#;
+        assert!(Instrumenter::already_instrumented(code));
+    }
+    #[test]
+    fn test_instrumentation_not_yet_instrumented() {
+        let code = r#"
+        fn main() {
+            println!("Hello, World!");
+        }"#;
+        assert!(!Instrumenter::already_instrumented(code));
+    }
+
+    #[test]
+    fn test_instrument_file_success() {
+        let config = create_temp_ziggy_config(false);
+
+        let instrumenter = Instrumenter::new(config.to_owned());
+        assert!(instrumenter.instrument().is_ok(), "Instrumentation failed");
+        let mut modified_code = String::new();
+        File::open(config.instrumented_path())
+            .unwrap()
+            .read_to_string(&mut modified_code)
+            .unwrap();
+
+        assert!(
+            Instrumenter::already_instrumented(modified_code.as_str()),
+            "Instrumentation didn't work properly"
+        );
+    }
+
+    #[test]
+    fn test_save_and_format_creates_and_formats_file() {
+        let temp_dir = tempdir().unwrap();
+        let rust_file = temp_dir.path().join("lib.rs");
+        let source_code = String::from("fn main(){}");
+
+        Instrumenter::save_and_format(source_code.clone(), rust_file.clone()).unwrap();
+
+        let mut file_content = String::new();
+        File::open(rust_file)
+            .unwrap()
+            .read_to_string(&mut file_content)
+            .unwrap();
+
+        assert!(file_content.contains("fn main() {}"));
+    }
+
+    #[test]
+    fn test_fork_creates_new_directory() {
+        let config = create_temp_ziggy_config(false);
+        let instrumenter = Instrumenter::new(config.clone());
+
+        let src_file = config.contract_path.join("lib.rs");
+        fs::create_dir_all(src_file.parent().unwrap()).unwrap();
+        File::create(&src_file).unwrap();
+
+        let result = instrumenter.fork().unwrap();
+        let files: Vec<_> = WalkDir::new(&result)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
+            .collect();
+
+        assert_eq!(files.len(), 2); // New directory and copied file
+    }
+
+    #[test]
+    fn test_build_successful() -> anyhow::Result<()> {
+        let config = ZiggyConfig {
+            config: Configuration {
+                fuzz_output: Some(PathBuf::from("/tmp/TOOOOOOOOOZ")),
+                instrumented_contract_path: Some(InstrumentedPath::from("/tmp/AAAAAAAAA")),
+                ..Default::default()
+            },
+            contract_path: PathBuf::from("sample/dummy"),
+        };
+        let instrumenter = Instrumenter::new(config);
+        let a = instrumenter.clone().instrument();
+        let b = instrumenter.build();
+        assert!(a.is_ok(), "{}", format!("{:?}", a.unwrap_err()));
+        assert!(b.is_ok(), "{}", format!("{:?}", b.unwrap_err()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_build_fails() {
+        let config = create_temp_ziggy_config(false);
+        let instrumenter = Instrumenter::new(config.clone());
+        let result = instrumenter.build();
+        assert!(result.is_err());
     }
 }
