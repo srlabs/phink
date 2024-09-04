@@ -40,6 +40,8 @@ assert_cmd = { version = "2.0.16" }
 toml_edit = { version = "0.22.20" }
 predicates = { version = "3.1.2" }
 tempfile = { version = "3.12.0" }
+mockall = { version = "0.13.0" }
+
 
 [dependencies]
 # Standard crates

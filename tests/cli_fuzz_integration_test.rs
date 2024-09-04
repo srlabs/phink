@@ -29,14 +29,13 @@ mod tests {
         path::PathBuf,
         time::Duration,
     };
+    use tempfile::tempdir;
 
     #[test]
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
-        let fuzz_output = PathBuf::from("output_test_1");
+        let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
-            instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
-                "contract_path_test_1",
-            ))),
+            instrumented_contract_path: Some(InstrumentedPath::new(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
             ..Default::default()
@@ -130,11 +129,9 @@ mod tests {
 
     #[test]
     fn test_fuzz_two_cores_work() -> Result<()> {
-        let fuzz_output = PathBuf::from("output_test_2");
+        let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
-            instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
-                "contract_path_test_2",
-            ))),
+            instrumented_contract_path: Some(InstrumentedPath::new(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(2),
             ..Default::default()

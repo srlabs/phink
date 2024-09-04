@@ -21,6 +21,12 @@ pub struct InstrumentedPath {
     pub path: PathBuf,
 }
 
+impl From<PathBuf> for InstrumentedPath {
+    fn from(path: PathBuf) -> Self {
+        Self { path }
+    }
+}
+
 impl Default for InstrumentedPath {
     /// By default, we create a random folder in /tmp/ink_fuzzed_XXXX
     fn default() -> Self {

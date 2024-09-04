@@ -178,3 +178,50 @@ pub fn parse_input(
     }
     input
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_data_iterator() {
+        let input = [1, 2, 3, 4, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8];
+        let data = Data {
+            data: &input,
+            pointer: 0,
+            size: 0,
+            max_messages_per_exec: 2,
+        };
+
+        let result: Vec<&[u8]> = data.collect();
+        assert_eq!(result, vec![&[1, 2, 3, 4], &[5, 6, 7, 8]]);
+    }
+
+    #[test]
+    fn test_data_size_limit() {
+        let input = [1, 2, 3, 4, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8];
+        let mut data = Data {
+            data: &input,
+            pointer: 0,
+            size: 0,
+            max_messages_per_exec: 1,
+        };
+
+        assert_eq!(data.next(), Some(&[1, 2, 3, 4][..]));
+        assert_eq!(data.next(), None);
+    }
+
+    #[test]
+    fn test_origin_default() {
+        assert_eq!(Origin::default(), Origin(1));
+    }
+
+    #[test]
+    fn test_origin_from_u8() {
+        assert_eq!(Origin::from(5), Origin(5));
+    }
+
+    #[test]
+    fn test_u8_from_origin() {
+        assert_eq!(u8::from(Origin(3)), 3);
+    }
+}

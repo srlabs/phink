@@ -208,7 +208,7 @@ impl ContractBridge {
                 Some(contract_info.account_id)
             }
             Err(e) => {
-                eprintln!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
+                println!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
                 None
             }
         }

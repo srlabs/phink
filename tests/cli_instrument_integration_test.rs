@@ -23,16 +23,16 @@ mod tests {
         fs,
         path::PathBuf,
     };
+    use tempfile::tempdir;
     use walkdir::WalkDir;
 
     #[test]
-    fn test_instrument_respects_configuration() {
-        let path_instrumented_contract =
-            InstrumentedPath::new(PathBuf::from("contract_path_test_3"));
+    fn test_instrument_respects_configuration() -> anyhow::Result<()> {
+        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
-            fuzz_output: Some(PathBuf::from("test_instrumentation_multifile_contract")),
+            fuzz_output: Some(tempdir()?.into_path()),
             ..Default::default()
         };
 
@@ -66,18 +66,16 @@ mod tests {
             Ok(())
         });
         assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+        Ok(())
     }
 
     #[test]
-    fn test_instrumentation_multifile_contract() {
-        let path_instrumented_contract =
-            InstrumentedPath::new(PathBuf::from("contract_path_test_4"));
+    fn test_instrumentation_multifile_contract() -> anyhow::Result<()> {
+        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
-            fuzz_output: Some(PathBuf::from(
-                "fuzz_output_test_instrument_respects_configuration",
-            )),
+            fuzz_output: Some(tempdir()?.into_path()),
             ..Default::default()
         };
 
@@ -116,18 +114,16 @@ mod tests {
             Ok(())
         });
         assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+        Ok(())
     }
 
     #[test]
-    fn test_instrument_contains_instrumented_code() {
-        let path_instrumented_contract =
-            InstrumentedPath::new(PathBuf::from("contract_path_test_5"));
+    fn test_instrument_contains_instrumented_code() -> anyhow::Result<()> {
+        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
-            fuzz_output: Some(PathBuf::from(
-                "fuzz_output_test_instrument_contains_instrumented_code",
-            )),
+            fuzz_output: Some(tempdir()?.into_path()),
             ..Default::default()
         };
 
@@ -142,12 +138,12 @@ mod tests {
         });
 
         assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+        Ok(())
     }
 
     #[test]
-    fn test_instrument_help_terminates_correctly() {
-        CommandAssertCmd::cargo_bin("phink")
-            .unwrap()
+    fn test_instrument_help_terminates_correctly() -> anyhow::Result<()> {
+        CommandAssertCmd::cargo_bin("phink")?
             .args(["--config", DEFAULT_TEST_PHINK_TOML])
             .arg("instrument")
             .arg(Sample::Dummy.path())
@@ -156,5 +152,6 @@ mod tests {
             .stdout(predicate::str::contains(
                 "Usage: phink instrument <CONTRACT_PATH>",
             ));
+        Ok(())
     }
 }
