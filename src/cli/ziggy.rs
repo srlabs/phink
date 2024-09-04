@@ -226,3 +226,147 @@ impl ZiggyConfig {
         Ok(())
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    use tempfile::tempdir;
+
+    fn create_test_config() -> ZiggyConfig {
+        let config = Configuration {
+            verbose: true,
+            cores: Some(4),
+            use_honggfuzz: false,
+            fuzz_output: Some(PathBuf::from("/tmp/fuzz_output")),
+            show_ui: false,
+            ..Default::default()
+        };
+        ZiggyConfig::new(config, PathBuf::from("/path/to/contract"))
+    }
+
+    #[test]
+    fn test_ziggy_config_new() {
+        let config = create_test_config();
+        assert_eq!(config.config.verbose, true);
+        assert_eq!(config.config.cores, Some(4));
+        assert_eq!(config.config.use_honggfuzz, false);
+        assert_eq!(
+            config.config.fuzz_output,
+            Some(PathBuf::from("/tmp/fuzz_output"))
+        );
+        assert_eq!(config.contract_path, PathBuf::from("/path/to/contract"));
+    }
+
+    #[test]
+    fn test_ziggy_config_parse() {
+        let config_str = r#"
+                {
+                   "config":{
+                      "cores":2,
+                      "use_honggfuzz":false,
+                      "deployer_address":"5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT",
+                      "max_messages_per_exec":4,
+                      "report_path":"output/phink/contract_coverage",
+                      "fuzz_origin":false,
+                      "default_gas_limit":{
+                         "ref_time":100000000000,
+                         "proof_size":3145728
+                      },
+                      "storage_deposit_limit":"100000000000",
+                      "instantiate_initial_value":"0",
+                      "constructor_payload":"9BAE9D5E5C1100007B000000279C603E9D4B5C6C8C672893AB54D068CECCBFBEC619E56E819A7769EADCBD766D714E7624D4BE6A35BED20D0730277D0F3A13A7B01DCDA7CEDBF67FE3A4E95F0758D2DF54F30DD663424723E09A56B19E1325B830E6CCCCF63C6FF12B78C79A",
+                      "verbose":true,
+                      "show_ui":true
+                   },
+                   "contract_path":"/tmp/ink_fuzzed_3h4Wm/"
+                }
+        "#;
+        let config = ZiggyConfig::parse(config_str.to_string());
+        assert_eq!(config.config.verbose, true);
+        assert_eq!(config.config.show_ui, true);
+        assert_eq!(config.config.use_honggfuzz, false);
+        assert_eq!(
+            config.config.storage_deposit_limit,
+            Some("100000000000".into())
+        );
+        assert_eq!(config.config.cores, Some(2));
+        assert_eq!(config.config.fuzz_output, Default::default());
+        assert_eq!(
+            config.contract_path,
+            PathBuf::from("/tmp/ink_fuzzed_3h4Wm/")
+        );
+    }
+
+    #[test]
+    fn test_build_llvm_allowlist() -> io::Result<()> {
+        let temp_dir = tempdir()?;
+        let config = Configuration {
+            fuzz_output: Some(temp_dir.path().to_path_buf()),
+            ..Default::default()
+        };
+        let ziggy_config = ZiggyConfig::new(config, PathBuf::from("/path/to/contract"));
+
+        ziggy_config.build_llvm_allowlist()?;
+
+        let allowlist_path = PhinkFiles::new(temp_dir.path().to_path_buf()).path(AllowlistPath);
+        assert!(allowlist_path.exists());
+
+        let contents = fs::read_to_string(allowlist_path)?;
+        assert!(contents.contains("fun: redirect_coverage*"));
+        assert!(contents.contains("fun: should_stop_now*"));
+        assert!(contents.contains("fun: parse_input*"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_with_allowlist() -> anyhow::Result<()> {
+        if cfg!(not(target_os = "macos")) {
+            let temp_dir = tempdir()?;
+            let config = Configuration {
+                fuzz_output: Some(temp_dir.path().to_path_buf()),
+                ..Default::default()
+            };
+            let ziggy_config = ZiggyConfig::new(config, PathBuf::from("/path/to/contract"));
+
+            ziggy_config.build_llvm_allowlist()?;
+
+            let mut command = Command::new("echo");
+            ziggy_config.with_allowlist(&mut command)?;
+
+            let allowlist_path = PhinkFiles::new(temp_dir.path().to_path_buf()).path(AllowlistPath);
+            let env_vars: Vec<(String, String)> = command
+                .get_envs()
+                .map(|(k, v)| {
+                    (
+                        k.to_str().unwrap().to_string(),
+                        v.unwrap().to_str().unwrap().to_string(),
+                    )
+                })
+                .collect();
+
+            assert!(env_vars.contains(&(
+                "AFL_LLVM_ALLOWLIST".to_string(),
+                allowlist_path.to_str().unwrap().to_string()
+            )));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_start_build_command() -> anyhow::Result<()> {
+        let config = create_test_config();
+        let temp_dir = tempdir()?;
+
+        env::set_var("CARGO_MANIFEST_DIR", temp_dir.path());
+
+        let result = config.start(
+            ZiggyCommand::Build,
+            vec!["--no-honggfuzz".to_string()],
+            vec![],
+        );
+        assert!(result.is_ok());
+
+        Ok(())
+    }
+}
