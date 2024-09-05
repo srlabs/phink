@@ -66,6 +66,7 @@ impl ZiggyConfig {
             .unwrap_or_default()
             .path
     }
+
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {

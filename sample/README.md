@@ -8,7 +8,7 @@ designed to test different aspects of Phink's fuzzing capabilities.
 - **dns/**: Contains a smart contract with complex logic to test Phink's ability to handle more intricate contract
   scenarios.
 
-- **cros_message_bug/**: Includes a contract with a bug triggered by a specific order of Ink! message function calls.
+- **cross_message_bug/**: Includes a contract with a bug triggered by a specific order of Ink! message function calls.
 
 - **dummy/**: Features a contract with nested `if` statements to evaluate Phink's coverage-guided fuzzing.
 

@@ -26,7 +26,6 @@ mod tests {
     };
     use std::{
         fs,
-        path::PathBuf,
         time::Duration,
     };
     use tempfile::tempdir;

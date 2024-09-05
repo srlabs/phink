@@ -164,7 +164,13 @@ pub fn afl_log_didnt_fail(output: &Path) -> bool {
 
 /// Try to clean up the path where the instrumented contract is. If it fails, it doesn't matter
 pub fn try_cleanup_instrumented(config: &Configuration) {
-    let _ = fs::remove_dir_all(config.instrumented_path());
+    let _ = fs::remove_dir_all(
+        config
+            .to_owned()
+            .instrumented_contract_path
+            .unwrap_or_default()
+            .path,
+    );
 }
 
 /// Try to clean up the path where the output of the fuzzing campaign is. If it fails, it doesn't

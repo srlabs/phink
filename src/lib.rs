@@ -1,3 +1,4 @@
+#![feature(os_str_display)]
 #![recursion_limit = "1024"]
 
 extern crate core;
@@ -61,6 +62,7 @@ enum Commands {
     /// Run all the seeds
     Run(Contract),
     /// Remove all the temporary files under /tmp/ink_fuzzed_*
+    #[deprecated]
     Clean,
     /// Generate a coverage report, only of the harness. You won't have your
     /// contract coverage here (mainly for debugging purposes only)
