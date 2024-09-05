@@ -20,10 +20,7 @@ use crate::{
             Fuzz,
         },
     },
-    instrumenter::{
-        instrumentation::Instrumenter,
-        instrumented_path::InstrumentedPath,
-    },
+    instrumenter::instrumentation::Instrumenter,
 };
 use clap::Parser;
 use std::{
@@ -66,10 +63,6 @@ enum Commands {
     /// Run all the seeds
     Run(Contract),
     /// Remove all the temporary files under /tmp/ink_fuzzed_*
-    #[deprecated]
-    Clean,
-    /// Generate a coverage report, only of the harness. You won't have your
-    /// contract coverage here (mainly for debugging purposes only)
     HarnessCover(Contract),
     /// Generate a coverage report for your smart-contract
     Coverage(Contract),
@@ -138,6 +131,5 @@ fn handle_cli() -> anyhow::Result<()> {
         Commands::Coverage(contract_path) => {
             CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path))
         }
-        Commands::Clean => InstrumentedPath::clean(),
     }
 }

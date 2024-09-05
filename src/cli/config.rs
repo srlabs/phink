@@ -193,9 +193,7 @@ mod tests {
             instantiate_initial_value: Some("500".into()),
             constructor_payload: Some("0x1234".into()),
             verbose: true,
-            instrumented_contract_path: Some(InstrumentedPath::new(PathBuf::from(
-                "/tmp/instrumented",
-            ))),
+            instrumented_contract_path: Some(InstrumentedPath::from("/tmp/instrumented")),
             fuzz_output: Some(PathBuf::from("/tmp/fuzz_output")),
             show_ui: false,
         }

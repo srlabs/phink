@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum PhinkEnv {
     FuzzingWithConfig,
     FromZiggy,
@@ -35,18 +35,5 @@ mod tests {
         );
         assert_eq!(PhinkEnv::FromZiggy.to_string(), "PHINK_FROM_ZIGGY");
         assert_eq!(PhinkEnv::CargoManifestDir.to_string(), "CARGO_MANIFEST_DIR");
-    }
-
-    #[test]
-    fn test_phink_env_debug() {
-        assert_eq!(
-            format!("{:?}", PhinkEnv::FuzzingWithConfig),
-            "StartFuzzingWithConfig"
-        );
-        assert_eq!(format!("{:?}", PhinkEnv::FromZiggy), "FromZiggy");
-        assert_eq!(
-            format!("{:?}", PhinkEnv::CargoManifestDir),
-            "CargoManifestDir"
-        );
     }
 }

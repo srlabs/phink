@@ -34,7 +34,7 @@ mod tests {
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
         let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
-            instrumented_contract_path: Some(InstrumentedPath::new(tempdir()?.into_path())),
+            instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
             ..Default::default()
@@ -130,7 +130,7 @@ mod tests {
     fn test_fuzz_two_cores_work() -> Result<()> {
         let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
-            instrumented_contract_path: Some(InstrumentedPath::new(tempdir()?.into_path())),
+            instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(2),
             ..Default::default()

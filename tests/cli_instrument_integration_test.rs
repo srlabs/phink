@@ -25,7 +25,7 @@ mod tests {
 
     #[test]
     fn test_instrument_respects_configuration() -> anyhow::Result<()> {
-        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
+        let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_instrumentation_multifile_contract() -> anyhow::Result<()> {
-        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
+        let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_instrument_contains_instrumented_code() -> anyhow::Result<()> {
-        let path_instrumented_contract = InstrumentedPath::new(tempdir()?.into_path());
+        let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
             instrumented_contract_path: Some(path_instrumented_contract.clone()),
