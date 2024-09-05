@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up Rust
-RUN rustup default nightly-2024-08-13 \
+RUN rustup default nightly \
     && rustup component add rust-src \
     && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract \
     && rustup component add clippy

@@ -17,7 +17,7 @@ includes:
     - LLVM 19 and Clang 19 are installed
 
 2. **Setting Up Rust**:
-    - This Dockerfile sets Rust to nightly version (`nightly-2024-08-13`) to ensure compatibility with Phink's
+   - This Dockerfile sets Rust to nightly version (`nightly`) to ensure compatibility with Phink's
       codebase.
     - Additional Rust components and tools such as `rust-src`, `cargo-afl`, `honggfuzz`, `grcov`, and `cargo-contract`
       are installed to support fuzzing and coverage instrumentation.
