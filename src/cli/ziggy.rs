@@ -23,6 +23,13 @@ use crate::cli::{
         },
         PhinkFiles,
     },
+    env::{
+        PhinkEnv,
+        PhinkEnv::{
+            AflDebug,
+            AflForkServerTimeout,
+        },
+    },
     ui,
 };
 use std::{
@@ -33,6 +40,11 @@ use std::{
         Command,
         Stdio,
     },
+};
+use PhinkEnv::{
+    AflLLVMAllowList,
+    FromZiggy,
+    FuzzingWithConfig,
 };
 
 pub const AFL_DEBUG: &str = "1";
@@ -70,7 +82,7 @@ impl ZiggyConfig {
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
-            println!("🖨️ Using PHINK_START_FUZZING_WITH_CONFIG = {config_str}",);
+            println!("🖨️ Using {} = {config_str}", FuzzingWithConfig);
         }
         config
     }
@@ -102,9 +114,9 @@ impl ZiggyConfig {
         let command_builder = binding
             .arg("ziggy")
             .arg(ziggy_command)
-            .env("PHINK_FROM_ZIGGY", "1")
-            .env("AFL_FORKSRV_INIT_TMOUT", AFL_FORKSRV_INIT_TMOUT)
-            .env("AFL_DEBUG", AFL_DEBUG)
+            .env(FromZiggy.to_string(), "1")
+            .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
+            .env(AflDebug.to_string(), AFL_DEBUG)
             .stdout(Stdio::null())
             .stderr(Stdio::null());
 
@@ -132,7 +144,7 @@ impl ZiggyConfig {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
                 .path(AllowlistPath);
-            command_builder.env("AFL_LLVM_ALLOWLIST", allowlist.canonicalize()?);
+            command_builder.env(AflLLVMAllowList.to_string(), allowlist.canonicalize()?);
         }
         Ok(())
     }
@@ -167,10 +179,7 @@ impl ZiggyConfig {
             ))
         }
 
-        let fuzz_config = vec![(
-            "PHINK_START_FUZZING_WITH_CONFIG".to_string(),
-            serde_json::to_string(self)?,
-        )];
+        let fuzz_config = vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)];
 
         self.start(
             ZiggyCommand::Fuzz(self.config.show_ui),
@@ -183,10 +192,7 @@ impl ZiggyConfig {
         self.start(
             ZiggyCommand::Cover,
             vec![],
-            vec![(
-                "PHINK_START_FUZZING_WITH_CONFIG".into(),
-                serde_json::to_string(self)?,
-            )],
+            vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
         Ok(())
     }
@@ -203,10 +209,7 @@ impl ZiggyConfig {
         self.start(
             ZiggyCommand::Run,
             vec![],
-            vec![(
-                "PHINK_START_FUZZING_WITH_CONFIG".into(),
-                serde_json::to_string(self)?,
-            )],
+            vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
         Ok(())
     }
@@ -217,7 +220,7 @@ impl ZiggyConfig {
             .path(AllowlistPath);
 
         if allowlist_path.exists() {
-            println!("❗ AFL_LLVM_ALLOWLIST already exists... skipping");
+            println!("❗ {} already exists... skipping", AflLLVMAllowList);
             return Ok(());
         }
 
@@ -229,7 +232,7 @@ impl ZiggyConfig {
             writeln!(allowlist_file, "fun: {}", func)?;
         }
 
-        println!("✅ AFL_LLVM_ALLOWLIST created successfully");
+        println!("✅ {} created successfully", AflLLVMAllowList);
         Ok(())
     }
 }
@@ -353,7 +356,7 @@ mod tests {
                 .collect();
 
             assert!(env_vars.contains(&(
-                "AFL_LLVM_ALLOWLIST".to_string(),
+                AflLLVMAllowList.to_string(),
                 allowlist_path.to_str().unwrap().to_string()
             )));
         }

@@ -51,6 +51,7 @@ pub struct InkFilesPath {
     pub wasm_path: PathBuf,
     pub specs_path: PathBuf,
 }
+/// Invokes `println!` only if `verbose` is `true`
 macro_rules! phink_log {
     ($self:expr, $($arg:tt)*) => {
         if $self.to_owned().verbose() {
@@ -68,7 +69,8 @@ impl Instrumenter {
     }
 
     pub fn find(&self) -> anyhow::Result<InkFilesPath> {
-        let wasm_path = fs::read_dir(&self.z_config.contract_path.join("target/ink/"))
+        let c_path = self.to_owned().z_config.contract_path;
+        let wasm_path = fs::read_dir(c_path.join("target/ink/"))
             .with_context(|| {
                 format!(
                     "It seems that your contract is not compiled into `target/ink`. \
@@ -79,7 +81,7 @@ impl Instrumenter {
                         .instrumented_path()
                         .to_str()
                         .unwrap(),
-                    self.z_config.contract_path.to_str().unwrap(),
+                    c_path.to_str().unwrap(),
                 )
             })?
             .filter_map(|entry| {
@@ -111,25 +113,35 @@ impl Instrumenter {
             bail!("There was probably a fork issue, as {p_display} doesn't exist.")
         }
 
-        let status = Command::new("cargo")
-            .current_dir(path.to_owned())
+        let mut build = Command::new("cargo")
+            .current_dir(path.as_path())
             .args(["contract", "build", "--features=phink"])
-            .status()?;
+            .spawn()?;
+
+        phink_log!(self, "✂️ Compiling {}...", p_display);
+
+        let status = build.wait()?;
 
         if !status.success() {
             bail!(
                 "🙅 It seems that your instrumented smart contract did not compile properly. \
-                Please go to {p_display}, edit the source code, and run cargo contract build again\
-                ({status}).",
+        Please go to {p_display}, edit the source code, and run `cargo contract build` again \
+        ({status}).",
             )
         }
+
+        println!(
+            "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in '{p_display}./'",
+            self.z_config.contract_path.display(),
+        );
+
         Ok(())
     }
 
     fn fork(self) -> anyhow::Result<PathBuf> {
         let new_dir = &self.to_owned().z_config.instrumented_path();
 
-        println!("🏗️ Creating new directory: {:?}", new_dir);
+        phink_log!(self, "🏗️ Creating new directory: {:?}", new_dir);
 
         fs::create_dir_all(new_dir)
             .with_context(|| format!("🙅 Failed to create directory: {}", new_dir.display()))?;
@@ -150,7 +162,7 @@ impl Instrumenter {
             );
 
             if entry.path().is_dir() {
-                println!("📂 Creating subdirectory: {:?}", target_path);
+                phink_log!(self, "📂 Creating subdirectory: {:?}", target_path);
                 fs::create_dir_all(&target_path)?;
             } else {
                 phink_log!(
@@ -310,7 +322,6 @@ mod tests {
             self,
             File,
         },
-        io::Read,
     };
     use tempfile::{
         tempdir,

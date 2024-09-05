@@ -44,6 +44,7 @@ impl InstrumentedPath {
     }
 
     #[deprecated]
+
     pub fn clean() -> anyhow::Result<()> {
         let dirs_to_remove =
             Self::get_dirs_to_remove(Path::new("/tmp"), DEFAULT_PATH_PATTERN_INSTRUMENTEDPATH)?;

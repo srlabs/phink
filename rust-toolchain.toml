@@ -1,5 +1,5 @@
 [toolchain]
-channel = "nightly-2024-08-13"
+channel = "nightly"
 components = ["rustfmt", "cargo", "rustc", "rust-std", "clippy"]
 targets = [
     "aarch64-apple-darwin", # macOS on ARM architecture

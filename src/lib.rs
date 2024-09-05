@@ -5,6 +5,11 @@ extern crate core;
 use crate::{
     cli::{
         config::Configuration,
+        env::{
+            PhinkEnv,
+            PhinkEnv::FromZiggy,
+        },
+        format_error,
         ziggy::ZiggyConfig,
     },
     cover::report::CoverageTracker,
@@ -21,13 +26,11 @@ use crate::{
     },
 };
 use clap::Parser;
-use colored::Colorize;
 use std::{
-    backtrace::BacktraceStatus,
     env::var,
     path::PathBuf,
-    process,
 };
+use PhinkEnv::FuzzingWithConfig;
 
 pub mod cli;
 pub mod contract;
@@ -54,6 +57,7 @@ struct Cli {
 }
 
 #[derive(clap::Subcommand, Debug)]
+#[allow(deprecated)]
 enum Commands {
     /// Starts the fuzzing process. Instrumentation required before!
     Fuzz(Contract),
@@ -86,21 +90,16 @@ struct Contract {
     #[clap(value_parser)]
     contract_path: PathBuf,
 }
-
 pub fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
-    if let Ok(config_str) = var("PHINK_START_FUZZING_WITH_CONFIG") {
-        if var("PHINK_FROM_ZIGGY").is_ok() {
+    if let Ok(config_str) = var(FuzzingWithConfig.to_string()) {
+        if var(FromZiggy.to_string()).is_ok() {
             if let Err(e) = Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str)) {
                 eprintln!("{}", format_error(e));
-                process::exit(1);
             }
         }
-    } else {
-        if let Err(e) = handle_cli() {
-            eprintln!("{}", format_error(e));
-            process::exit(1);
-        }
+    } else if let Err(e) = handle_cli() {
+        eprintln!("{}", format_error(e));
     }
 }
 
@@ -116,12 +115,6 @@ fn handle_cli() -> anyhow::Result<()> {
             let engine = Instrumenter::new(z_config.to_owned());
             engine.to_owned().instrument()?;
             engine.build()?;
-
-            println!(
-                "🤞 Contract '{}' has been instrumented and compiled! You can find the instrumented contract in '{}/'",
-                contract_path.contract_path.display(),
-                z_config.instrumented_path().display()
-            );
             Ok(())
         }
         Commands::Fuzz(contract_path) => {
@@ -147,28 +140,4 @@ fn handle_cli() -> anyhow::Result<()> {
         }
         Commands::Clean => InstrumentedPath::clean(),
     }
-}
-
-fn format_error(e: anyhow::Error) -> String {
-    let mut message = format!("\n{}: {}\n", "Phink got an error...".red().bold(), e);
-
-    match e.backtrace().status() {
-        BacktraceStatus::Captured => {
-            message = format!(
-                "{}\n{}\n{}\n",
-                message,
-                "Backtrace ->".yellow(),
-                e.backtrace()
-            )
-        }
-        _ => {}
-    }
-
-    let mut source = e.source();
-    while let Some(cause) = source {
-        message = format!("{}\n\n{}: {}", message, "Caused by".cyan().bold(), cause);
-        source = cause.source();
-    }
-
-    message
 }

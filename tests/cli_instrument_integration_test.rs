@@ -19,10 +19,7 @@ mod tests {
         instrumenter::instrumented_path::InstrumentedPath,
     };
     use predicates::prelude::predicate;
-    use std::{
-        fs,
-        path::PathBuf,
-    };
+    use std::fs;
     use tempfile::tempdir;
     use walkdir::WalkDir;
 
