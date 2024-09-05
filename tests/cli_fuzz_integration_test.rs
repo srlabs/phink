@@ -142,14 +142,15 @@ mod tests {
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
                 ensure!(fuzz_created, "Fuzz output directory wasn't created");
-                let log_path = config
-                    .fuzz_output
-                    .clone()
-                    .unwrap_or_default()
-                    .join("phink")
-                    .join("logs");
 
                 if fuzz_created {
+                    let log_path = config
+                        .fuzz_output
+                        .clone()
+                        .unwrap_or_default()
+                        .join("phink")
+                        .join("logs");
+
                     ensure!(log_path.join("afl.log").exists(), "afl.log wasn't created",);
                     ensure!(
                         log_path.join("afl_1.log").exists(),

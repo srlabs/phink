@@ -7,6 +7,7 @@ use anyhow::{
     bail,
     Context,
 };
+
 use quote::quote;
 use regex::Regex;
 use std::{
@@ -113,20 +114,29 @@ impl Instrumenter {
             bail!("There was probably a fork issue, as {p_display} doesn't exist.")
         }
 
-        let mut build = Command::new("cargo")
+        let clippy_d = Self::create_temp_clippy()?;
+
+        phink_log!(self, "✂️ Creating `{}` to bypass errors", clippy_d);
+
+        let output = Command::new("cargo")
             .current_dir(path.as_path())
+            .env("RUST_BACKTRACE", "1")
+            .env("CLIPPY_CONF_DIR", clippy_d)
             .args(["contract", "build", "--features=phink"])
-            .spawn()?;
+            .output()?;
 
-        phink_log!(self, "✂️ Compiling {}...", p_display);
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
 
-        let status = build.wait()?;
-
-        if !status.success() {
+            phink_log!(
+                self,
+                "✂️ Compiling `{p_display}` finished successfully!\n{stdout}\n{stderr}",
+            );
+        } else {
             bail!(
-                "🙅 It seems that your instrumented smart contract did not compile properly. \
-        Please go to {p_display}, edit the source code, and run `cargo contract build` again \
-        ({status}).",
+                "It seems that your instrumented smart contract did not compile properly. \
+        Please go to {p_display}, edit the source code, and run `cargo contract build` again.",
             )
         }
 
@@ -138,6 +148,29 @@ impl Instrumenter {
         Ok(())
     }
 
+    /// Return a full path to a temporary `clippy.toml`
+    /// Create a temporary `clippy.toml` file and return its full path.
+    ///
+    /// # Returns
+    /// A `Result` containing the canonicalized path of the temporary file as a `String`.
+    fn create_temp_clippy() -> anyhow::Result<String> {
+        let temp_dir = tempfile::TempDir::new().context("Failed to create temporary directory")?;
+        let clippy_toml_path = temp_dir.path().join("clippy.toml");
+
+        let mut clippy_toml =
+            File::create(&clippy_toml_path).context("Failed to create clippy.toml file")?;
+
+        writeln!(clippy_toml, "avoid-breaking-exported-api = false")
+            .context("Failed to write to clippy.toml file")?;
+
+        let temp_dir_path = temp_dir.into_path();
+        let temp_dir_str = temp_dir_path
+            .to_str()
+            .context("Failed to convert temporary directory path to string")?
+            .to_string();
+
+        Ok(temp_dir_str + "/clippy.toml")
+    }
     fn fork(self) -> anyhow::Result<PathBuf> {
         let new_dir = &self.to_owned().z_config.instrumented_path();
 
@@ -243,8 +276,7 @@ impl Instrumenter {
         file.flush()?;
         println!("🛠️ Formatting {} with `rustfmt`...", rust_file.display());
         Command::new("rustfmt")
-            .arg(rust_file)
-            .arg("--edition=2021")
+            .args([rust_file.display().to_string().as_str(), "--edition=2021"])
             .status()?;
         Ok(())
     }
@@ -347,6 +379,19 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_create_temp_clippy() {
+        let result = Instrumenter::create_temp_clippy().expect("Failed to create temp clippy.toml");
+        assert!(result.ends_with("/clippy.toml"));
+        let path = Path::new(&result);
+        assert!(path.exists(), "clippy.toml file was not created");
+        let content = fs::read_to_string(path).expect("Failed to read clippy.toml file");
+        assert_eq!(
+            content.trim(),
+            "avoid-breaking-exported-api = false",
+            "Unexpected content in clippy.toml"
+        );
+    }
     #[test]
     fn test_find_wasm_and_specs_paths_success() {
         let config = create_temp_ziggy_config(false);

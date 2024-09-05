@@ -29,7 +29,7 @@ pub fn format_error(e: anyhow::Error) -> String {
 
     let mut source = e.source();
     while let Some(cause) = source {
-        message = format!("{}\n\n{}: {}", message, "Caused by".cyan().bold(), cause);
+        message = format!("{}\n\n{} {}", message, "Caused by".cyan().bold(), cause);
         source = cause.source();
     }
 

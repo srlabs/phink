@@ -39,12 +39,12 @@ std = [
 assert_cmd = { version = "2.0.16" }
 toml_edit = { version = "0.22.20" }
 predicates = { version = "3.1.2" }
-tempfile = { version = "3.12.0" }
 mockall = { version = "0.13.0" }
 
 
 [dependencies]
-# Standard crates
+# Standard crates and helpers
+tempfile = { version = "3.12.0" }
 seq-macro = { version = "0.3.5" }
 scale-info = { version = "2.6.0", default-features = false }
 prettytable-rs = { version = "0.10.0" }
@@ -80,7 +80,6 @@ pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", bra
 pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/paritytech/polkadot-sdk.git", branch = "release-polkadot-v1.10.0", default-features = false }
-
 # ink! crates
 ink_metadata = { version = "*" }
 ink_env = { version = "*" }

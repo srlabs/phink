@@ -126,9 +126,6 @@ impl ZiggyConfig {
         command_builder.args(args.iter());
         command_builder.envs(env);
         command_builder.spawn()?;
-
-        // let status = ziggy_child.wait()?;
-
         Ok(())
     }
 
@@ -139,10 +136,10 @@ impl ZiggyConfig {
     ///
     /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
     ///
-    /// returns: Result<(), Error>
+    /// returns: Result<()>
     fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
         if cfg!(not(target_os = "macos")) {
-            let allowlist = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
+            let allowlist = PhinkFiles::new(self.config.fuzz_output.to_owned().unwrap_or_default())
                 .path(AllowlistPath);
             command_builder.env(AflLLVMAllowList.to_string(), allowlist.canonicalize()?);
         }

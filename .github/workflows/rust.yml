@@ -55,5 +55,14 @@ jobs:
         working-directory: ./sample
         run: bash build.sh
 
-      - name: Run unit tests and integration tests
-        run: cargo test --no-fail-fast -- --show-output --test-threads=1
+      - name: Run unit tests of all crates
+        run: cargo test -- --show-output --test-threads=1
+
+      - name: Run integration tests for *instrumentation*
+        run: cargo test --test cli_instrument_integration_test -- --show-output
+
+      - name: Run integration tests for *sample*
+        run: cargo test --test sample_integration_test -- --show-output
+
+#      - name: Run integration tests for *fuzz*
+#        run: cargo test --test cli_fuzz_integration_test -- --show-output
