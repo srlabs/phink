@@ -24,14 +24,71 @@ mod tests {
         cli::config::Configuration,
         instrumenter::instrumented_path::InstrumentedPath,
     };
+    use regex::Regex;
     use std::{
         fs,
         time::Duration,
     };
     use tempfile::tempdir;
 
-    // TODO: Write a test that fuzz `dummy` on Unix and ensure that bugs are found within 2/3
-    // minutes
+    #[test]
+    #[cfg_attr(target_os = "macos", ignore)]
+    fn test_fuzz_find_crash_before_two_minutes() -> Result<()> {
+        let fuzz_output = tempdir()?.into_path();
+        let config = Configuration {
+            instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
+            fuzz_output: Some(fuzz_output.clone()),
+            cores: Some(4),
+            show_ui: false,
+            ..Default::default()
+        };
+
+        with_modified_phink_config(&config, || {
+            let _ = instrument(Sample::Dummy);
+
+            let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
+                let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
+                ensure!(fuzz_created, "Fuzz output directory wasn't created");
+
+                if fuzz_created {
+                    // We search if a crashes is spotted
+                    let afl_log = config
+                        .fuzz_output
+                        .clone()
+                        .unwrap_or_default()
+                        .join("phink")
+                        .join("logs")
+                        .join("afl.log");
+
+                    let log_content = fs::read_to_string(afl_log).unwrap();
+
+                    let saved_crashes: i32 = if let Some(captures) =
+                        Regex::new(r"saved crashes : (\d+)")
+                            .unwrap()
+                            .captures(&log_content)
+                    {
+                        captures[1].parse().unwrap()
+                    } else {
+                        0
+                    };
+
+                    ensure!(
+                        saved_crashes >= 1,
+                        "No crash detected within the 120 seconds, this should crash easily"
+                    );
+                }
+                Ok(())
+            });
+
+            ensure!(
+                fuzzing.is_ok(),
+                "ensure_while_fuzzing returned an error: {:?}",
+                fuzzing.unwrap_err()
+            );
+
+            Ok(())
+        })
+    }
 
     #[test]
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
