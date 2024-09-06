@@ -1,17 +1,96 @@
+use anyhow::{
+    bail,
+    Context,
+};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
+    fmt::{
+        Display,
+        Formatter,
+    },
     fs,
     path::PathBuf,
 };
+use thiserror::Error;
 use walkdir::WalkDir;
+#[derive(Error, Debug)]
+pub enum SelectorError {
+    #[error("Invalid hex string")]
+    InvalidHex(#[from] hex::FromHexError),
 
-pub type Selector = [u8; 4];
+    #[error("Invalid length for a 4-byte array")]
+    InvalidLength,
+}
+#[derive(PartialEq, Clone, Debug)]
+pub struct Selector([u8; 4]);
+
+impl Display for Selector {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&hex::encode(self.0))
+    }
+}
+
+impl AsMut<[u8]> for Selector {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
+impl AsRef<[u8]> for Selector {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<[u8; 4]> for Selector {
+    fn from(value: [u8; 4]) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Selector> for Vec<u8> {
+    fn from(selector: Selector) -> Self {
+        selector.0.to_vec()
+    }
+}
+
+impl TryFrom<&str> for Selector {
+    type Error = SelectorError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let value = value.trim_start_matches("0x"); // Remove "0x" if present
+        let bytes = hex::decode(value)?;
+        Selector::try_from(bytes.as_slice())
+    }
+}
+
+impl TryFrom<&[u8]> for Selector {
+    type Error = SelectorError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != 4 {
+            return Err(SelectorError::InvalidLength);
+        }
+        let mut array = [0u8; 4];
+        array.copy_from_slice(value);
+        Ok(Selector(array))
+    }
+}
+
+impl TryFrom<Vec<u8>> for Selector {
+    type Error = SelectorError;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        value.as_slice().try_into()
+    }
+}
 
 #[derive(Default, Clone)]
 pub struct PayloadCrafter {}
 
 /// This prefix defines the way a property start with
+///
 /// # Example
 // ```rust
 // #[ink(message)]
@@ -29,7 +108,7 @@ pub struct SelectorEntry {
     selector: String,
 }
 impl PayloadCrafter {
-    pub fn extract_all(contract_path: PathBuf) -> Vec<Selector> {
+    pub fn extract_all(contract_path: PathBuf) -> anyhow::Result<Vec<Selector>> {
         let mut all_selectors: Vec<Selector> = Vec::new();
 
         for entry in WalkDir::new(contract_path)
@@ -40,28 +119,30 @@ impl PayloadCrafter {
                 if let Ok(contents) = fs::read_to_string(entry.path()) {
                     if let Ok(v) = serde_json::from_str::<Value>(&contents) {
                         if let Ok(spec) = serde_json::from_value::<Spec>(v["spec"].clone()) {
-                            let selectors = Self::parse_selectors(&spec);
+                            let selectors = Self::parse_selectors(&spec)
+                                .context("Couldn't parse all the selectors")?;
                             all_selectors.extend(selectors);
-                            return all_selectors;
+                            return Ok(all_selectors);
                         }
                     }
                 }
             }
         }
 
-        all_selectors
+        Ok(all_selectors)
     }
 
-    pub fn parse_selectors(spec: &Spec) -> Vec<Selector> {
+    pub fn parse_selectors(spec: &Spec) -> anyhow::Result<Vec<Selector>> {
         let mut selectors: Vec<Selector> = Vec::new();
         for entry in spec.constructors.iter().chain(spec.messages.iter()) {
-            if let Ok(bytes) = hex::decode(entry.selector.trim_start_matches("0x")) {
-                if let Ok(selector) = <[u8; 4]>::try_from(bytes.as_slice()) {
-                    selectors.push(selector);
+            match Selector::try_from(entry.selector.as_str()) {
+                Ok(sel) => selectors.push(sel),
+                Err(e) => {
+                    bail!("Couldn't push the selector while parsing: {e}")
                 }
             }
         }
-        selectors
+        Ok(selectors)
     }
 
     /// Extract every selector associated to the invariants defined in the ink!
@@ -92,49 +173,43 @@ impl PayloadCrafter {
     /// Return the smart-contract constructor based on its spec. If there are
     /// multiple constructors, returns the one that preferably doesn't have
     /// args. If no suitable constructor is found or there is an error in
-    /// processing, this function returns `None`.
-    pub fn get_constructor(json_data: &str) -> Option<Selector> {
-        // Parse the JSON data safely, return None if parsing fails.
-        let parsed_json: Value = match serde_json::from_str(json_data) {
-            Ok(data) => data,
-            Err(_) => return None,
-        };
+    /// processing, this function returns `Err`.
+    pub fn get_constructor(json_data: &str) -> anyhow::Result<Selector> {
+        let parsed_json: Value = serde_json::from_str(json_data)?;
 
-        // Access the constructors array, return None if it's not found or not
-        // an array.
-        let constructors = parsed_json["spec"]["constructors"].as_array()?;
+        let constructors = parsed_json["spec"]["constructors"].as_array().unwrap();
 
-        // If there is exactly one constructor, return its selector if
-        // available.
         if constructors.len() == 1 {
-            return Self::get_selector_bytes(constructors[0]["selector"].as_str()?);
+            return Self::get_selector_bytes(constructors[0]["selector"].as_str().unwrap());
         }
 
         // Otherwise, look for a constructor without arguments.
         for constructor in constructors {
             if constructor["args"].as_array().map_or(false, Vec::is_empty) {
-                return Self::get_selector_bytes(constructor["selector"].as_str()?);
+                return Self::get_selector_bytes(constructor["selector"].as_str().unwrap());
             }
         }
-
-        // Return None if no suitable constructor is found.
-        None
+        bail!("No selector found")
     }
 
     /// Decode `encoded` to a proper `Selector`
     fn decode_selector(encoded: &str) -> Selector {
+        // todo: refeactor
         let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
-        <[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array")
+        Selector(<[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array"))
     }
 
     /// Helper function to decode a hexadecimal string selector into a byte
     /// array of length 4. Returns `None` if the decoding or conversion
     /// fails.
-    fn get_selector_bytes(selector_str: &str) -> Option<Selector> {
-        hex::decode(selector_str.trim_start_matches("0x"))
-            .ok()?
-            .try_into()
-            .ok()
+    fn get_selector_bytes(selector: &str) -> anyhow::Result<Selector> {
+        let trimmed = hex::decode(selector.trim_start_matches("0x"))?.to_vec();
+        match Selector::try_from(trimmed) {
+            Ok(sel) => Ok(sel),
+            Err(e) => {
+                bail!(format!("Couldn't parse the selector - {e}"))
+            }
+        }
     }
 }
 
@@ -179,12 +254,21 @@ mod test {
             ],
         };
 
-        let selectors = PayloadCrafter::parse_selectors(&spec);
+        let selectors = PayloadCrafter::parse_selectors(&spec).unwrap();
 
         assert_eq!(selectors.len(), 3);
-        assert_eq!(selectors[0], [0x12, 0x34, 0x56, 0x78]);
-        assert_eq!(selectors[1], [0xab, 0xcd, 0xef, 0x01]);
-        assert_eq!(selectors[2], [0x23, 0x45, 0x67, 0x89]);
+        assert_eq!(
+            selectors[0],
+            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
+        );
+        assert_eq!(
+            selectors[1],
+            Selector::try_from([0xab, 0xcd, 0xef, 0x01]).unwrap()
+        );
+        assert_eq!(
+            selectors[2],
+            Selector::try_from([0x23, 0x45, 0x67, 0x89]).unwrap()
+        );
     }
 
     #[test]
@@ -213,8 +297,14 @@ mod test {
         let invariants = PayloadCrafter::extract_invariants(json_data).unwrap();
 
         assert_eq!(invariants.len(), 2);
-        assert_eq!(invariants[0], [0x12, 0x34, 0x56, 0x78]);
-        assert_eq!(invariants[1], [0x23, 0x45, 0x67, 0x89]);
+        assert_eq!(
+            invariants[0],
+            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
+        );
+        assert_eq!(
+            invariants[1],
+            Selector::try_from([0x23, 0x45, 0x67, 0x89]).unwrap()
+        );
     }
 
     #[test]
@@ -247,7 +337,7 @@ mod test {
         "#;
 
         let constructor = PayloadCrafter::get_constructor(json_data).unwrap();
-        assert_eq!(constructor, [0x12, 0x34, 0x56, 0x78]);
+        assert_eq!(constructor, [0x12, 0x34, 0x56, 0x78].into());
     }
 
     #[test]
@@ -272,11 +362,17 @@ mod test {
         "#;
         fs::write(&file_path, json_content).unwrap();
 
-        let selectors = PayloadCrafter::extract_all(temp_dir.path().to_path_buf());
+        let selectors = PayloadCrafter::extract_all(temp_dir.path().to_path_buf()).unwrap();
 
         assert_eq!(selectors.len(), 2);
-        assert_eq!(selectors[0], [0x12, 0x34, 0x56, 0x78]);
-        assert_eq!(selectors[1], [0xab, 0xcd, 0xef, 0x01]);
+        assert_eq!(
+            selectors[0],
+            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
+        );
+        assert_eq!(
+            selectors[1],
+            Selector::try_from([0xab, 0xcd, 0xef, 0x01]).unwrap()
+        );
     }
     #[test]
     fn fetch_good_invariants() {
@@ -294,10 +390,10 @@ mod test {
     #[test]
     fn fetch_correct_selectors() {
         let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns"))
+            .unwrap()
             .iter()
             .map(|x| hex::encode(x) + " ")
             .collect();
-
         // DNS selectors
         assert_eq!(
             extracted,

@@ -1,8 +1,7 @@
-use std::{
-    fs,
-    path::PathBuf,
+use anyhow::{
+    bail,
+    Context,
 };
-
 use frame_support::{
     __private::BasicExternalities,
     pallet_prelude::Weight,
@@ -25,6 +24,10 @@ use sp_core::{
     H256,
 };
 use sp_runtime::DispatchError;
+use std::{
+    fs,
+    path::PathBuf,
+};
 use v13::ContractInfoOf;
 
 use payload::PayloadCrafter;
@@ -77,8 +80,11 @@ impl ContractBridge {
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
     pub fn initialize_wasm(config: ZiggyConfig) -> anyhow::Result<ContractBridge> {
-        let finder = Instrumenter::new(config.clone()).find()?;
-        let wasm_bytes = fs::read(&finder.wasm_path)?;
+        let finder = Instrumenter::new(config.clone())
+            .find()
+            .context("Couldn't execute `find` for this current config")?;
+        let wasm_bytes = fs::read(&finder.wasm_path)
+            .context(format!("Couldn't read from {:?}", finder.wasm_path))?;
 
         let mut contract_addr: AccountIdOf<Runtime> = config
             .config
@@ -91,13 +97,15 @@ impl ContractBridge {
             contract_addr
         );
 
-        let json_specs = fs::read_to_string(finder.specs_path.clone())?;
+        let json_specs = fs::read_to_string(finder.specs_path.to_owned())
+            .context(format!("Couldn't read from {:?}", finder.specs_path))?;
+
         let genesis_storage: Storage = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
 
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
-                let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can Err easily, so we use `let _`
+                let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can `Err()` easily, so we use `let _`
 
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
 
@@ -162,11 +170,9 @@ impl ContractBridge {
         );
         match upload_result {
             Ok(upload_info) => {
-                println!(
-                    "✅ Upload successful. Code hash: {:?}",
-                    upload_info.code_hash
-                );
-                upload_info.code_hash
+                let hash = upload_info.code_hash;
+                println!("✅ Upload successful. Code hash: {hash}",);
+                hash
             }
             Err(e) => {
                 panic!("❌ Upload failed for: {:?} with error: {:?}", who, e);
@@ -179,20 +185,19 @@ impl ContractBridge {
         code_hash: H256,
         who: AccountId,
         config: Configuration,
-    ) -> Option<AccountIdOf<Runtime>> {
+    ) -> anyhow::Result<AccountIdOf<Runtime>> {
         let data: Vec<u8> = if let Some(payload) = config.constructor_payload {
             hex::decode(payload.replace(" ", ""))
-                .expect("Impossible to hex-decode this. Check your config file")
+                .context("Impossible to hex-decode this. Check your config file")?
         } else {
             PayloadCrafter::get_constructor(json_specs)?.into()
         };
 
-        let instantiate_initial_value: Option<BalanceOf<Runtime>> =
-            Configuration::parse_balance(config.instantiate_initial_value);
+        let initial_value = Configuration::parse_balance(config.instantiate_initial_value);
 
         let instantiate = Contracts::bare_instantiate(
             who.clone(),
-            instantiate_initial_value.unwrap_or(0),
+            initial_value.unwrap_or(0),
             config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
             None,
             Code::Existing(code_hash),
@@ -205,11 +210,10 @@ impl ContractBridge {
         match instantiate.result {
             Ok(contract_info) => {
                 println!("🔍 Instantiated the contract, using account {:?}", who);
-                Some(contract_info.account_id)
+                Ok(contract_info.account_id)
             }
             Err(e) => {
-                println!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
-                None
+                bail!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
             }
         }
     }

@@ -1,3 +1,7 @@
+use anyhow::Context;
+use contract_transcode::ContractMessageTranscoder;
+use frame_support::__private::BasicExternalities;
+use sp_core::hexdisplay::AsBytesRef;
 use std::{
     fs,
     io::{
@@ -10,10 +14,6 @@ use std::{
     },
     sync::Mutex,
 };
-
-use contract_transcode::ContractMessageTranscoder;
-use frame_support::__private::BasicExternalities;
-use sp_core::hexdisplay::AsBytesRef;
 
 use crate::{
     cli::{
@@ -109,7 +109,7 @@ impl Fuzzer {
 
         for (i, selector) in selectors.iter().enumerate() {
             write_corpus_file(i, selector, phink_file.path(CorpusPath))?;
-            write_dict_entry(&mut dict_file, selector);
+            write_dict_entry(&mut dict_file, selector).unwrap();
         }
 
         Ok(())
@@ -121,8 +121,8 @@ impl Fuzzer {
                 payload
                     .payload
                     .get(..4)
-                    .and_then(|slice| slice.try_into().ok())
-                    .map_or(false, |slice: &[u8; 4]| {
+                    .and_then(|slice| Selector::try_from(slice).ok())
+                    .map_or(false, |slice: Selector| {
                         bug_manager.contains_selector(slice)
                     })
             })
@@ -218,6 +218,7 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
 
     let selectors_without_invariants: Vec<Selector> =
         PayloadCrafter::extract_all(fuzzer.contract_path.clone())
+            .unwrap()
             .into_iter()
             .filter(|s| !invariants.contains(s))
             .collect();
@@ -256,13 +257,10 @@ fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> 
     fs::write(file_path, selector)
 }
 
-fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) {
+fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Result<()> {
     use std::fmt::Write;
-    let selector_string = selector.iter().fold(String::new(), |mut acc, b| {
-        write!(&mut acc, "\\x{:02X}", b).unwrap();
-        acc
-    });
-    writeln!(dict_file, "\"{selector_string}\"").expect("😅 Failed to write to dict_file");
+    writeln!(dict_file, "\"{}\"", selector.to_string())?;
+    Ok(())
 }
 
 fn execute_messages(

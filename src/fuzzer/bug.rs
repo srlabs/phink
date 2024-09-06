@@ -49,8 +49,8 @@ impl BugManager {
         }
     }
 
-    pub fn contains_selector(&self, selector: &Selector) -> bool {
-        self.invariant_selectors.contains(selector)
+    pub fn contains_selector(&self, selector: Selector) -> bool {
+        self.invariant_selectors.contains(&selector)
     }
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
@@ -87,23 +87,19 @@ impl BugManager {
         &self,
         responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
-        invariant_tested: Selector,
+        mut invariant_tested: Selector,
         transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
-        let mut invariant_slice: &[u8] = &invariant_tested;
-
         let hex = transcoder_loader
             .get_mut()
             .unwrap()
-            .decode_contract_message(&mut invariant_slice)
+            .decode_contract_message(&mut &*invariant_tested.as_mut())
             .unwrap();
 
         #[cfg(not(fuzzing))]
         {
             println!("\n🤯 An invariant got caught! Let's dive into it");
-
             println!("\n🫵  This was caused by `{hex}`\n");
-
             println!("🎉 Find below the trace that caused that invariant");
             <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
         }
@@ -121,7 +117,7 @@ impl BugManager {
                 self.configuration.clone(),
             );
             if invariant_call.result.is_err() {
-                return Err(*invariant);
+                return Err(invariant.clone());
             }
         }
         Ok(())

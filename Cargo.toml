@@ -11,9 +11,11 @@ categories = ["cryptography::cryptocurrencies", "command-line-utilities", "devel
 
 [profile.dev]
 panic = "abort"
+debug = true
 
 [profile.release]
 panic = "abort"
+debug = true
 
 [[bin]]
 name = "phink"

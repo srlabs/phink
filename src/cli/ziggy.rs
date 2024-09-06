@@ -32,7 +32,10 @@ use crate::cli::{
     },
     ui,
 };
-use anyhow::bail;
+use anyhow::{
+    bail,
+    Context,
+};
 use std::{
     io::{
         self,
@@ -99,7 +102,8 @@ impl ZiggyConfig {
             ZiggyCommand::Run => "run",
             ZiggyCommand::Cover => "cover",
             ZiggyCommand::Build => {
-                self.build_llvm_allowlist()?;
+                self.build_llvm_allowlist()
+                    .context("Buildin't LLVM allowlist failed")?;
                 "build"
             }
             ZiggyCommand::Fuzz(..) => "fuzz",
@@ -136,7 +140,9 @@ impl ZiggyConfig {
             .env(AflDebug.to_string(), AFL_DEBUG)
             .stdout(Stdio::piped());
 
-        let mut ziggy_child = command_builder.spawn()?;
+        let mut ziggy_child = command_builder
+            .spawn()
+            .context("Spawning Ziggy was unsuccessfull")?;
 
         if let Some(stdout) = ziggy_child.stdout.take() {
             let reader = io::BufReader::new(stdout);
@@ -145,16 +151,17 @@ impl ZiggyConfig {
             }
         }
 
-        let status = ziggy_child.wait()?;
+        let status = ziggy_child.wait().context("Couldn't wait for Ziggy")?;
         if !status.success() {
             bail!("`cargo ziggy` failed ({})", status);
         }
-        self.with_allowlist(command_builder)?;
+        self.with_allowlist(command_builder)
+            .context("Couldn't use the allowlist")?;
 
         // If there are additional arguments, pass them to the command
         command_builder.args(args.iter());
         command_builder.envs(env);
-        command_builder.spawn()?;
+        command_builder.spawn().context("Couldn't spawn Ziggy")?;
         Ok(())
     }
 
@@ -168,7 +175,12 @@ impl ZiggyConfig {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.to_owned().unwrap_or_default())
                 .path(AllowlistPath);
-            command_builder.env(AflLLVMAllowList.to_string(), allowlist.canonicalize()?);
+            command_builder.env(
+                AflLLVMAllowList.to_string(),
+                allowlist
+                    .canonicalize()
+                    .context("Couldn't canonicalize the allowlist path")?,
+            );
         }
         Ok(())
     }
