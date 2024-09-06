@@ -16,11 +16,23 @@ pub mod ziggy;
 /// # Example
 /// `eprintln!("{}", format_error(e));`
 pub fn format_error(e: anyhow::Error) -> String {
-    let mut message = format!("\n{}: {}\n", "Phink got an error...".red().bold(), e);
+    let maybe_backtrace = if std::env::var("RUST_BACKTRACE").is_err() {
+        format!(
+            "\nUse {} to make it more verbose",
+            "RUST_BACKTRACE=1".italic().yellow()
+        )
+    } else {
+        "".to_string()
+    };
+
+    let mut message = format!(
+        "\n{}: {e}\n\n{maybe_backtrace}\n",
+        "Phink got an error...".red().bold(),
+    );
 
     if e.backtrace().status() == BacktraceStatus::Captured {
         message = format!(
-            "{}\n{}\n{}\n",
+            "{}\n{}\n{}",
             message,
             "Backtrace ->".yellow(),
             e.backtrace()
@@ -29,7 +41,7 @@ pub fn format_error(e: anyhow::Error) -> String {
 
     let mut source = e.source();
     while let Some(cause) = source {
-        message = format!("{}\n\n{} {}", message, "Caused by".cyan().bold(), cause);
+        message = format!("{message}\n\n{} {cause}", "Caused by".cyan().bold());
         source = cause.source();
     }
 

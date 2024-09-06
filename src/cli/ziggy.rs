@@ -32,6 +32,7 @@ use crate::cli::{
     },
     ui,
 };
+use anyhow::bail;
 use std::{
     io::{
         self,
@@ -101,15 +102,31 @@ impl ZiggyConfig {
                 self.build_llvm_allowlist()?;
                 "build"
             }
-            ZiggyCommand::Fuzz(ui) => {
-                if ui {
-                    ui::tui::initialize_tui().unwrap();
-                }
-                "fuzz"
-            }
+            ZiggyCommand::Fuzz(..) => "fuzz",
         }
         .parse()?;
 
+        match command {
+            ZiggyCommand::Fuzz(ui) => {
+                if ui {
+                    ui::tui::initialize_tui().unwrap();
+                } else {
+                    self.native_ui(args, env, ziggy_command)?;
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+
+    fn native_ui(
+        &self,
+        args: Vec<String>,
+        env: Vec<(String, String)>,
+        ziggy_command: String,
+    ) -> anyhow::Result<()> {
+        use std::io::BufRead;
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
@@ -117,9 +134,21 @@ impl ZiggyConfig {
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
             .env(AflDebug.to_string(), AFL_DEBUG)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
+            .stdout(Stdio::piped());
 
+        let mut ziggy_child = command_builder.spawn()?;
+
+        if let Some(stdout) = ziggy_child.stdout.take() {
+            let reader = io::BufReader::new(stdout);
+            for line in reader.lines() {
+                println!("{}", line?);
+            }
+        }
+
+        let status = ziggy_child.wait()?;
+        if !status.success() {
+            bail!("`cargo ziggy` failed ({})", status);
+        }
         self.with_allowlist(command_builder)?;
 
         // If there are additional arguments, pass them to the command
@@ -135,8 +164,6 @@ impl ZiggyConfig {
     /// # Arguments
     ///
     /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
-    ///
-    /// returns: Result<()>
     fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.to_owned().unwrap_or_default())
@@ -148,7 +175,7 @@ impl ZiggyConfig {
 
     pub fn ziggy_fuzz(&self) -> anyhow::Result<()> {
         let fuzzoutput = &self.config.fuzz_output;
-        let dict = PhinkFiles::new(fuzzoutput.clone().unwrap_or_default()).path(DictPath);
+        let dict = PhinkFiles::new(fuzzoutput.to_owned().unwrap_or_default()).path(DictPath);
 
         let build_args = if !self.config.use_honggfuzz {
             vec!["--no-honggfuzz".parse()?]
