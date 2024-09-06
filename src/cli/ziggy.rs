@@ -110,15 +110,12 @@ impl ZiggyConfig {
         }
         .parse()?;
 
-        match command {
-            ZiggyCommand::Fuzz(ui) => {
-                if ui {
-                    ui::tui::initialize_tui().unwrap();
-                } else {
-                    self.native_ui(args, env, ziggy_command)?;
-                }
+        if let ZiggyCommand::Fuzz(ui) = command {
+            if ui {
+                ui::tui::initialize_tui().unwrap();
+            } else {
+                self.native_ui(args, env, ziggy_command)?;
             }
-            _ => {}
         }
 
         Ok(())

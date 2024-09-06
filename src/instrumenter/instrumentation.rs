@@ -70,20 +70,12 @@ impl Instrumenter {
     }
 
     pub fn find(&self) -> anyhow::Result<InkFilesPath> {
-        let c_path = self.to_owned().z_config.contract_path;
+        let c_path = self.to_owned().z_config.instrumented_path();
+        let c_path_str = c_path.to_str().unwrap();
+
         let wasm_path = fs::read_dir(c_path.join("target/ink/"))
             .with_context(|| {
-                format!(
-                    "It seems that your contract is not compiled into `target/ink`. \
-                Please, ensure that your WASM blob and the JSON specs are stored in \
-                '{}target/ink/' (the instrumeted contract was initially in '{}')",
-                    self.to_owned()
-                        .z_config
-                        .instrumented_path()
-                        .to_str()
-                        .unwrap(),
-                    c_path.to_str().unwrap(),
-                )
+                format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}target/ink/')")
             })?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();
@@ -141,7 +133,7 @@ impl Instrumenter {
         }
 
         println!(
-            "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in '{p_display}./'",
+            "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in '{p_display}'",
             self.z_config.contract_path.display(),
         );
 
@@ -174,7 +166,7 @@ impl Instrumenter {
     fn fork(self) -> anyhow::Result<PathBuf> {
         let new_dir = &self.to_owned().z_config.instrumented_path();
 
-        phink_log!(self, "🏗️ Creating new directory: {:?}", new_dir);
+        phink_log!(self, "🏗️ Creating new directory: '{}'", new_dir.display());
 
         fs::create_dir_all(new_dir)
             .with_context(|| format!("🙅 Failed to create directory: {}", new_dir.display()))?;
@@ -421,7 +413,7 @@ mod tests {
                 )),
                 ..Default::default()
             },
-            contract_path: PathBuf::from("rezrzerze/dummy"),
+            contract_path: PathBuf::from("rezrzerze/idontexistsad"),
         };
         let instrumenter = Instrumenter::new(config);
         let result = instrumenter.find();

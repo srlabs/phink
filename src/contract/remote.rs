@@ -84,7 +84,7 @@ impl ContractBridge {
             .find()
             .context("Couldn't execute `find` for this current config")?;
         let wasm_bytes = fs::read(&finder.wasm_path)
-            .context(format!("Couldn't read from {:?}", finder.wasm_path))?;
+            .context(format!("Couldn't read WASM from{:?}", finder.wasm_path))?;
 
         let mut contract_addr: AccountIdOf<Runtime> = config
             .config
@@ -97,8 +97,8 @@ impl ContractBridge {
             contract_addr
         );
 
-        let json_specs = fs::read_to_string(finder.specs_path.to_owned())
-            .context(format!("Couldn't read from {:?}", finder.specs_path))?;
+        let json_specs = fs::read_to_string(&finder.specs_path)
+            .context(format!("Couldn't read JSON from {:?}", finder.specs_path))?;
 
         let genesis_storage: Storage = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();

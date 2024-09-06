@@ -258,8 +258,8 @@ fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> 
 }
 
 fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Result<()> {
-    use std::fmt::Write;
-    writeln!(dict_file, "\"{}\"", selector.to_string())?;
+    writeln!(dict_file, "\"{}\"", selector)
+        .with_context(|| format!("Couldn't write {selector} into the dict"))?;
     Ok(())
 }
 

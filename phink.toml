@@ -3,7 +3,7 @@
 cores = 2 # set it to 1 for single-core
 max_messages_per_exec = 4
 report_path = "output/phink/contract_coverage"
-fuzz_output = "output"
+#fuzz_output = "output"
 use_honggfuzz = false # obligatory for MacOS users
 fuzz_origin = false
 deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Alice (Origin(1))
@@ -11,7 +11,7 @@ constructor_payload = "9BAE9D5E5C1100007B000000ACAC0000CC5B763F7AA51000F4BD3F32F
 storage_deposit_limit = "100000000000" # this is commented by default, to set is to `None`
 instantiate_initial_value = "0"
 verbose = false
-instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
+#instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
 show_ui = false
 
 [default_gas_limit]

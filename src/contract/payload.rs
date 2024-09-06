@@ -164,7 +164,7 @@ impl PayloadCrafter {
                         .as_str()
                         .filter(|label| label.starts_with(DEFAULT_PHINK_PREFIX))
                         .and_then(|_| message["selector"].as_str())
-                        .map(Self::decode_selector)
+                        .map(|e| Selector::try_from(e).unwrap())
                 })
                 .collect(),
         )
@@ -190,13 +190,6 @@ impl PayloadCrafter {
             }
         }
         bail!("No selector found")
-    }
-
-    /// Decode `encoded` to a proper `Selector`
-    fn decode_selector(encoded: &str) -> Selector {
-        // todo: refeactor
-        let bytes: Vec<u8> = hex::decode(encoded.trim_start_matches("0x")).unwrap();
-        Selector(<[u8; 4]>::try_from(bytes).expect("Selector is not a valid 4-byte array"))
     }
 
     /// Helper function to decode a hexadecimal string selector into a byte
@@ -257,18 +250,9 @@ mod test {
         let selectors = PayloadCrafter::parse_selectors(&spec).unwrap();
 
         assert_eq!(selectors.len(), 3);
-        assert_eq!(
-            selectors[0],
-            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
-        );
-        assert_eq!(
-            selectors[1],
-            Selector::try_from([0xab, 0xcd, 0xef, 0x01]).unwrap()
-        );
-        assert_eq!(
-            selectors[2],
-            Selector::try_from([0x23, 0x45, 0x67, 0x89]).unwrap()
-        );
+        assert_eq!(selectors[0], Selector::from([0x12, 0x34, 0x56, 0x78]));
+        assert_eq!(selectors[1], Selector::from([0xab, 0xcd, 0xef, 0x01]));
+        assert_eq!(selectors[2], Selector::from([0x23, 0x45, 0x67, 0x89]));
     }
 
     #[test]
@@ -297,14 +281,8 @@ mod test {
         let invariants = PayloadCrafter::extract_invariants(json_data).unwrap();
 
         assert_eq!(invariants.len(), 2);
-        assert_eq!(
-            invariants[0],
-            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
-        );
-        assert_eq!(
-            invariants[1],
-            Selector::try_from([0x23, 0x45, 0x67, 0x89]).unwrap()
-        );
+        assert_eq!(invariants[0], Selector::from([0x12, 0x34, 0x56, 0x78]));
+        assert_eq!(invariants[1], Selector::from([0x23, 0x45, 0x67, 0x89]));
     }
 
     #[test]
@@ -365,14 +343,8 @@ mod test {
         let selectors = PayloadCrafter::extract_all(temp_dir.path().to_path_buf()).unwrap();
 
         assert_eq!(selectors.len(), 2);
-        assert_eq!(
-            selectors[0],
-            Selector::try_from([0x12, 0x34, 0x56, 0x78]).unwrap()
-        );
-        assert_eq!(
-            selectors[1],
-            Selector::try_from([0xab, 0xcd, 0xef, 0x01]).unwrap()
-        );
+        assert_eq!(selectors[0], Selector::from([0x12, 0x34, 0x56, 0x78]));
+        assert_eq!(selectors[1], Selector::from([0xab, 0xcd, 0xef, 0x01]));
     }
     #[test]
     fn fetch_good_invariants() {

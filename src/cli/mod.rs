@@ -26,7 +26,7 @@ pub fn format_error(e: anyhow::Error) -> String {
     };
 
     let mut message = format!(
-        "\n{}: {e}\n\n{maybe_backtrace}\n",
+        "\n{}: {e}\n{maybe_backtrace}\n",
         "Phink got an error...".red().bold(),
     );
 
@@ -41,7 +41,7 @@ pub fn format_error(e: anyhow::Error) -> String {
 
     let mut source = e.source();
     while let Some(cause) = source {
-        message = format!("{message}\n\n{} {cause}", "Caused by".cyan().bold());
+        message = format!("{message}\n{} {cause}\n", "Caused by".cyan().bold());
         source = cause.source();
     }
 

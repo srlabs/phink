@@ -37,9 +37,9 @@ use std::{
 
 pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 
-/// Helper used to run tests, mainly checking that the instrumented
-/// folder/fuzzing output doesn't exist. It removes the temporary forked
-/// Phink config file, executes the tests and then clean everything again.
+/// Helper for running tests, specifically to ensure that the instrumented
+/// folder and fuzzing output are absent. It removes the temporary forked
+/// Phink config file, executes the tests, and cleans everything up afterward.
 ///
 /// # Arguments
 ///
@@ -54,6 +54,7 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 ///     Ok(())
 /// });
 /// ```
+
 pub fn with_modified_phink_config<F>(config: &Configuration, executed_test: F) -> Result<()>
 where
     F: FnOnce() -> Result<()>,

@@ -41,7 +41,6 @@ impl DevelopperPreferences for Preferences {
         storage
     }
 
-    /// TODO! Only for test purposes, this will crash necessarily
     /// We want for our test case to upload other contracts
     /// Most of the time, you might want this function to be empty
     fn on_contract_initialize() -> anyhow::Result<()> {
