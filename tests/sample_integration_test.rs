@@ -29,6 +29,10 @@ mod tests {
 
             let entries = fs::read_dir(sample_path)
                 .unwrap_or_else(|_| panic!("Failed to read directory: {:?}", sample_path));
+            assert!(
+                sample_path.join("target/ink").exists(),
+                "Please compile the projects before! Go to `sample/` and execute `bash build.sh`"
+            );
 
             let mut file_count = 0;
             for entry in entries {

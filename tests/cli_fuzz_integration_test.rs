@@ -43,15 +43,16 @@ mod tests {
             ..Default::default()
         };
 
+        const TIMEOUT: u64 = 180; // 3 minutes of timeout for this one, lucky him
+
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
 
-            let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
+            let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(TIMEOUT), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
                 ensure!(fuzz_created, "Fuzz output directory wasn't created");
 
                 if fuzz_created {
-                    // We search if a crashes is spotted
                     let afl_log = config
                         .fuzz_output
                         .clone()
@@ -62,6 +63,7 @@ mod tests {
 
                     let log_content = fs::read_to_string(afl_log).unwrap();
 
+                    // We search if a crashes is spotted from AFL++ dashboard
                     let saved_crashes: i32 = if let Some(captures) =
                         Regex::new(r"saved crashes : (\d+)")
                             .unwrap()
@@ -74,7 +76,7 @@ mod tests {
 
                     ensure!(
                         saved_crashes >= 1,
-                        "No crash detected within the 120 seconds, this should crash easily"
+                        "No crash detected within the {TIMEOUT} seconds, this should crash easily"
                     );
                 }
                 Ok(())

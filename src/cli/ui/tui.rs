@@ -7,7 +7,6 @@ use ratatui::{
     Frame,
 };
 
-/// Basic hello world for TUI
 pub fn initialize_tui() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = ratatui::init();
     loop {
