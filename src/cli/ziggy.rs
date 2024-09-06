@@ -137,6 +137,13 @@ impl ZiggyConfig {
             .env(AflDebug.to_string(), AFL_DEBUG)
             .stdout(Stdio::piped());
 
+        self.with_allowlist(command_builder)
+            .context("Couldn't use the allowlist")?;
+
+        command_builder.args(args.iter());
+        command_builder.envs(env);
+        command_builder.spawn().context("Couldn't spawn Ziggy")?;
+
         let mut ziggy_child = command_builder
             .spawn()
             .context("Spawning Ziggy was unsuccessfull")?;
@@ -152,13 +159,7 @@ impl ZiggyConfig {
         if !status.success() {
             bail!("`cargo ziggy` failed ({})", status);
         }
-        self.with_allowlist(command_builder)
-            .context("Couldn't use the allowlist")?;
 
-        // If there are additional arguments, pass them to the command
-        command_builder.args(args.iter());
-        command_builder.envs(env);
-        command_builder.spawn().context("Couldn't spawn Ziggy")?;
         Ok(())
     }
 
