@@ -13,7 +13,6 @@ use std::{
     path::PathBuf,
 };
 use thiserror::Error;
-use walkdir::WalkDir;
 #[derive(Error, Debug)]
 pub enum SelectorError {
     #[error("Invalid hex string")]
@@ -87,7 +86,7 @@ impl TryFrom<Vec<u8>> for Selector {
 }
 
 #[derive(Default, Clone)]
-pub struct PayloadCrafter {}
+pub struct PayloadCrafter;
 
 /// This prefix defines the way a property start with
 ///
@@ -97,52 +96,63 @@ pub struct PayloadCrafter {}
 // pub fn phink_assert_abc_dot_com_cant_be_registered(&self) -> bool {}
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Spec {
     constructors: Vec<SelectorEntry>,
     messages: Vec<SelectorEntry>,
 }
 
-#[derive(Deserialize)]
+impl Spec {
+    pub fn parse(&self) -> anyhow::Result<Vec<Selector>> {
+        if self.constructors.is_empty() || self.messages.is_empty() {
+            bail!("Empty constructor or messages vec")
+        };
+
+        self.constructors
+            .iter()
+            .chain(self.messages.iter())
+            .map(|entry| Selector::try_from(entry.selector.as_str()))
+            .collect::<Result<_, _>>()
+            .map_err(|e| anyhow::anyhow!("Couldn't push the selector while parsing: {e}"))
+    }
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct SelectorEntry {
     selector: String,
 }
 impl PayloadCrafter {
     pub fn extract_all(contract_path: PathBuf) -> anyhow::Result<Vec<Selector>> {
-        let mut all_selectors: Vec<Selector> = Vec::new();
+        let mut all_selectors = Vec::new();
 
-        for entry in WalkDir::new(contract_path)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
-            if entry.path().extension().map_or(false, |ext| ext == "json") {
-                if let Ok(contents) = fs::read_to_string(entry.path()) {
-                    if let Ok(v) = serde_json::from_str::<Value>(&contents) {
-                        if let Ok(spec) = serde_json::from_value::<Spec>(v["spec"].clone()) {
-                            let selectors = Self::parse_selectors(&spec)
-                                .context("Couldn't parse all the selectors")?;
-                            all_selectors.extend(selectors);
-                            return Ok(all_selectors);
-                        }
-                    }
-                }
+        let target_ink_path = contract_path.join("target/ink");
+        let entries = fs::read_dir(&target_ink_path)
+            .with_context(|| format!("Failed to read directory {:?}", target_ink_path))?;
+
+        for entry in entries {
+            let path = entry
+                .with_context(|| "Failed to read directory entry")?
+                .path();
+
+            if path.extension().map_or(false, |ext| ext == "json")
+                && !path.file_name().unwrap().to_str().unwrap().starts_with(".")
+            {
+                let contents = fs::read_to_string(&path)
+                    .with_context(|| format!("Failed to read file {:?}", path))?;
+
+                let v: Value = serde_json::from_str(&contents)
+                    .with_context(|| format!("Failed to parse JSON from file {:?}", path))?;
+
+                let spec: Spec = serde_json::from_value(v["spec"].clone())
+                    .with_context(|| format!("Failed to deserialize spec from file {:?}", path))?;
+
+                let selectors = spec.parse().context("Couldn't parse all the selectors")?;
+                all_selectors.extend(selectors);
+                break; // Since we only want to process the first JSON file found, break the loop
             }
         }
 
         Ok(all_selectors)
-    }
-
-    pub fn parse_selectors(spec: &Spec) -> anyhow::Result<Vec<Selector>> {
-        let mut selectors: Vec<Selector> = Vec::new();
-        for entry in spec.constructors.iter().chain(spec.messages.iter()) {
-            match Selector::try_from(entry.selector.as_str()) {
-                Ok(sel) => selectors.push(sel),
-                Err(e) => {
-                    bail!("Couldn't push the selector while parsing: {e}")
-                }
-            }
-        }
-        Ok(selectors)
     }
 
     /// Extract every selector associated to the invariants defined in the ink!
@@ -197,6 +207,7 @@ impl PayloadCrafter {
     /// fails.
     fn get_selector_bytes(selector: &str) -> anyhow::Result<Selector> {
         let trimmed = hex::decode(selector.trim_start_matches("0x"))?.to_vec();
+
         match Selector::try_from(trimmed) {
             Ok(sel) => Ok(sel),
             Err(e) => {
@@ -247,7 +258,7 @@ mod test {
             ],
         };
 
-        let selectors = PayloadCrafter::parse_selectors(&spec).unwrap();
+        let selectors = spec.parse().unwrap();
 
         assert_eq!(selectors.len(), 3);
         assert_eq!(selectors[0], Selector::from([0x12, 0x34, 0x56, 0x78]));
@@ -321,7 +332,8 @@ mod test {
     #[test]
     fn test_extract_all() {
         let temp_dir = TempDir::new().unwrap();
-        let file_path = temp_dir.path().join("contract.json");
+        let file_path = temp_dir.path().join("target/ink/");
+        fs::create_dir_all(&file_path).unwrap();
         let json_content = r#"
         {
             "spec": {
@@ -338,7 +350,7 @@ mod test {
             }
         }
         "#;
-        fs::write(&file_path, json_content).unwrap();
+        fs::write(file_path.join("contract.json"), json_content).unwrap();
 
         let selectors = PayloadCrafter::extract_all(temp_dir.path().to_path_buf()).unwrap();
 
@@ -361,11 +373,12 @@ mod test {
 
     #[test]
     fn fetch_correct_selectors() {
-        let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns"))
+        let extracted: String = PayloadCrafter::extract_all(PathBuf::from("sample/dns/"))
             .unwrap()
             .iter()
-            .map(|x| hex::encode(x) + " ")
+            .map(|x| x.to_string() + " ")
             .collect();
+
         // DNS selectors
         assert_eq!(
             extracted,

@@ -387,8 +387,9 @@ mod tests {
     #[test]
     fn test_find_wasm_and_specs_paths_success() {
         let config = create_temp_ziggy_config(false);
-        let wasm_file = config.contract_path.join("target/ink/test_contract.wasm");
-        let specs_file = config.contract_path.join("target/ink/test_contract.json");
+        let buf = config.to_owned().instrumented_path();
+        let wasm_file = buf.join("target/ink/dummy.wasm");
+        let specs_file = buf.join("target/ink/dummy.json");
 
         // Create a fake .wasm file and corresponding .json spec file
         fs::create_dir_all(wasm_file.parent().unwrap()).unwrap();

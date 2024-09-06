@@ -217,7 +217,7 @@ fn init_fuzzer(fuzzer: Fuzzer) -> (Mutex<ContractMessageTranscoder>, BugManager)
         .expect("🙅 No invariants found, check your contract");
 
     let selectors_without_invariants: Vec<Selector> =
-        PayloadCrafter::extract_all(fuzzer.contract_path.clone())
+        PayloadCrafter::extract_all(fuzzer.contract_path.to_owned())
             .unwrap()
             .into_iter()
             .filter(|s| !invariants.contains(s))

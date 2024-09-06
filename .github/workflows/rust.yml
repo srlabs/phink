@@ -64,5 +64,5 @@ jobs:
       - name: Run integration tests for *sample*
         run: cargo test --test sample_integration_test -- --show-output
 
-#      - name: Run integration tests for *fuzz*
-#        run: cargo test --test cli_fuzz_integration_test -- --show-output
+      - name: Run integration tests for *fuzz*
+        run: cargo test --test cli_fuzz_integration_test -- --show-output
