@@ -7,7 +7,7 @@ pub enum PhinkEnv {
     CargoManifestDir,
     AflForkServerTimeout,
     AflDebug,
-    AflLLVMAllowList,
+    AllowList,
 }
 
 impl Display for PhinkEnv {
@@ -18,7 +18,7 @@ impl Display for PhinkEnv {
             PhinkEnv::CargoManifestDir => "CARGO_MANIFEST_DIR",
             PhinkEnv::AflForkServerTimeout => "AFL_FORKSRV_INIT_TMOUT",
             PhinkEnv::AflDebug => "AFL_DEBUG",
-            PhinkEnv::AflLLVMAllowList => "AFL_LLVM_ALLOWLIST",
+            PhinkEnv::AllowList => "AFL_LLVM_ALLOWLIST",
         })
     }
 }

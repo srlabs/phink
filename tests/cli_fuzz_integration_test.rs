@@ -51,16 +51,15 @@ mod tests {
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(TIMEOUT), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
                 ensure!(fuzz_created, "Fuzz output directory wasn't created");
+                let afl_log = config
+                    .fuzz_output
+                    .clone()
+                    .unwrap_or_default()
+                    .join("phink")
+                    .join("logs")
+                    .join("afl.log");
 
-                if fuzz_created {
-                    let afl_log = config
-                        .fuzz_output
-                        .clone()
-                        .unwrap_or_default()
-                        .join("phink")
-                        .join("logs")
-                        .join("afl.log");
-
+                if fuzz_created && afl_log.exists() {
                     let log_content = fs::read_to_string(afl_log).unwrap();
 
                     // We search if a crashes is spotted from AFL++ dashboard

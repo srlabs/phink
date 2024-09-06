@@ -46,7 +46,7 @@ use std::{
     },
 };
 use PhinkEnv::{
-    AflLLVMAllowList,
+    AllowList,
     FromZiggy,
     FuzzingWithConfig,
 };
@@ -142,7 +142,6 @@ impl ZiggyConfig {
 
         command_builder.args(args.iter());
         command_builder.envs(env);
-        command_builder.spawn().context("Couldn't spawn Ziggy")?;
 
         let mut ziggy_child = command_builder
             .spawn()
@@ -174,7 +173,7 @@ impl ZiggyConfig {
             let allowlist = PhinkFiles::new(self.config.fuzz_output.to_owned().unwrap_or_default())
                 .path(AllowlistPath);
             command_builder.env(
-                AflLLVMAllowList.to_string(),
+                AllowList.to_string(),
                 allowlist
                     .canonicalize()
                     .context("Couldn't canonicalize the allowlist path")?,
@@ -254,7 +253,7 @@ impl ZiggyConfig {
             .path(AllowlistPath);
 
         if allowlist_path.exists() {
-            println!("❗ {} already exists... skipping", AflLLVMAllowList);
+            println!("❗ {} already exists... skipping", AllowList);
             return Ok(());
         }
 
@@ -266,7 +265,7 @@ impl ZiggyConfig {
             writeln!(allowlist_file, "fun: {}", func)?;
         }
 
-        println!("✅ {} created successfully", AflLLVMAllowList);
+        println!("✅ {} created successfully", AllowList);
         Ok(())
     }
 }
@@ -390,7 +389,7 @@ mod tests {
                 .collect();
 
             assert!(env_vars.contains(&(
-                AflLLVMAllowList.to_string(),
+                AllowList.to_string(),
                 allowlist_path.to_str().unwrap().to_string()
             )));
         }
