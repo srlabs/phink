@@ -75,7 +75,7 @@ impl Instrumenter {
 
         let wasm_path = fs::read_dir(c_path.join("target/ink/"))
             .with_context(|| {
-                format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}target/ink/')")
+                format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}/target/ink/'")
             })?
             .filter_map(|entry| {
                 let path = entry.ok()?.path();

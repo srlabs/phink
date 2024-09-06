@@ -11,7 +11,7 @@ constructor_payload = "9BAE9D5E5C1100007B000000ACAC0000CC5B763F7AA51000F4BD3F32F
 storage_deposit_limit = "100000000000" # this is commented by default, to set is to `None`
 instantiate_initial_value = "0"
 verbose = false
-#instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
+instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
 show_ui = false
 
 [default_gas_limit]

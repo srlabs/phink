@@ -6,7 +6,7 @@ use crate::{
     contract::{
         remote::{
             BalanceOf,
-            ContractBridge,
+            ContractSetup,
         },
         runtime::Runtime,
     },
@@ -76,10 +76,10 @@ impl Default for Configuration {
             cores: Some(1),
             use_honggfuzz: false,
             fuzz_origin: false,
-            deployer_address: ContractBridge::DEFAULT_DEPLOYER.into(),
+            deployer_address: ContractSetup::DEFAULT_DEPLOYER.into(),
             max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
             report_path: Some(PathBuf::from("output/coverage_report")),
-            default_gas_limit: Some(ContractBridge::DEFAULT_GAS_LIMIT),
+            default_gas_limit: Some(ContractSetup::DEFAULT_GAS_LIMIT),
             storage_deposit_limit: Some("100000000000".into()),
             instantiate_initial_value: None,
             constructor_payload: None,
@@ -215,7 +215,7 @@ mod tests {
         );
         assert_eq!(
             default_config.default_gas_limit,
-            Some(ContractBridge::DEFAULT_GAS_LIMIT)
+            Some(ContractSetup::DEFAULT_GAS_LIMIT)
         );
         assert_eq!(
             default_config.storage_deposit_limit,

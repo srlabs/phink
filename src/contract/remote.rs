@@ -65,7 +65,7 @@ pub type FullContractResponse =
     ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
 
 #[derive(Clone)]
-pub struct ContractBridge {
+pub struct ContractSetup {
     pub genesis: Storage,
     pub contract_address: AccountIdOf<Runtime>,
     pub json_specs: String,
@@ -73,13 +73,13 @@ pub struct ContractBridge {
     pub contract_path: PathBuf,
 }
 
-impl ContractBridge {
+impl ContractSetup {
     pub const DEFAULT_GAS_LIMIT: Weight = Weight::from_parts(100_000_000_000, 3 * 1024 * 1024);
     pub const DEFAULT_DEPLOYER: AccountId32 = AccountId32::new([1u8; 32]);
 
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
-    pub fn initialize_wasm(config: ZiggyConfig) -> anyhow::Result<ContractBridge> {
+    pub fn initialize_wasm(config: ZiggyConfig) -> anyhow::Result<Self> {
         let finder = Instrumenter::new(config.clone())
             .find()
             .context("Couldn't execute `find` for this current config")?;
@@ -90,7 +90,7 @@ impl ContractBridge {
             .config
             .deployer_address
             .clone()
-            .unwrap_or(ContractBridge::DEFAULT_DEPLOYER);
+            .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
 
         println!(
             "🛠️Initializing contract address from the origin: {:?}",

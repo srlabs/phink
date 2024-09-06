@@ -4,14 +4,13 @@ use crate::{
     contract::{
         payload::Selector,
         remote::{
-            ContractBridge,
+            ContractSetup,
             FullContractResponse,
         },
     },
     cover::coverage::InputCoverage,
     fuzzer::{
-        engine::FuzzerEngine,
-        fuzz::Fuzzer,
+        engine::pretty_print,
         parser::{
             Message,
             OneInput,
@@ -31,7 +30,7 @@ use std::{
 
 #[derive(Clone)]
 pub struct BugManager {
-    pub contract_bridge: ContractBridge,
+    pub contract_bridge: ContractSetup,
     pub invariant_selectors: Vec<Selector>,
     pub configuration: Configuration,
 }
@@ -39,7 +38,7 @@ pub struct BugManager {
 impl BugManager {
     pub fn new(
         invariant_selectors: Vec<Selector>,
-        contract_bridge: ContractBridge,
+        contract_bridge: ContractSetup,
         configuration: Configuration,
     ) -> Self {
         Self {
@@ -70,7 +69,7 @@ impl BugManager {
 
             println!("🎉 Find below the trace that caused that trapped contract");
 
-            <Fuzzer as FuzzerEngine>::pretty_print(
+            pretty_print(
                 vec![response],
                 OneInput {
                     messages: vec![message.clone()],
@@ -101,7 +100,7 @@ impl BugManager {
             println!("\n🤯 An invariant got caught! Let's dive into it");
             println!("\n🫵  This was caused by `{hex}`\n");
             println!("🎉 Find below the trace that caused that invariant");
-            <Fuzzer as FuzzerEngine>::pretty_print(responses, decoded_msg);
+            pretty_print(responses, decoded_msg);
         }
         // Artificially trigger a bug for AFL
         panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");

@@ -62,7 +62,8 @@ enum Commands {
     Instrument(Contract),
     /// Run all the seeds
     Run(Contract),
-    /// Remove all the temporary files under /tmp/ink_fuzzed_*
+    /// Generate a coverage report, only of the harness. You won't have your contract coverage here
+    /// (mainly for debugging purposes only)
     HarnessCover(Contract),
     /// Generate a coverage report for your smart-contract
     Coverage(Contract),
@@ -87,7 +88,10 @@ pub fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var(FuzzingWithConfig.to_string()) {
         if var(FromZiggy.to_string()).is_ok() {
-            if let Err(e) = Fuzzer::execute_harness(Fuzz, ZiggyConfig::parse(config_str)) {
+            let fuzzer = Fuzzer::new(ZiggyConfig::parse(config_str)).unwrap();
+            let exec = fuzzer.execute_harness(Fuzz);
+
+            if let Err(e) = exec {
                 eprintln!("{}", format_error(e));
             }
         }
@@ -105,7 +109,7 @@ fn handle_cli() -> anyhow::Result<()> {
             let z_config: ZiggyConfig =
                 ZiggyConfig::new(config.to_owned(), contract_path.contract_path.to_owned());
 
-            let engine = Instrumenter::new(z_config.to_owned());
+            let engine = Instrumenter::new(z_config);
             engine.to_owned().instrument()?;
             engine.build()?;
             Ok(())
@@ -120,10 +124,8 @@ fn handle_cli() -> anyhow::Result<()> {
             seed,
             contract_path,
         } => {
-            Fuzzer::execute_harness(
-                ExecuteOneInput(seed),
-                ZiggyConfig::new(config, contract_path),
-            )
+            let fuzzer = Fuzzer::new(ZiggyConfig::new(config, contract_path))?;
+            fuzzer.execute_harness(ExecuteOneInput(seed))
         }
         Commands::HarnessCover(contract_path) => {
             ZiggyConfig::new(config, contract_path.contract_path).ziggy_cover()
