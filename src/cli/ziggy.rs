@@ -37,6 +37,7 @@ use anyhow::{
     Context,
 };
 use std::{
+    cmp::PartialEq,
     io::{
         self,
     },
@@ -54,7 +55,7 @@ use PhinkEnv::{
 pub const AFL_DEBUG: &str = "1";
 pub const AFL_FORKSRV_INIT_TMOUT: &str = "10000000";
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ZiggyCommand {
     Run,
     Cover,
@@ -98,24 +99,25 @@ impl ZiggyConfig {
         args: Vec<String>,
         env: Vec<(String, String)>,
     ) -> anyhow::Result<()> {
-        let ziggy_command: String = match command {
+        let mut pop_ui = false;
+        let ziggy_command = match command {
             ZiggyCommand::Run => "run",
             ZiggyCommand::Cover => "cover",
             ZiggyCommand::Build => {
                 self.build_llvm_allowlist()
-                    .context("Buildin't LLVM allowlist failed")?;
+                    .context("Building LLVM allowlist failed")?;
                 "build"
             }
-            ZiggyCommand::Fuzz(..) => "fuzz",
-        }
-        .parse()?;
-
-        if let ZiggyCommand::Fuzz(ui) = command {
-            if ui {
-                ui::tui::initialize_tui().unwrap();
-            } else {
-                self.native_ui(args, env, ziggy_command)?;
+            ZiggyCommand::Fuzz(ui) => {
+                pop_ui = ui;
+                "fuzz"
             }
+        };
+
+        if pop_ui {
+            ui::tui::initialize_tui().unwrap();
+        } else {
+            self.native_ui(args, env, ziggy_command.into())?;
         }
 
         Ok(())

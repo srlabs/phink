@@ -73,8 +73,12 @@ mod tests {
                         0
                     };
 
+                    let crashed = saved_crashes >= 1;
+                    if crashed {
+                        println!("Spotted {saved_crashes} crashes");
+                    }
                     ensure!(
-                        saved_crashes >= 1,
+                        crashed,
                         "No crash detected within the {TIMEOUT} seconds, this should crash easily"
                     );
                 }
