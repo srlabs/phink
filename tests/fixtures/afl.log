@@ -70,7 +70,7 @@ seed: "ffffffff01fa80c2f60000"
 │        run time : [0m0 days, 0 hrs, 0 min, 0 sec       [1;90m│  cycles done : [0;35m0     [1;90m│
 │   last new find : [0m0 days, 0 hrs, 0 min, 0 sec       [1;90m│ corpus count : [9m11    [1;90m│
 │last saved crash : [0mnone seen yet                     [1;90m│saved crashes : [8m0     [1;90m│
-│ last saved hang : [0mnone seen yet                     [1;90m│  saved hangs : [10m0     [1;90m│
+│ last saved hang : [0mnone seen yet                     [1;90m│  saved hangs : [10Zm0     [1;90m│
 ├─[0;36m cycle progress [1;90m─────────────────────┬─[0;36m map coverage[1;90m┴──────────────────────┤
 │  now processing : [0m0.0 (0.0%)         [1;90m│    map density : [0m0.07% / 0.08%      [1;90m│
 │  runs timed out : [0m0 (0.00%)          [1;90m│ count coverage : [0m2.45 bits/tuple    [1;90m│
@@ -9622,7 +9622,7 @@ Performing final sync, this make take some time ...
 │  now trying : [0msync 1                 [1;90m│ favored items : [0m19 (14.96%)         [1;90m│
 │ stage execs : [0m0/-                    [1;90m│  new edges on : [0m28 (22.05%)         [1;90m│
 │ total execs : [0m116k                   [1;90m│ total crashes : [0m0 (0 saved)         [1;90m│
-│  exec speed : [1;91m0.00/sec (zzzz...)     [1;90m│  total tmouts : [0m0 (0 saved)         [1;90m│
+│  exec speed : [1;91m5555.00/sec (zzzz...)     [1;90m│  total tmouts : [0m0 (0 saved)         [1;90m│
 ├─[0;36m fuzzing strategy yields [1;90m────────────┴─────────────┬─[0;36m item geometry [1;90m───────┤
 │   bit flips : [0m0/0, 0/0, 0/0                        [1;90m│    levels : [0m6         [1;90m│
 │  byte flips : [0m0/0, 0/0, 0/0                        [1;90m│   pending : [0m35        [1;90m│

@@ -1,4 +1,7 @@
-use anyhow::bail;
+use anyhow::{
+    bail,
+    Context,
+};
 use predicates::name::PredicateNameExt;
 use regex::Regex;
 use std::{
@@ -63,19 +66,19 @@ impl FromStr for AFLProperties {
     }
 }
 #[derive(Debug, Clone, Default)]
-pub struct Dashboard {
+pub struct AFLDashboard {
     pub log_fullpath: PathBuf,
 }
 
-impl Dashboard {
-    pub fn from_fullpath(log_fullpath: PathBuf) -> anyhow::Result<Dashboard> {
+impl AFLDashboard {
+    pub fn from_fullpath(log_fullpath: PathBuf) -> anyhow::Result<AFLDashboard> {
         match log_fullpath.exists() {
             true => Ok(Self { log_fullpath }),
             false => bail!("The fullpath isn't correct"),
         }
     }
 
-    pub fn from_output(output: PathBuf) -> anyhow::Result<Dashboard> {
+    pub fn from_output(output: PathBuf) -> anyhow::Result<AFLDashboard> {
         let path = output.join("phink").join("logs").join("afl.log");
         match path.exists() {
             true => Self::from_fullpath(path),
@@ -88,7 +91,23 @@ impl Dashboard {
     // Read and parse properties from the log
     pub fn read_properties(&self) -> anyhow::Result<AFLProperties> {
         let content = fs::read_to_string(&self.log_fullpath)?;
-        Self::parse_properties(&content)
+
+        // Assuming each dashboard starts with the unique marker "AFL"
+        let delimiter = "AFL";
+        let dashboards: Vec<&str> = content.split(delimiter).collect();
+
+        // Get the last dashboard, prefixing it with "AFL" again
+        if let Some(last_dashboard) = dashboards.last() {
+            let last_dashboard = format!("{}{}", delimiter, last_dashboard);
+
+            let cleaned = Regex::new(r"\x1b\[[^m]*m")?
+                .replace_all(&last_dashboard, "")
+                .to_string(); // remove ANSI for shell colors
+
+            println!("{}", cleaned);
+            return Self::parse_properties(&cleaned)
+        }
+        bail!("Couldn't parse the set of dashboards of AFL")
     }
 
     // Function to parse properties using regex
@@ -145,7 +164,7 @@ mod tests {
         writeln!(temp_file, "{afl_dashboard}")?;
         let path = temp_file.path();
 
-        let dashboard = Dashboard::from_fullpath(path.into())?;
+        let dashboard = AFLDashboard::from_fullpath(path.into())?;
         assert!(dashboard.is_ready());
         Ok(())
     }
@@ -183,7 +202,7 @@ mod tests {
         writeln!(temp_file, "{afl_dashboard}")?;
         let path = temp_file.path();
 
-        let dashboard = Dashboard::from_fullpath(path.into())?;
+        let dashboard = AFLDashboard::from_fullpath(path.into())?;
         let properties = dashboard.read_properties()?;
 
         assert_eq!(properties.saved_crashes, 4);
@@ -227,7 +246,7 @@ mod tests {
         writeln!(temp_file, "{afl_dashboard}")?;
         let path = temp_file.path();
 
-        let dashboard = Dashboard::from_fullpath(path.into())?;
+        let dashboard = AFLDashboard::from_fullpath(path.into())?;
         let properties = dashboard.read_properties()?;
 
         assert_eq!(properties.saved_crashes, 0);
@@ -267,7 +286,7 @@ mod tests {
         writeln!(temp_file, "{afl_dashboard}")?;
         let path = temp_file.path();
 
-        let dashboard = Dashboard::from_fullpath(path.into())?;
+        let dashboard = AFLDashboard::from_fullpath(path.into())?;
         let properties = dashboard.read_properties()?;
 
         assert_eq!(properties.saved_crashes, 5);
@@ -279,13 +298,12 @@ mod tests {
 
     #[test]
     fn test_with_real_fixture() -> anyhow::Result<()> {
-        let dashboard = Dashboard::from_fullpath(PathBuf::from("tests/fixtures/afl.log"))?;
+        let dashboard = AFLDashboard::from_fullpath(PathBuf::from("tests/fixtures/afl.log"))?;
         let properties = dashboard.read_properties()?;
-
         assert_eq!(properties.saved_crashes, 42);
         assert_eq!(properties.run_time, "0 days, 0 hrs, 1 min, 21 sec");
         assert_eq!(properties.last_saved_crash, "none seen yet");
-        assert_eq!(properties.exec_speed, 91);
+        assert_eq!(properties.exec_speed, 5555);
         Ok(())
     }
 }
