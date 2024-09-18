@@ -114,15 +114,11 @@ pub fn parse_input(
     transcoder: &mut Mutex<ContractMessageTranscoder>,
     config: Configuration,
 ) -> OneInput {
-    let max_messages_per_exec = config
-        .max_messages_per_exec
-        .unwrap_or(MAX_MESSAGES_PER_EXEC);
-
     let iterable = Data {
         data,
         pointer: 0,
         size: 0,
-        max_messages_per_exec,
+        max_messages_per_exec: config.max_messages_per_exec.unwrap_or_default(),
     };
 
     let mut input = OneInput {

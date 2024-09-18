@@ -52,7 +52,6 @@ use PhinkEnv::{
     FuzzingWithConfig,
 };
 
-pub const AFL_DEBUG: &str = "1";
 pub const AFL_FORKSRV_INIT_TMOUT: &str = "10000000";
 
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -83,7 +82,12 @@ impl ZiggyConfig {
             .unwrap_or_default()
             .path
     }
-
+    pub fn afl_debug<'a>(&self) -> &'a str {
+        match self.config.verbose {
+            true => "1",
+            false => "0",
+        }
+    }
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
@@ -136,7 +140,7 @@ impl ZiggyConfig {
             .arg(ziggy_command)
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
-            .env(AflDebug.to_string(), AFL_DEBUG)
+            .env(AflDebug.to_string(), &self.afl_debug())
             .stdout(Stdio::piped());
 
         self.with_allowlist(command_builder)

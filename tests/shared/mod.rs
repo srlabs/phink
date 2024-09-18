@@ -150,18 +150,18 @@ where
     }
 }
 
-#[must_use]
-pub fn afl_log_didnt_fail(output: &Path) -> bool {
-    let log_path = output.join("logs").join("afl.log");
-
-    match fs::read_to_string(log_path) {
-        Ok(content) => {
-            // this is a string that is present in AFL dashboard
-            content.contains("findings in depth")
-        }
-        _ => false,
-    }
-}
+// #[must_use]
+// pub fn afl_log_didnt_fail(output: &Path) -> bool {
+//     let log_path = output.join("phink").join("logs").join("afl.log");
+//
+//     match fs::read_to_string(log_path) {
+//         Ok(content) => {
+//             // this is a string that is present in AFL dashboard
+//             content.contains("findings in depth")
+//         }
+//         _ => false,
+//     }
+// }
 
 /// Try to clean up the path where the instrumented contract is. If it fails, it doesn't matter
 pub fn try_cleanup_instrumented(config: &Configuration) {

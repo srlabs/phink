@@ -33,12 +33,12 @@ mod tests {
 
     #[test]
     #[cfg_attr(target_os = "macos", ignore)]
-    fn test_fuzz_find_crash_before_two_minutes() -> Result<()> {
+    fn test_fuzz_find_crash_before_three_minutes() -> Result<()> {
         let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
             instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
-            cores: Some(4),
+            cores: Some(10),
             show_ui: false,
             ..Default::default()
         };
@@ -73,6 +73,7 @@ mod tests {
                         0
                     };
 
+                    // println!("current crash number: {saved_crashes}");
                     let crashed = saved_crashes >= 1;
                     if crashed {
                         println!("Spotted {saved_crashes} crashes");

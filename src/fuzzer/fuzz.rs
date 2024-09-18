@@ -55,7 +55,7 @@ use std::{
     sync::Mutex,
 };
 
-pub const MAX_MESSAGES_PER_EXEC: usize = 4; // One execution contains maximum 4 messages.
+pub const MAX_MESSAGES_PER_EXEC: usize = 1; // One execution contains maximum 4 messages.
 
 pub enum FuzzingMode {
     ExecuteOneInput(PathBuf),
@@ -278,8 +278,11 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
+    // 00010000 fa80c2f6 00
+    let mut data = vec![0x00, 0x00, 0x00, 0x00];
     let file_path = corpus_dir.join(format!("selector_{index}.bin"));
-    fs::write(file_path, selector)
+    data.extend_from_slice(selector.0.as_ref());
+    fs::write(file_path, data)
 }
 
 fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Result<()> {

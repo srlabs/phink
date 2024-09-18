@@ -22,7 +22,7 @@ pub enum SelectorError {
     InvalidLength,
 }
 #[derive(PartialEq, Clone, Debug)]
-pub struct Selector([u8; 4]);
+pub struct Selector(pub [u8; 4]);
 
 impl Display for Selector {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -411,6 +411,15 @@ mod test {
             hex,
             "b8a4d3d9d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
         );
+    }
+    #[test]
+    fn dummy_encode() {
+        let metadata_path = Path::new("sample/dummy/target/ink/dummy.json");
+        let transcoder = ContractMessageTranscoder::load(metadata_path).unwrap();
+        let constructor = "crash_with_invariant";
+        let data = transcoder.encode(constructor, ["\"\""]).unwrap();
+        let hex = hex::encode(data);
+        println!("{:?}", hex);
     }
 
     #[test]
