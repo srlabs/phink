@@ -7,7 +7,6 @@ pub mod shared;
 mod tests {
     use super::*;
     use crate::shared::{
-        afl_log_didnt_fail,
         ensure_while_fuzzing,
         get_corpus_files,
         instrument,

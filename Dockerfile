@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main" >> /etc/apt/sources.list.d/llvm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
     llvm-19 \
-    llvm-19-dev \
+#    llvm-19-dev \
     clang-19 \
     libclang-19-dev \
     && apt-get clean \

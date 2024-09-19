@@ -427,9 +427,9 @@ mod test {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
 
         let encoded_bytes = hex::decode(
-            "00000000229b553f9400000000000000000027272727272727272700002727272727272727272727\
+            "0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727\
             2a2a2a2a2a2a2a2a\
-            00000000229b553f9400000000000000000027272727272727272700002727272727272727272727",
+            0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727",
         )
         .unwrap();
 
@@ -437,12 +437,16 @@ mod test {
             ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
         );
 
+        let mut configuration = Configuration::default();
+        configuration.max_messages_per_exec = Some(4);
+
         let input = parse_input(
             encoded_bytes.as_bytes_ref(),
             &mut transcoder_loader,
-            Configuration::default(),
+            configuration,
         );
         let msg = input.messages;
+        println!("{:?}", msg);
         assert_eq!(msg.len(), 2, "No messages decoded");
         assert_eq!(
             msg.first().unwrap().origin,
