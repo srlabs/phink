@@ -2,11 +2,11 @@
 use crate::{
     cli::config::Configuration,
     contract::{
-        payload::Selector,
         remote::{
             ContractSetup,
             FullContractResponse,
         },
+        selector::Selector,
     },
     cover::coverage::InputCoverage,
     fuzzer::{

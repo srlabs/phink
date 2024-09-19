@@ -24,6 +24,7 @@ use crate::{
 };
 use clap::Parser;
 use std::{
+    env,
     env::var,
     path::PathBuf,
 };
@@ -88,9 +89,10 @@ pub fn main() {
     // We execute `handle_cli()` first, then re-enter into `main()`
     if let Ok(config_str) = var(FuzzingWithConfig.to_string()) {
         if var(FromZiggy.to_string()).is_ok() {
-            let fuzzer = Fuzzer::new(ZiggyConfig::parse(config_str)).unwrap();
-            let exec = fuzzer.execute_harness(Fuzz);
+            let config = ZiggyConfig::parse(config_str);
 
+            let fuzzer = Fuzzer::new(config).unwrap();
+            let exec = fuzzer.execute_harness(Fuzz);
             if let Err(e) = exec {
                 eprintln!("{}", format_error(e));
             }

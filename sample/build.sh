@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
-echo $SCRIPT_DIR
+echo "$SCRIPT_DIR"
 cd "$SCRIPT_DIR" || exit
 
 echo "We're building every contract :-)"

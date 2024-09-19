@@ -11,14 +11,12 @@ use crate::{
         ziggy::ZiggyConfig,
     },
     contract::{
-        payload::{
-            PayloadCrafter,
-            Selector,
-        },
+        payload::PayloadCrafter,
         remote::{
             ContractSetup,
             FullContractResponse,
         },
+        selector::Selector,
     },
     cover::coverage::InputCoverage,
     fuzzer::{
@@ -43,6 +41,7 @@ use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 use std::{
+    env,
     fs,
     io::{
         self,
@@ -84,6 +83,12 @@ impl Fuzzer {
                 self.fuzz()?;
             }
             ExecuteOneInput(seed_path) => {
+                if config.config.verbose {
+                    let args: Vec<String> = env::args().collect();
+                    let full_command = args.join(" ");
+                    println!("Full command: {}", full_command);
+                }
+
                 let covpath =
                     PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
                         .path(CoverageTracePath);
