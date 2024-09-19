@@ -21,7 +21,10 @@ mod tests {
         Result,
     };
     use phink_lib::{
-        cli::config::Configuration,
+        cli::{
+            config::Configuration,
+            ui::logs::AFLDashboard,
+        },
         instrumenter::instrumented_path::InstrumentedPath,
     };
     use regex::Regex;
@@ -51,35 +54,12 @@ mod tests {
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(TIMEOUT), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
                 ensure!(fuzz_created, "Fuzz output directory wasn't created");
-                let afl_log = config
-                    .fuzz_output
-                    .clone()
-                    .unwrap_or_default()
-                    .join("phink")
-                    .join("logs")
-                    .join("afl.log");
+                let dashboard = AFLDashboard::from_output(fuzz_output.clone())?;
 
-                if fuzz_created && afl_log.exists() {
-                    let log_content = fs::read_to_string(afl_log).unwrap();
-
-                    // We search if a crashes is spotted from AFL++ dashboard
-                    let saved_crashes: i32 = if let Some(captures) =
-                        Regex::new(r"saved crashes : (\d+)")
-                            .unwrap()
-                            .captures(&log_content)
-                    {
-                        captures[1].parse().unwrap()
-                    } else {
-                        0
-                    };
-
-                    // println!("current crash number: {saved_crashes}");
-                    let crashed = saved_crashes >= 1;
-                    if crashed {
-                        println!("Spotted {saved_crashes} crashes");
-                    }
+                if fuzz_created && dashboard.is_ready() {
+                    let props = dashboard.read_properties()?;
                     ensure!(
-                        crashed,
+                        props.crashed(),
                         "No crash detected within the {TIMEOUT} seconds, this should crash easily"
                     );
                 }
@@ -144,21 +124,15 @@ mod tests {
                     let selector = phink_output.join("selectors.dict");
                     ensure!(selector.exists(), "selectors.dict doesn't exist");
 
-                    // The content of selectors.dict should be
-                    //
-                    // # Dictionary file for selectors
-                    // # Lines starting with '#' and empty lines are ignored.
-                    // delimiter="********"
-                    // "\x9B\xAE\x9D\x5E"
-                    // "\xFA\x80\xC2\xF6"
-
                     ensure!(
                         fs::read_to_string(selector).unwrap().lines().count() == 5,
                         "There should be 5 lines in selectors, 2 for crash_with_invariant and phink_assert_dangerous_number, 1 for demimiter, and two comments"
                     );
 
+                    let dash = AFLDashboard::from_output(fuzz_output.clone())?;
+
                     ensure!(
-                        afl_log_didnt_fail(&phink_output),
+                        dash.is_ready(),
                         "'logs/afl.log' didn't return a successfull dashboard"
                     );
 

@@ -2,7 +2,6 @@ use anyhow::{
     bail,
     Context,
 };
-use predicates::name::PredicateNameExt;
 use regex::Regex;
 use std::{
     fs,
@@ -19,6 +18,17 @@ pub struct AFLProperties {
     saved_crashes: u32,
     exec_speed: u32,
 }
+
+impl AFLProperties {
+    pub fn crashed(&self) -> bool {
+        self.saved_crashes > 1
+    }
+
+    pub fn crashes(&self) -> u32 {
+        self.saved_crashes
+    }
+}
+
 impl FromStr for AFLProperties {
     type Err = Box<dyn std::error::Error>;
 
@@ -36,12 +46,10 @@ impl FromStr for AFLProperties {
                 .ok()
         }
 
-        // Extract run time
         if let Some(cap) = Regex::new(r"run time : (.+?)\s+│").unwrap().captures(s) {
             props.run_time = cap[1].to_string();
         }
 
-        // Extract last new find
         if let Some(cap) = Regex::new(r"last new find : (.+?)\s+│")
             .unwrap()
             .captures(s)
@@ -49,7 +57,6 @@ impl FromStr for AFLProperties {
             props.last_new_find = cap[1].to_string();
         }
 
-        // Extract last saved crash
         if let Some(cap) = Regex::new(r"last saved crash : (.+?)\s+│")
             .unwrap()
             .captures(s)
@@ -57,7 +64,6 @@ impl FromStr for AFLProperties {
             props.last_saved_crash = cap[1].to_string();
         }
 
-        // Extract numeric values
         props.corpus_count = extract_value(s, r"corpus count : (\d+)").unwrap_or_default();
         props.saved_crashes = extract_value(s, r"saved crashes : (\d+)").unwrap_or_default();
         props.exec_speed = extract_value(s, r"exec speed : (\d+)").unwrap_or_default();
@@ -134,7 +140,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn is_ready() -> anyhow::Result<()> {
+    fn test_is_ready() -> anyhow::Result<()> {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 0 days, 0 hrs, 2 min, 49 sec      │  cycles done : 312   │
@@ -170,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn spot_crashes() -> anyhow::Result<()> {
+    fn test_spot_crashes() -> anyhow::Result<()> {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 0 days, 0 hrs, 2 min, 1 sec      │  cycles done : 312   │
