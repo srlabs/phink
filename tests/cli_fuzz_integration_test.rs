@@ -27,7 +27,7 @@ mod tests {
         },
         instrumenter::instrumented_path::InstrumentedPath,
     };
-    use regex::Regex;
+
     use std::{
         fs,
         time::Duration,
@@ -41,7 +41,7 @@ mod tests {
         let config = Configuration {
             instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
-            cores: Some(10),
+            cores: Some(15),
             show_ui: false,
             ..Default::default()
         };

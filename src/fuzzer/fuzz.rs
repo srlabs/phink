@@ -279,7 +279,7 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 
 fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
     // 00010000 fa80c2f6 00
-    let mut data = vec![0x00, 0x00, 0x00, 0x00];
+    let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
     let file_path = corpus_dir.join(format!("selector_{index}.bin"));
     data.extend_from_slice(selector.0.as_ref());
     fs::write(file_path, data)

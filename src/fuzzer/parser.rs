@@ -127,21 +127,14 @@ pub fn parse_input(
     };
 
     for decoded_payloads in iterable {
-        let value_token: u32 = u32::from_ne_bytes(
-            decoded_payloads[0..4]
-                .try_into()
-                .expect("missing transfer value bytes"),
-        );
+        let value_token: u32 = u32::from_ne_bytes(decoded_payloads[0..4].try_into().unwrap());
 
-        let encoded_message: &[u8];
-        let mut origin = Origin::default();
-        match input.fuzz_option {
-            EnableOriginFuzzing => {
-                origin = Origin(decoded_payloads[4]);
-                encoded_message = &decoded_payloads[5..];
-            }
-            DisableOriginFuzzing => encoded_message = &decoded_payloads[4..],
-        }
+        let origin = match input.fuzz_option {
+            EnableOriginFuzzing => Origin(decoded_payloads[4]),
+            DisableOriginFuzzing => Origin::default(),
+        };
+
+        let encoded_message: &[u8] = &decoded_payloads[5..];
 
         let binding = transcoder.get_mut().unwrap();
         let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
