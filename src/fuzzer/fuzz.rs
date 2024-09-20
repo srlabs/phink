@@ -86,7 +86,13 @@ impl Fuzzer {
                     PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
                         .path(CoverageTracePath);
                 let _ = fs::remove_file(covpath); // we also reset the cov map, doesn't matter if it fails
-                self.exec_seed(seed_path)?;
+                let manager = self
+                    .to_owned()
+                    .init_fuzzer()
+                    .context("Couldn't grap the transcoder and the invariant manager")?;
+
+                let data = fs::read(seed_path).context("Couldn't read the seed")?;
+                self.harness(manager, data.as_bytes_ref());
             }
         }
 
@@ -223,17 +229,6 @@ impl Fuzzer {
 
         // We now fake the coverage
         coverage.redirect_coverage(coverage.flatten_cov());
-    }
-
-    fn exec_seed(&self, seed: PathBuf) -> anyhow::Result<()> {
-        let manager = self
-            .to_owned()
-            .init_fuzzer()
-            .context("Couldn't grap the transcoder and the invariant manager")?;
-
-        let data = fs::read(seed)?;
-        self.harness(manager, data.as_bytes_ref());
-        Ok(())
     }
 }
 

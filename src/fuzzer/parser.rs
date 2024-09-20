@@ -107,19 +107,16 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
     for inkpayload in fuzzdata {
         let encoded_message: &[u8] = &inkpayload[5..];
-
         let selector: [u8; 4] = encoded_message[0..4]
             .try_into()
             .expect("Slice conversion failed");
+        let sec = Selector::from(selector);
 
-        let sec = &Selector::from(selector);
-
-        if !manager.database().messages().unwrap().contains(sec) {
+        if !manager.database().messages().unwrap().contains(&sec) {
             continue;
         }
 
-        let value_token: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap());
-
+        let value: u128 = u128::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
         let origin = match input.fuzz_option {
             EnableOriginFuzzing => Origin(inkpayload[4]),
             DisableOriginFuzzing => Origin::default(),
@@ -139,9 +136,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                     println!("{:?}", metadata);
 
                     input.messages.push(Message {
-                        is_payable: manager.is_payable(sec),
+                        is_payable: manager.is_payable(&sec),
                         payload: encoded_message.into(),
-                        value_token: value_token.into(),
+                        value_token: value,
                         message_metadata: metadata.clone(),
                         origin,
                     });
@@ -162,7 +159,8 @@ mod tests {
     #[test]
     fn test_data_iterator() {
         let input = [
-            1, 2, 3, 4, 5, 6, 7, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 23, 123, 1, 8,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 23, 123, 1, 8,
+            12, 13, 14,
         ];
         let data = Data {
             data: &input,
@@ -174,13 +172,18 @@ mod tests {
         let result: Vec<&[u8]> = data.collect();
         assert_eq!(
             result,
-            vec![&[1, 2, 3, 4, 5, 6, 7], &[5, 6, 7, 23, 123, 1, 8]]
+            vec![
+                &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                &[5, 6, 7, 23, 123, 1, 8, 12, 13, 14]
+            ]
         );
     }
 
     #[test]
     fn test_data_size_limit() {
-        let input = [1, 2, 3, 4, 5, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8, 8];
+        let input = [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8, 8,
+        ];
         let mut data = Data {
             data: &input,
             pointer: 0,
@@ -188,7 +191,7 @@ mod tests {
             max_messages_per_exec: 1,
         };
 
-        assert_eq!(data.next(), Some(&[1, 2, 3, 4, 5][..]));
+        assert_eq!(data.next(), Some(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10][..]));
         assert_eq!(data.next(), None);
     }
 

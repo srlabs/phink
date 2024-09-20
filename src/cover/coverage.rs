@@ -82,6 +82,8 @@ impl InputCoverage {
     }
 
     pub fn flatten_cov(&self) -> Vec<u64> {
+        // todo: also dedup this, we shouldn't have a messageinput that has two times the same
+        // coverage, as a coverage
         self.messages_coverage
             .iter()
             .flat_map(|entry| entry.cov_ids.clone().into_iter())
