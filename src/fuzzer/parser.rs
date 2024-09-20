@@ -14,7 +14,7 @@ use OriginFuzzingOption::{
 };
 
 pub const DELIMITER: [u8; 8] = [42; 8]; // call delimiter for each message
-pub const MIN_SEED_LEN: usize = 5;
+pub const MIN_SEED_LEN: usize = 9;
 /// 0..4 covers indices 0, 1, 2, and 3. (value to be transfered)
 /// 4 covers index 4. (origin) (optionnal)
 /// 5.. starts from index 5 and goes to the end of the array.

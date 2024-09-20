@@ -22,7 +22,7 @@ use std::{
 pub struct InputCoverage {
     /// One input might contains multiple messages
     messages_coverage: Vec<MessageCoverage>,
-    /// Simply the Vec of Strings, for example
+    /// Simply the `Vec` of Strings, for example
     /// COV=128
     /// COV=129 ...
     raw_from_debug: Vec<CoverageTrace>,
@@ -106,7 +106,7 @@ impl InputCoverage {
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
             if flat.contains(&(x)) {
-                println!("{:?}", x)
+                println!("{:?}", x);
                 let _ = black_box(x + 1);
             }
         });
