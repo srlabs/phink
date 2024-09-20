@@ -122,7 +122,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             .decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
-            Ok(_) => {
+            Ok(metadata) => {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
@@ -134,7 +134,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                         is_payable: manager.is_payable(&Selector::from(selector)),
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
-                        message_metadata: decoded_msg.unwrap(),
+                        message_metadata: metadata.clone(),
                         origin,
                     });
                 }

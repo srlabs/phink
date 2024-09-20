@@ -74,7 +74,6 @@ impl Fuzzer {
 
     pub fn execute_harness(self, mode: FuzzingMode) -> anyhow::Result<()> {
         let config = &self.ziggy_config;
-
         match mode {
             Fuzz => {
                 let manager = self.clone().init_fuzzer()?;
@@ -86,8 +85,7 @@ impl Fuzzer {
                 let covpath =
                     PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
                         .path(CoverageTracePath);
-                // We also reset the cov map, doesn't matter if it fails
-                let _ = fs::remove_file(covpath);
+                let _ = fs::remove_file(covpath); // we also reset the cov map, doesn't matter if it fails
                 self.exec_seed(seed_path)?;
             }
         }
@@ -95,6 +93,7 @@ impl Fuzzer {
         Ok(())
     }
 
+    // todo: move this to the other file
     fn build_corpus_and_dict(self, selectors: Vec<Selector>) -> io::Result<()> {
         let phink_file = PhinkFiles::new(self.ziggy_config.config.fuzz_output.unwrap_or_default());
 
@@ -112,17 +111,20 @@ impl Fuzzer {
     }
 
     fn should_stop_now(manager: &CampaignManager, messages: Vec<Message>) -> bool {
+        // todo: need to refactor this
         messages.is_empty()
             || messages.iter().any(|payload| {
                 payload
                     .payload
                     .get(..4)
                     .and_then(|slice| Selector::try_from(slice).ok())
-                    .map_or(false, |slice: Selector| manager.database().exists(slice))
+                    .map_or(false, |slice: Selector| {
+                        manager.database().invariants().unwrap().contains(&slice)
+                    })
             })
     }
 
-    pub(crate) fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
+    pub fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
         let contract_bridge = self.setup.clone();
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
@@ -215,6 +217,7 @@ impl Fuzzer {
                 .save(configuration.fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
+            println!("toz");
             pretty_print(all_msg_responses, decoded_msgs);
         }
 
@@ -279,6 +282,30 @@ mod tests {
         let encoded_bytes =
             hex::decode("229b553f9400000000000000000027272727272727272700002727272727272727272727")
                 .expect("Failed to decode hex string");
+
+        assert!(
+            transcoder
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &encoded_bytes[..])
+                .is_ok(),
+            "Failed to decode contract message"
+        );
+
+        let binding = transcoder.lock().unwrap();
+        let messages = binding.metadata().spec().messages();
+        assert!(!messages.is_empty(), "There should be some messages here");
+    }
+
+    #[test]
+    fn test_parse_dummy() {
+        let metadata_path = Path::new("sample/dummy/target/ink/dummy.json");
+        let transcoder = Mutex::new(
+            ContractMessageTranscoder::load(metadata_path)
+                .expect("Failed to load `ContractMessageTranscoder`"),
+        );
+
+        let encoded_bytes = hex::decode("fa80c2f600").expect("Failed to decode hex string");
 
         assert!(
             transcoder

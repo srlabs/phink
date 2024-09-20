@@ -430,7 +430,9 @@ mod test {
                 .lock()
                 .unwrap()
                 .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
-            assert!(hex.is_ok(), "Decoding wasn't Ok")
+            assert!(hex.is_ok(), "Decoding wasn't Ok");
+
+            println!("{:?}", hex.unwrap());
         }
         Ok(())
     }
