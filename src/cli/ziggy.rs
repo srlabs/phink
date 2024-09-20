@@ -274,12 +274,7 @@ impl ZiggyConfig {
         fs::create_dir_all(allowlist_path.parent().unwrap())?;
         let mut allowlist_file = File::create(allowlist_path)?;
 
-        let functions = [
-            "redirect_coverage*",
-            "should_stop_now*",
-            "parse_input*",
-            "decode_contract_message*",
-        ]; // todo: decode_contract_message
+        let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
         for func in &functions {
             writeln!(allowlist_file, "fun: {}", func)?;
         }

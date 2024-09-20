@@ -137,11 +137,7 @@ mod test {
             config::Configuration,
             ziggy::ZiggyConfig,
         },
-        contract::{
-            payload::PayloadCrafter,
-            remote::BalanceOf,
-            runtime::Runtime,
-        },
+        contract::payload::PayloadCrafter,
         fuzzer::{
             fuzz::Fuzzer,
             parser::{

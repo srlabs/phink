@@ -93,7 +93,7 @@ impl Fuzzer {
         Ok(())
     }
 
-    // todo: move this to the other file
+    // todo: move this to the other file (delete)
     fn build_corpus_and_dict(self, selectors: Vec<Selector>) -> io::Result<()> {
         let phink_file = PhinkFiles::new(self.ziggy_config.config.fuzz_output.unwrap_or_default());
 
@@ -146,8 +146,11 @@ impl Fuzzer {
             self.ziggy_config.config.to_owned(),
         );
 
+        // let env_builder: EnvironmentBuilder::new(database.messages());
+        // env_builder.build_env().context("🙅 Couldn't create corpus & dict")?;
+
         self.build_corpus_and_dict(database.messages()?)
-            .expect("🙅 Failed to create initial corpus");
+            .expect(" Failed to create initial corpus");
 
         println!(
             "\n🚀  Now fuzzing `{}` ({})!\n",
@@ -190,8 +193,6 @@ impl Fuzzer {
     }
 
     pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
-        let configuration = self.ziggy_config.config.to_owned();
-
         let decoded_msgs: OneInput = parse_input(input, manager.to_owned());
 
         if Self::should_stop_now(&manager, decoded_msgs.messages.to_owned()) {
@@ -214,15 +215,14 @@ impl Fuzzer {
         {
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage
-                .save(configuration.fuzz_output.unwrap_or_default())
+                .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            println!("toz");
             pretty_print(all_msg_responses, decoded_msgs);
         }
 
         // We now fake the coverage
-        coverage.redirect_coverage();
+        coverage.redirect_coverage(coverage.flatten_cov());
     }
 
     fn exec_seed(&self, seed: PathBuf) -> anyhow::Result<()> {
@@ -252,7 +252,7 @@ fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> 
     let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
     let file_path = corpus_dir.join(format!("selector_{index}.bin"));
     data.extend_from_slice(selector.0.as_ref());
-    data.extend(vec![0x00]);
+    data.extend(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
     fs::write(file_path, data)
 }
 

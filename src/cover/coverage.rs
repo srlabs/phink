@@ -81,25 +81,23 @@ impl InputCoverage {
         Ok(())
     }
 
-    #[allow(unused_doc_comments)]
-    #[allow(clippy::identity_op)]
-    pub fn redirect_coverage(&self) {
-        let flattened_cov: Vec<_> = self
-            .messages_coverage
+    pub fn flatten_cov(&self) -> Vec<u64> {
+        self.messages_coverage
             .iter()
             .flat_map(|entry| entry.cov_ids.clone().into_iter())
-            .collect();
+            .collect()
+    }
 
+    #[allow(unused_doc_comments)]
+    #[allow(clippy::identity_op)]
+    pub fn redirect_coverage(&self, flat: Vec<u64>) {
         #[cfg(not(fuzzing))]
         {
             println!(
                 "[🚧DEBUG TRACE] Detected {} messages traces",
                 self.messages_coverage.clone().len(),
             );
-            println!(
-                "[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n",
-                &flattened_cov
-            );
+            println!("[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n", &flat);
         }
 
         #[allow(clippy::unnecessary_cast)]
@@ -107,7 +105,8 @@ impl InputCoverage {
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
-            if flattened_cov.contains(&(x)) {
+            if flat.contains(&(x)) {
+                println!("{:?}", x)
                 let _ = black_box(x + 1);
             }
         });

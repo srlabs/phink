@@ -92,7 +92,7 @@ impl CampaignManager {
             .unwrap_or(false)
     }
 
-    pub(crate) fn check_invariants(
+    pub fn check_invariants(
         &self,
         all_msg_responses: &[FullContractResponse],
         decoded_msgs: &OneInput,

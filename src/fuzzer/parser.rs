@@ -106,14 +106,24 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     };
 
     for inkpayload in fuzzdata {
+        let encoded_message: &[u8] = &inkpayload[5..];
+
+        let selector: [u8; 4] = encoded_message[0..4]
+            .try_into()
+            .expect("Slice conversion failed");
+
+        let sec = &Selector::from(selector);
+
+        if !manager.database().messages().unwrap().contains(sec) {
+            continue;
+        }
+
         let value_token: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap());
 
         let origin = match input.fuzz_option {
             EnableOriginFuzzing => Origin(inkpayload[4]),
             DisableOriginFuzzing => Origin::default(),
         };
-
-        let encoded_message: &[u8] = &inkpayload[5..];
 
         let decoded_msg = manager
             .transcoder()
@@ -126,12 +136,8 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
-                    let selector: [u8; 4] = encoded_message[0..4]
-                        .try_into()
-                        .expect("Slice conversion failed");
-
                     input.messages.push(Message {
-                        is_payable: manager.is_payable(&Selector::from(selector)),
+                        is_payable: manager.is_payable(sec),
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
                         message_metadata: metadata.clone(),
