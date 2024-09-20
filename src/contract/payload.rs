@@ -1,4 +1,4 @@
-use crate::contract::selector::Selector;
+use crate::contract::selectors::selector::Selector;
 use anyhow::{
     bail,
     Context,
@@ -6,14 +6,10 @@ use anyhow::{
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
-    fmt::{
-        Display,
-        Formatter,
-    },
     fs,
     path::PathBuf,
+    str::FromStr,
 };
-use thiserror::Error;
 
 #[derive(Default, Clone)]
 pub struct PayloadCrafter;
@@ -27,7 +23,7 @@ pub struct PayloadCrafter;
 /// ```
 pub const DEFAULT_PHINK_PREFIX: &str = "phink_";
 #[derive(Deserialize, Debug, Clone)]
-pub struct Spec {
+struct Spec {
     constructors: Vec<SelectorEntry>,
     messages: Vec<SelectorEntry>,
 }
@@ -48,7 +44,7 @@ impl Spec {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct SelectorEntry {
+struct SelectorEntry {
     selector: String,
 }
 impl PayloadCrafter {
@@ -120,30 +116,16 @@ impl PayloadCrafter {
         let constructors = parsed_json["spec"]["constructors"].as_array().unwrap();
 
         if constructors.len() == 1 {
-            return Self::get_selector_bytes(constructors[0]["selector"].as_str().unwrap());
+            return Selector::from_str(constructors[0]["selector"].as_str().unwrap());
         }
 
         // Otherwise, look for a constructor without arguments.
         for constructor in constructors {
             if constructor["args"].as_array().map_or(false, Vec::is_empty) {
-                return Self::get_selector_bytes(constructor["selector"].as_str().unwrap());
+                return Selector::from_str(constructor["selector"].as_str().unwrap())
             }
         }
         bail!("No selector found")
-    }
-
-    /// Helper function to decode a hexadecimal string selector into a byte
-    /// array of length 4. Returns `None` if the decoding or conversion
-    /// fails.
-    fn get_selector_bytes(selector: &str) -> anyhow::Result<Selector> {
-        let trimmed = hex::decode(selector.trim_start_matches("0x"))?.to_vec();
-
-        match Selector::try_from(trimmed) {
-            Ok(sel) => Ok(sel),
-            Err(e) => {
-                bail!(format!("Couldn't parse the selector - {e}"))
-            }
-        }
     }
 }
 
@@ -152,10 +134,7 @@ mod test {
     use super::*;
     use crate::{
         cli::config::Configuration,
-        contract::{
-            payload::PayloadCrafter,
-            selector::Selector,
-        },
+        contract::payload::PayloadCrafter,
         fuzzer::parser::{
             parse_input,
             Origin,

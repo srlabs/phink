@@ -6,7 +6,10 @@ use crate::{
             ContractSetup,
             FullContractResponse,
         },
-        selector::Selector,
+        selectors::{
+            database::SelectorDatabase,
+            selector::Selector,
+        },
     },
     cover::coverage::InputCoverage,
     fuzzer::{
@@ -18,38 +21,97 @@ use crate::{
         },
     },
 };
+use anyhow::{
+    bail,
+    Context,
+};
 use contract_transcode::ContractMessageTranscoder;
+use ink_metadata::InkProject;
 use sp_runtime::{
     DispatchError,
     ModuleError,
 };
 use std::{
     panic,
-    sync::Mutex,
+    path::Path,
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 
 #[derive(Clone)]
-pub struct BugManager {
-    pub contract_bridge: ContractSetup,
-    pub invariant_selectors: Vec<Selector>,
-    pub configuration: Configuration,
+pub struct CampaignManager {
+    contract_bridge: ContractSetup,
+    database: SelectorDatabase,
+    configuration: Configuration,
+    transcoder: Arc<Mutex<ContractMessageTranscoder>>,
 }
 
-impl BugManager {
+impl CampaignManager {
     pub fn new(
-        invariant_selectors: Vec<Selector>,
+        database: SelectorDatabase,
         contract_bridge: ContractSetup,
         configuration: Configuration,
-    ) -> Self {
-        Self {
+    ) -> anyhow::Result<Self> {
+        let transcoder = Arc::new(Mutex::new(
+            ContractMessageTranscoder::load(Path::new(&contract_bridge.path_to_specs))
+                .context("Cannot instantiante the `ContractMessageTranscoder`")?,
+        ));
+
+        Ok(Self {
             contract_bridge,
-            invariant_selectors,
+            database: database.clone(),
             configuration,
-        }
+            transcoder,
+        })
     }
 
-    pub fn contains_selector(&self, selector: Selector) -> bool {
-        self.invariant_selectors.contains(&selector)
+    pub fn config(&self) -> Configuration {
+        self.configuration.clone()
+    }
+
+    pub fn database(&self) -> SelectorDatabase {
+        self.database.clone()
+    }
+
+    pub fn transcoder(&self) -> Arc<Mutex<ContractMessageTranscoder>> {
+        Arc::clone(&self.transcoder)
+    }
+
+    pub fn is_payable(&self, selector: &Selector) -> bool {
+        self.transcoder
+            .lock()
+            .unwrap()
+            .metadata()
+            .spec()
+            .messages()
+            .iter()
+            .find(|msg| msg.selector().to_bytes().eq(selector.as_ref()))
+            .map(|msg| msg.payable())
+            .unwrap_or(false)
+    }
+
+    pub(crate) fn check_invariants(
+        &self,
+        all_msg_responses: &[FullContractResponse],
+        decoded_msgs: &OneInput,
+    ) {
+        let first = decoded_msgs.messages[0].to_owned();
+        all_msg_responses
+            .iter()
+            .filter(|response| CampaignManager::is_trapped(response))
+            .for_each(|response| {
+                self.display_trap(first.clone(), response.clone());
+            });
+
+        if let Ok(invariant_tested) = self.are_invariants_failing(first.origin) {
+            self.display_invariant(
+                all_msg_responses.to_vec(),
+                decoded_msgs.to_owned(),
+                invariant_tested,
+            );
+        }
     }
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
@@ -87,10 +149,10 @@ impl BugManager {
         responses: Vec<FullContractResponse>,
         decoded_msg: OneInput,
         mut invariant_tested: Selector,
-        transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
     ) {
-        let hex = transcoder_loader
-            .get_mut()
+        let hex = self
+            .transcoder()
+            .lock()
             .unwrap()
             .decode_contract_message(&mut &*invariant_tested.as_mut())
             .unwrap();
@@ -107,8 +169,8 @@ impl BugManager {
     }
 
     /// This function aims to call every invariants via `invariant_selectors`.
-    pub fn are_invariants_passing(&self, origin: Origin) -> Result<(), Selector> {
-        for invariant in &self.invariant_selectors {
+    pub fn are_invariants_failing(&self, origin: Origin) -> anyhow::Result<Selector> {
+        for invariant in &self.database.to_owned().invariants()? {
             let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
                 invariant.as_ref(),
                 origin.into(),
@@ -116,13 +178,13 @@ impl BugManager {
                 self.configuration.clone(),
             );
             if invariant_call.result.is_err() {
-                return Err(invariant.clone());
+                return Ok(invariant.clone());
             }
         }
-        Ok(())
+        bail!("All invariants passed")
     }
 
-    pub fn is_contract_trapped(&self, contract_response: &FullContractResponse) -> bool {
+    pub fn is_trapped(contract_response: &FullContractResponse) -> bool {
         if let Err(DispatchError::Module(ModuleError { message, .. })) = contract_response.result {
             if message == Some("ContractTrapped") {
                 return true;

@@ -6,16 +6,15 @@ use crate::{
     contract::{
         remote::BalanceOf,
         runtime::Runtime,
+        selectors::selector::Selector,
     },
+    fuzzer::manager::CampaignManager,
 };
 use contract_transcode::{
     ContractMessageTranscoder,
     Value,
 };
-use ink_metadata::{
-    InkProject,
-    Selector,
-};
+use ink_metadata::InkProject;
 use std::sync::Mutex;
 use OriginFuzzingOption::{
     DisableOriginFuzzing,
@@ -98,22 +97,11 @@ impl<'a> Iterator for Data<'a> {
         }
     }
 }
-fn is_message_payable(selector: &Selector, metadata: &InkProject) -> bool {
-    metadata
-        .spec()
-        .messages()
-        .iter()
-        .find(|msg| msg.selector().eq(selector))
-        .map(|msg| msg.payable())
-        .unwrap_or(false)
-}
 
-pub fn parse_input(
-    data: &[u8],
-    transcoder: &mut Mutex<ContractMessageTranscoder>,
-    config: Configuration,
-) -> OneInput {
-    let iterable = Data {
+pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
+    let config = manager.clone().config();
+
+    let fuzzdata = Data {
         data,
         pointer: 0,
         size: 0,
@@ -125,33 +113,33 @@ pub fn parse_input(
         fuzz_option: config.should_fuzz_origin(),
     };
 
-    for decoded_payloads in iterable {
-        let value_token: u32 = u32::from_ne_bytes(decoded_payloads[0..4].try_into().unwrap());
+    for inkpayload in fuzzdata {
+        let value_token: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap());
 
         let origin = match input.fuzz_option {
-            EnableOriginFuzzing => Origin(decoded_payloads[4]),
+            EnableOriginFuzzing => Origin(inkpayload[4]),
             DisableOriginFuzzing => Origin::default(),
         };
 
-        let encoded_message: &[u8] = &decoded_payloads[5..];
+        let encoded_message: &[u8] = &inkpayload[5..];
 
-        let binding = transcoder.get_mut().unwrap();
-        let decoded_msg = binding.decode_contract_message(&mut &*encoded_message);
+        let decoded_msg = manager
+            .transcoder()
+            .lock()
+            .unwrap()
+            .decode_contract_message(&mut &*encoded_message);
 
         match &decoded_msg {
             Ok(_) => {
-                if iterable.max_messages_per_exec != 0
-                    && input.messages.len() <= iterable.max_messages_per_exec
+                if fuzzdata.max_messages_per_exec != 0
+                    && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
-                    let is_payable: bool = is_message_payable(
-                        &Selector::from(
-                            <&[u8] as TryInto<[u8; 4]>>::try_into(&encoded_message[0..4]).unwrap(),
-                        ),
-                        transcoder.get_mut().unwrap().metadata(),
-                    );
+                    let selector: [u8; 4] = encoded_message[0..4]
+                        .try_into()
+                        .expect("Slice conversion failed");
 
                     input.messages.push(Message {
-                        is_payable,
+                        is_payable: manager.is_payable(&Selector::from(selector)),
                         payload: encoded_message.into(),
                         value_token: value_token.into(),
                         message_metadata: decoded_msg.unwrap(),
@@ -166,13 +154,16 @@ pub fn parse_input(
     }
     input
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_data_iterator() {
-        let input = [1, 2, 3, 4, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8];
+        let input = [
+            1, 2, 3, 4, 5, 6, 7, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 23, 123, 1, 8,
+        ];
         let data = Data {
             data: &input,
             pointer: 0,
@@ -181,12 +172,15 @@ mod tests {
         };
 
         let result: Vec<&[u8]> = data.collect();
-        assert_eq!(result, vec![&[1, 2, 3, 4], &[5, 6, 7, 8]]);
+        assert_eq!(
+            result,
+            vec![&[1, 2, 3, 4, 5, 6, 7], &[5, 6, 7, 23, 123, 1, 8]]
+        );
     }
 
     #[test]
     fn test_data_size_limit() {
-        let input = [1, 2, 3, 4, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8];
+        let input = [1, 2, 3, 4, 5, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8, 8];
         let mut data = Data {
             data: &input,
             pointer: 0,
@@ -194,7 +188,7 @@ mod tests {
             max_messages_per_exec: 1,
         };
 
-        assert_eq!(data.next(), Some(&[1, 2, 3, 4][..]));
+        assert_eq!(data.next(), Some(&[1, 2, 3, 4, 5][..]));
         assert_eq!(data.next(), None);
     }
 

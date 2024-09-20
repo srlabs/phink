@@ -10,7 +10,7 @@ deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Alice (O
 constructor_payload = "9BAE9D5E5C1100007B000000ACAC0000CC5B763F7AA51000F4BD3F32F51151FF017FD22F9404D0308AFBDB3DE6F2E030E23910AC7DCDBB41BC52F1F2F923E49BAF32E9587DCD4D43D50408B62431D7B79C1A506DBEC4785423DDF36E66E2BEBA6CFEFCDD4F5708DFA3388E48"
 storage_deposit_limit = "100000000000" # this is commented by default, to set is to `None`
 instantiate_initial_value = "0"
-verbose = false
+verbose = true
 instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
 show_ui = false
 

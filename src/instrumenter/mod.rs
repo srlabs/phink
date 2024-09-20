@@ -1,2 +1,2 @@
 pub mod instrumentation;
-pub mod instrumented_path;
+pub mod path;

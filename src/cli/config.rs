@@ -11,7 +11,7 @@ use crate::{
         runtime::Runtime,
     },
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
-    instrumenter::instrumented_path::InstrumentedPath,
+    instrumenter::path::InstrumentedPath,
 };
 use anyhow::Context;
 use frame_support::weights::Weight;

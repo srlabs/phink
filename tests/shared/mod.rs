@@ -10,7 +10,7 @@ use anyhow::{
 use assert_cmd::Command;
 use phink_lib::{
     cli::config::Configuration,
-    instrumenter::instrumented_path::InstrumentedPath,
+    instrumenter::path::InstrumentedPath,
 };
 
 use assert_cmd::assert::Assert;

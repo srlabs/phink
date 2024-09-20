@@ -98,7 +98,6 @@ impl AFLDashboard {
     pub fn read_properties(&self) -> anyhow::Result<AFLProperties> {
         let content = fs::read_to_string(&self.log_fullpath)?;
 
-        // Assuming each dashboard starts with the unique marker "AFL"
         let delimiter = "AFL";
         let dashboards: Vec<&str> = content.split(delimiter).collect();
 

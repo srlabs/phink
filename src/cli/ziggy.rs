@@ -38,6 +38,7 @@ use anyhow::{
 };
 use std::{
     cmp::PartialEq,
+    fmt::Display,
     io::{
         self,
     },
@@ -68,6 +69,12 @@ pub struct ZiggyConfig {
     pub contract_path: PathBuf,
 }
 
+impl Display for ZiggyConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
+}
+
 impl ZiggyConfig {
     pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
         Self {
@@ -88,6 +95,7 @@ impl ZiggyConfig {
             false => "0",
         }
     }
+
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config.verbose {
@@ -414,7 +422,10 @@ mod tests {
             vec!["--no-honggfuzz".to_string()],
             vec![],
         );
-        assert!(result.is_ok());
+        assert!(
+            result.is_ok(),
+            "One possibility could be `cargo afl config --build`"
+        );
 
         Ok(())
     }

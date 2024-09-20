@@ -8,6 +8,10 @@ use crate::{
             },
             PhinkFiles,
         },
+        env::PhinkEnv::{
+            FromZiggy,
+            FuzzingWithConfig,
+        },
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -16,11 +20,13 @@ use crate::{
             ContractSetup,
             FullContractResponse,
         },
-        selector::Selector,
+        selectors::{
+            database::SelectorDatabase,
+            selector::Selector,
+        },
     },
     cover::coverage::InputCoverage,
     fuzzer::{
-        bug::BugManager,
         engine::{
             pretty_print,
             timestamp,
@@ -29,6 +35,7 @@ use crate::{
             ExecuteOneInput,
             Fuzz,
         },
+        manager::CampaignManager,
         parser::{
             parse_input,
             Message,
@@ -42,6 +49,7 @@ use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 use std::{
     env,
+    env::var,
     fs,
     io::{
         self,
@@ -64,7 +72,7 @@ pub enum FuzzingMode {
 #[derive(Clone)]
 pub struct Fuzzer {
     pub ziggy_config: ZiggyConfig,
-    setup: ContractSetup,
+    pub setup: ContractSetup,
 }
 
 impl Fuzzer {
@@ -80,15 +88,12 @@ impl Fuzzer {
 
         match mode {
             Fuzz => {
-                self.fuzz()?;
+                let manager = self.clone().init_fuzzer()?;
+                ziggy::fuzz!(|data: &[u8]| {
+                    Self::harness(&self, manager.to_owned(), data);
+                });
             }
             ExecuteOneInput(seed_path) => {
-                if config.config.verbose {
-                    let args: Vec<String> = env::args().collect();
-                    let full_command = args.join(" ");
-                    println!("Full command: {}", full_command);
-                }
-
                 let covpath =
                     PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
                         .path(CoverageTracePath);
@@ -101,7 +106,7 @@ impl Fuzzer {
         Ok(())
     }
 
-    fn build_corpus_and_dict(self, selectors: &[Selector]) -> io::Result<()> {
+    fn build_corpus_and_dict(self, selectors: Vec<Selector>) -> io::Result<()> {
         let phink_file = PhinkFiles::new(self.ziggy_config.config.fuzz_output.unwrap_or_default());
 
         fs::create_dir_all(phink_file.path(CorpusPath))?;
@@ -117,56 +122,40 @@ impl Fuzzer {
         Ok(())
     }
 
-    fn should_stop_now(bug_manager: &BugManager, messages: Vec<Message>) -> bool {
+    fn should_stop_now(manager: &CampaignManager, messages: Vec<Message>) -> bool {
         messages.is_empty()
             || messages.iter().any(|payload| {
                 payload
                     .payload
                     .get(..4)
                     .and_then(|slice| Selector::try_from(slice).ok())
-                    .map_or(false, |slice: Selector| {
-                        bug_manager.contains_selector(slice)
-                    })
+                    .map_or(false, |slice: Selector| manager.database().exists(slice))
             })
     }
 
-    fn fuzz(self) -> anyhow::Result<()> {
-        let (mut transcoder_loader, invariant_manager) = self.clone().init_fuzzer()?;
-
-        ziggy::fuzz!(|data: &[u8]| {
-            Self::harness(
-                self.clone(),
-                &mut transcoder_loader,
-                &mut invariant_manager.clone(),
-                data,
-            );
-        });
-        Ok(())
-    }
-
-    fn init_fuzzer(self) -> anyhow::Result<(Mutex<ContractMessageTranscoder>, BugManager)> {
+    fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
         let contract_bridge = self.setup.clone();
 
-        let transcoder_loader = Mutex::new(ContractMessageTranscoder::load(Path::new(
-            &contract_bridge.path_to_specs,
-        ))?);
-
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
-            .expect("🙅 No invariants found, check your contract");
+            .context("🙅 No invariants found, check your contract")?;
 
-        let selectors_without_invariants: Vec<Selector> =
-            PayloadCrafter::extract_all(self.ziggy_config.contract_path.to_owned())?
-                .into_iter()
-                .filter(|s| !invariants.contains(s))
-                .collect();
+        let messages = PayloadCrafter::extract_all(self.ziggy_config.contract_path.to_owned())
+            .context("Couldn't extract all the messages selectors")?
+            .into_iter()
+            .filter(|s| !invariants.contains(s))
+            .collect();
 
-        let invariant_manager = BugManager::new(
-            invariants,
+        let mut database = SelectorDatabase::new();
+        database.add_invariants(invariants);
+        database.add_messages(messages);
+
+        let manager = CampaignManager::new(
+            database.clone(),
             contract_bridge.clone(),
             self.ziggy_config.config.to_owned(),
         );
 
-        self.build_corpus_and_dict(&selectors_without_invariants)
+        self.build_corpus_and_dict(database.messages()?)
             .expect("🙅 Failed to create initial corpus");
 
         println!(
@@ -175,11 +164,11 @@ impl Fuzzer {
             &contract_bridge.contract_address
         );
 
-        Ok((transcoder_loader, invariant_manager))
+        manager
     }
 
     fn execute_messages(
-        self,
+        &self,
         decoded_msgs: &OneInput,
         chain: &mut BasicExternalities,
         coverage: &mut InputCoverage,
@@ -209,17 +198,12 @@ impl Fuzzer {
         all_msg_responses
     }
 
-    fn harness(
-        self,
-        transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
-        bug_manager: &mut BugManager,
-        input: &[u8],
-    ) {
+    pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
         let configuration = self.ziggy_config.config.to_owned();
-        let decoded_msgs: OneInput =
-            parse_input(input, transcoder_loader, configuration.to_owned());
 
-        if Self::should_stop_now(bug_manager, decoded_msgs.messages.to_owned()) {
+        let decoded_msgs: OneInput = parse_input(input, manager.to_owned());
+
+        if Self::should_stop_now(&manager, decoded_msgs.messages.to_owned()) {
             return;
         }
 
@@ -230,14 +214,7 @@ impl Fuzzer {
 
         let all_msg_responses = self.execute_messages(&decoded_msgs, &mut chain, &mut coverage);
 
-        chain.execute_with(|| {
-            check_invariants(
-                bug_manager,
-                &all_msg_responses,
-                &decoded_msgs,
-                transcoder_loader,
-            )
-        });
+        chain.execute_with(|| manager.check_invariants(&all_msg_responses, &decoded_msgs));
 
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
@@ -256,18 +233,14 @@ impl Fuzzer {
         coverage.redirect_coverage();
     }
 
-    fn exec_seed(self, seed: PathBuf) -> anyhow::Result<()> {
-        let (mut transcoder_loader, mut invariant_manager) = self
+    fn exec_seed(&self, seed: PathBuf) -> anyhow::Result<()> {
+        let manager = self
             .to_owned()
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
         let data = fs::read(seed)?;
-        self.harness(
-            &mut transcoder_loader,
-            &mut invariant_manager,
-            data.as_bytes_ref(),
-        );
+        self.harness(manager, data.as_bytes_ref());
         Ok(())
     }
 }
@@ -283,10 +256,11 @@ fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
 }
 
 fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
-    // 00010000 fa80c2f6 00
+    // 00010000 01 fa80c2f6 00
     let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
     let file_path = corpus_dir.join(format!("selector_{index}.bin"));
     data.extend_from_slice(selector.0.as_ref());
+    data.extend(vec![0x00]);
     fs::write(file_path, data)
 }
 
@@ -294,31 +268,6 @@ fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Re
     writeln!(dict_file, "\"{}\"", selector)
         .with_context(|| format!("Couldn't write {selector} into the dict"))?;
     Ok(())
-}
-
-fn check_invariants(
-    bug_manager: &mut BugManager,
-    all_msg_responses: &[FullContractResponse],
-    decoded_msgs: &OneInput,
-    transcoder_loader: &mut Mutex<ContractMessageTranscoder>,
-) {
-    all_msg_responses
-        .iter()
-        .filter(|response| bug_manager.is_contract_trapped(response))
-        .for_each(|response| {
-            bug_manager.display_trap(decoded_msgs.messages[0].clone(), response.clone());
-        });
-
-    if let Err(invariant_tested) =
-        bug_manager.are_invariants_passing(decoded_msgs.messages[0].origin)
-    {
-        bug_manager.display_invariant(
-            all_msg_responses.to_vec(),
-            decoded_msgs.clone(),
-            invariant_tested,
-            transcoder_loader,
-        );
-    }
 }
 
 #[cfg(test)]

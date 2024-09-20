@@ -338,7 +338,7 @@ mod tests {
     use super::*;
     use crate::{
         cli::config::Configuration,
-        instrumenter::instrumented_path::InstrumentedPath,
+        instrumenter::path::InstrumentedPath,
     };
     use std::{
         default::Default,

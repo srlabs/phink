@@ -24,7 +24,7 @@ mod tests {
             config::Configuration,
             ui::logs::AFLDashboard,
         },
-        instrumenter::instrumented_path::InstrumentedPath,
+        instrumenter::path::InstrumentedPath,
     };
 
     use std::{

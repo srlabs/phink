@@ -16,7 +16,7 @@ mod tests {
     use assert_cmd::Command as CommandAssertCmd;
     use phink_lib::{
         cli::config::Configuration,
-        instrumenter::instrumented_path::InstrumentedPath,
+        instrumenter::path::InstrumentedPath,
     };
     use predicates::prelude::predicate;
     use std::fs;

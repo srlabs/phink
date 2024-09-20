@@ -1,6 +1,13 @@
-use std::fmt::{
-    Display,
-    Formatter,
+use anyhow::{
+    anyhow,
+    bail,
+};
+use std::{
+    fmt::{
+        Display,
+        Formatter,
+    },
+    str::FromStr,
 };
 use thiserror::Error;
 
@@ -19,6 +26,25 @@ pub struct Selector(pub [u8; 4]);
 impl Display for Selector {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(self.0))
+    }
+}
+
+impl FromStr for Selector {
+    type Err = anyhow::Error;
+    /// Decode a hexadecimal string selector into a byte
+    /// array of length 4. Returns `None` if the decoding or conversion
+    /// fails.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = hex::decode(s.trim_start_matches("0x"))?;
+        if trimmed.len() != 4 {
+            return Err(anyhow!(
+                "Decoded hex does not match the expected length of 4"
+            ));
+        }
+        match Selector::try_from(trimmed.to_vec()) {
+            Ok(sel) => Ok(sel),
+            Err(e) => bail!(format!("Couldn't parse the selector {s} because {e}").to_string()),
+        }
     }
 }
 
