@@ -136,6 +136,8 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
+                    println!("{:?}", metadata);
+
                     input.messages.push(Message {
                         is_payable: manager.is_payable(sec),
                         payload: encoded_message.into(),
