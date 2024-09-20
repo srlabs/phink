@@ -23,8 +23,15 @@ use sp_core::{
     storage::Storage,
     H256,
 };
-use sp_runtime::DispatchError;
+use sp_runtime::{
+    DispatchError,
+    ModuleError,
+};
 use std::{
+    fmt::{
+        Display,
+        Formatter,
+    },
     fs,
     path::PathBuf,
 };
@@ -49,6 +56,7 @@ use crate::{
             Runtime,
         },
     },
+    cover::trace::CoverageTrace,
     instrumenter::instrumentation::Instrumenter,
 };
 
@@ -60,9 +68,48 @@ pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::RuntimeEvent,
     <Runtime as frame_system::Config>::Hash,
 >;
+type ContractResponse = ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
 
-pub type FullContractResponse =
-    ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
+#[derive(Clone)]
+pub struct FullContractResponse(ContractResponse);
+
+impl Display for FullContractResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let binding = self.clone().debug_message().remove_cov_from_trace();
+        let message = String::from_utf8_lossy(&binding);
+        write!(f, "{}", message.replace("\n", " "))
+    }
+}
+impl FullContractResponse {
+    pub fn from_contract_result(
+        c: ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>,
+    ) -> Self {
+        Self(c)
+    }
+    pub fn result(&self) -> &Result<ExecReturnValue, DispatchError> {
+        &self.0.result
+    }
+
+    pub fn failed(&self) -> bool {
+        self.0.result.is_err()
+    }
+
+    pub fn get(&self) -> &ContractResponse {
+        &self.0
+    }
+
+    pub fn debug_message(self) -> CoverageTrace {
+        CoverageTrace::from(self.0.debug_message)
+    }
+    pub fn is_trapped(&self) -> bool {
+        if let Err(DispatchError::Module(ModuleError { message, .. })) = &self.0.result {
+            if *message == Some("ContractTrapped") {
+                return true;
+            }
+        }
+        false
+    }
+}
 
 #[derive(Clone)]
 pub struct ContractSetup {
@@ -147,7 +194,7 @@ impl ContractSetup {
         transfer_value: BalanceOf<Runtime>,
         config: Configuration,
     ) -> FullContractResponse {
-        Contracts::bare_call(
+        FullContractResponse::from_contract_result(Contracts::bare_call(
             AccountId32::new([who; 32]),
             self.contract_address,
             transfer_value,
@@ -157,7 +204,7 @@ impl ContractSetup {
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
             Determinism::Enforced,
-        )
+        ))
     }
 
     pub fn upload(wasm_bytes: &[u8], who: AccountId) -> H256 {

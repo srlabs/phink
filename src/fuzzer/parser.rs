@@ -1,8 +1,5 @@
 use crate::{
-    cli::config::{
-        Configuration,
-        OriginFuzzingOption,
-    },
+    cli::config::OriginFuzzingOption,
     contract::{
         remote::BalanceOf,
         runtime::Runtime,
@@ -10,12 +7,7 @@ use crate::{
     },
     fuzzer::manager::CampaignManager,
 };
-use contract_transcode::{
-    ContractMessageTranscoder,
-    Value,
-};
-use ink_metadata::InkProject;
-use std::sync::Mutex;
+use contract_transcode::Value;
 use OriginFuzzingOption::{
     DisableOriginFuzzing,
     EnableOriginFuzzing,

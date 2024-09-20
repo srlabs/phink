@@ -8,10 +8,6 @@ use crate::{
             },
             PhinkFiles,
         },
-        env::PhinkEnv::{
-            FromZiggy,
-            FuzzingWithConfig,
-        },
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -44,22 +40,15 @@ use crate::{
     },
 };
 use anyhow::Context;
-use contract_transcode::ContractMessageTranscoder;
 use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 use std::{
-    env,
-    env::var,
     fs,
     io::{
         self,
         Write,
     },
-    path::{
-        Path,
-        PathBuf,
-    },
-    sync::Mutex,
+    path::PathBuf,
 };
 
 pub const MAX_MESSAGES_PER_EXEC: usize = 1; // One execution contains maximum 4 messages.
@@ -133,7 +122,7 @@ impl Fuzzer {
             })
     }
 
-    fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
+    pub(crate) fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
         let contract_bridge = self.setup.clone();
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
@@ -190,7 +179,7 @@ impl Fuzzer {
                     self.ziggy_config.config.clone(),
                 );
 
-                coverage.add_cov(&result.debug_message);
+                coverage.add_cov(&result.clone().debug_message());
                 all_msg_responses.push(result);
             }
         });
@@ -272,9 +261,12 @@ fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Re
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
-    use std::path::Path;
+    use contract_transcode::ContractMessageTranscoder;
+    use std::{
+        path::Path,
+        sync::Mutex,
+    };
 
     #[test]
     fn test_parse_input() {

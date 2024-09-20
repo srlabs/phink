@@ -1,6 +1,9 @@
-use crate::cli::config::{
-    PFiles::CoverageTracePath,
-    PhinkFiles,
+use crate::{
+    cli::config::{
+        PFiles::CoverageTracePath,
+        PhinkFiles,
+    },
+    cover::trace::CoverageTrace,
 };
 use std::{
     collections::HashSet,
@@ -14,8 +17,6 @@ use std::{
     io::Write,
     path::PathBuf,
 };
-
-pub type CoverageTrace = Vec<u8>;
 
 #[derive(Clone, Default)]
 pub struct InputCoverage {
@@ -45,35 +46,10 @@ impl Debug for InputCoverage {
 
 impl InputCoverage {
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
-        let parsed = Self::parse_coverage(coverage);
+        let parsed = coverage.parse_coverage();
         self.raw_from_debug.push(coverage.clone());
         self.messages_coverage
             .push(MessageCoverage { cov_ids: parsed });
-    }
-
-    fn parse_coverage(coverage: &CoverageTrace) -> Vec<u64> {
-        let coverage_str = String::from_utf8_lossy(coverage);
-        let mut parsed = Vec::new();
-
-        for part in coverage_str.split_whitespace() {
-            if let Some(cov) = part.strip_prefix("COV=") {
-                if let Ok(value) = cov.parse::<u64>() {
-                    parsed.push(value);
-                }
-            }
-        }
-
-        parsed
-    }
-
-    pub fn remove_cov_from_trace(trace: CoverageTrace) -> Vec<u8> {
-        let cleaned_str = String::from_utf8_lossy(&trace)
-            .split_whitespace()
-            .filter(|&s| !s.starts_with("COV="))
-            .collect::<Vec<&str>>()
-            .join(" ");
-
-        cleaned_str.into_bytes()
     }
 
     pub fn save(&self, output: PathBuf) -> std::io::Result<()> {

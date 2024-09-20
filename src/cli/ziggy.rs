@@ -148,7 +148,7 @@ impl ZiggyConfig {
             .arg(ziggy_command)
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
-            .env(AflDebug.to_string(), &self.afl_debug())
+            .env(AflDebug.to_string(), self.afl_debug())
             .stdout(Stdio::piped());
 
         self.with_allowlist(command_builder)

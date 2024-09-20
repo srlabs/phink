@@ -1,7 +1,4 @@
-use anyhow::{
-    bail,
-    Context,
-};
+use anyhow::bail;
 use regex::Regex;
 use std::{
     fs,

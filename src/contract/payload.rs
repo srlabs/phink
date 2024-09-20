@@ -133,12 +133,19 @@ impl PayloadCrafter {
 mod test {
     use super::*;
     use crate::{
-        cli::config::Configuration,
-        contract::payload::PayloadCrafter,
-        fuzzer::parser::{
-            parse_input,
-            Origin,
+        cli::{
+            config::Configuration,
+            ziggy::ZiggyConfig,
         },
+        contract::payload::PayloadCrafter,
+        fuzzer::{
+            fuzz::Fuzzer,
+            parser::{
+                parse_input,
+                Origin,
+            },
+        },
+        instrumenter::path::InstrumentedPath,
     };
     use contract_transcode::ContractMessageTranscoder;
     use sp_core::hexdisplay::AsBytesRef;
@@ -332,30 +339,32 @@ mod test {
     }
 
     #[test]
-    fn parse_one_input_with_two_messages() {
-        let metadata_path = Path::new("sample/dns/target/ink/dns.json");
-
+    fn parse_one_input_with_two_messages() -> anyhow::Result<()> {
         let encoded_bytes = hex::decode(
             "0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727\
             2a2a2a2a2a2a2a2a\
             0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727",
-        )
-        .unwrap();
+        )?;
 
-        let mut transcoder_loader = std::sync::Mutex::new(
-            ContractMessageTranscoder::load(Path::new(metadata_path)).unwrap(),
-        );
+        let configuration = Configuration {
+            max_messages_per_exec: Some(4), // because we have two messages below
+            instrumented_contract_path: Some(InstrumentedPath::from("sample/dns")),
+            // below is a hack, `sample/dns` isn't the instrumented, but for the test we don't care
+            ..Default::default()
+        };
 
-        let mut configuration = Configuration::default();
-        configuration.max_messages_per_exec = Some(4);
+        let ziggy_config: ZiggyConfig =
+            ZiggyConfig::new(configuration, PathBuf::from("sample/dns"));
 
-        let input = parse_input(
-            encoded_bytes.as_bytes_ref(),
-            &mut transcoder_loader,
-            configuration,
-        );
+        let manager = Fuzzer::new(ziggy_config)?
+            .init_fuzzer()
+            .context("Couldn't grap the transcoder and the invariant manager")?;
+
+        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+
         let msg = input.messages;
         println!("{:?}", msg);
+
         assert_eq!(msg.len(), 2, "No messages decoded");
         assert_eq!(
             msg.first().unwrap().origin,
@@ -364,12 +373,14 @@ mod test {
         );
 
         for i in 0..msg.len() {
-            let hex = transcoder_loader
+            let hex = manager
+                .transcoder()
                 .lock()
                 .unwrap()
                 .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
             assert!(hex.is_ok(), "Decoding wasn't Ok")
         }
+        Ok(())
     }
 
     #[test]

@@ -1,6 +1,5 @@
 use crate::contract::selectors::selector::Selector;
 use anyhow::bail;
-use ink_metadata::InkProject;
 
 #[derive(Clone, Debug)]
 pub struct SelectorDatabase {

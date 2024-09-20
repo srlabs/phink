@@ -24,7 +24,6 @@ use crate::{
 };
 use clap::Parser;
 use std::{
-    env,
     env::var,
     path::PathBuf,
 };

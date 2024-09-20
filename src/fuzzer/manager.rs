@@ -42,7 +42,7 @@ use std::{
 
 #[derive(Clone)]
 pub struct CampaignManager {
-    contract_bridge: ContractSetup,
+    setup: ContractSetup,
     database: SelectorDatabase,
     configuration: Configuration,
     transcoder: Arc<Mutex<ContractMessageTranscoder>>,
@@ -51,16 +51,16 @@ pub struct CampaignManager {
 impl CampaignManager {
     pub fn new(
         database: SelectorDatabase,
-        contract_bridge: ContractSetup,
+        setup: ContractSetup,
         configuration: Configuration,
     ) -> anyhow::Result<Self> {
         let transcoder = Arc::new(Mutex::new(
-            ContractMessageTranscoder::load(Path::new(&contract_bridge.path_to_specs))
+            ContractMessageTranscoder::load(Path::new(&setup.path_to_specs))
                 .context("Cannot instantiante the `ContractMessageTranscoder`")?,
         ));
 
         Ok(Self {
-            contract_bridge,
+            setup,
             database: database.clone(),
             configuration,
             transcoder,
@@ -100,7 +100,7 @@ impl CampaignManager {
         let first = decoded_msgs.messages[0].to_owned();
         all_msg_responses
             .iter()
-            .filter(|response| CampaignManager::is_trapped(response))
+            .filter(|response| response.is_trapped())
             .for_each(|response| {
                 self.display_trap(first.clone(), response.clone());
             });
@@ -120,19 +120,11 @@ impl CampaignManager {
         #[cfg(not(fuzzing))]
         {
             println!("\n🤯 A trapped contract got caught! Let's dive into it");
-
-            println!(
-                "\n🐛 IMPORTANT STACKTRACE : {}\n",
-                String::from_utf8_lossy(&InputCoverage::remove_cov_from_trace(
-                    response.clone().debug_message
-                ))
-                .replace("\n", " ")
-            );
-
+            println!("\n🐛 IMPORTANT STACKTRACE : {}\n", response);
             println!("🎉 Find below the trace that caused that trapped contract");
 
             pretty_print(
-                vec![response],
+                vec![response.clone()],
                 OneInput {
                     messages: vec![message.clone()],
                     fuzz_option: self.configuration.should_fuzz_origin(),
@@ -171,25 +163,16 @@ impl CampaignManager {
     /// This function aims to call every invariants via `invariant_selectors`.
     pub fn are_invariants_failing(&self, origin: Origin) -> anyhow::Result<Selector> {
         for invariant in &self.database.to_owned().invariants()? {
-            let invariant_call: FullContractResponse = self.contract_bridge.clone().call(
+            let invariant_call: FullContractResponse = self.setup.clone().call(
                 invariant.as_ref(),
                 origin.into(),
                 0,
                 self.configuration.clone(),
             );
-            if invariant_call.result.is_err() {
+            if invariant_call.failed() {
                 return Ok(invariant.clone());
             }
         }
         bail!("All invariants passed")
-    }
-
-    pub fn is_trapped(contract_response: &FullContractResponse) -> bool {
-        if let Err(DispatchError::Module(ModuleError { message, .. })) = contract_response.result {
-            if message == Some("ContractTrapped") {
-                return true;
-            }
-        }
-        false
     }
 }

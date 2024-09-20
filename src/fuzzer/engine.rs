@@ -15,7 +15,6 @@ use frame_support::traits::{
     OnFinalize,
     OnInitialize,
 };
-use pallet_contracts::ContractResult;
 use prettytable::{
     Cell,
     Row,
@@ -34,20 +33,17 @@ pub fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
     for (response, message) in responses.iter().zip(&one_input.messages) {
         let call_description = message.message_metadata.to_string();
 
-        let ContractResult {
-            result: _result, ..
-        } = response;
-
+        let reply = response.get();
         let debug = format!(
             "⛽️ Gas required: {}\n\
              🔥 Gas consumed: {}\n\
              🧑 Origin: {:?} ({})\n\
              💾 Storage deposit: {:?}{}",
-            response.gas_required,
-            response.gas_consumed,
+            reply.gas_required,
+            reply.gas_consumed,
             message.origin,
             AccountId32::new([message.origin.into(); 32]),
-            response.storage_deposit,
+            reply.storage_deposit,
             if message.is_payable {
                 format!(
                     "\n💸 Message was payable and {} units were transferred",
