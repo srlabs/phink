@@ -116,7 +116,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             continue;
         }
 
-        let value: u128 = u128::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
+        let value: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
         let origin = match input.fuzz_option {
             EnableOriginFuzzing => Origin(inkpayload[4]),
             DisableOriginFuzzing => Origin::default(),
@@ -138,7 +138,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                     input.messages.push(Message {
                         is_payable: manager.is_payable(&sec),
                         payload: encoded_message.into(),
-                        value_token: value,
+                        value_token: value as u128, // todo: fix this
                         message_metadata: metadata.clone(),
                         origin,
                     });
