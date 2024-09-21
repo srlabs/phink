@@ -1,3 +1,5 @@
+pub const COV_IDENTIFIER: &str = "COV="; // todo: apply me to everythin
+
 #[derive(Clone, Default)]
 pub struct CoverageTrace(Vec<u8>);
 
@@ -19,7 +21,7 @@ impl CoverageTrace {
         let mut parsed = Vec::new();
 
         for part in coverage_str.split_whitespace() {
-            if let Some(cov) = part.strip_prefix("COV=") {
+            if let Some(cov) = part.strip_prefix(COV_IDENTIFIER) {
                 if let Ok(value) = cov.parse::<u64>() {
                     parsed.push(value);
                 }
@@ -31,7 +33,7 @@ impl CoverageTrace {
     pub fn remove_cov_from_trace(self) -> Vec<u8> {
         let cleaned_str = String::from_utf8_lossy(self.as_ref())
             .split_whitespace()
-            .filter(|&s| !s.starts_with("COV="))
+            .filter(|&s| !s.starts_with(COV_IDENTIFIER))
             .collect::<Vec<&str>>()
             .join(" ");
         cleaned_str.into_bytes()

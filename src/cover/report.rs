@@ -1,8 +1,11 @@
 use crate::cli::ziggy::ZiggyConfig;
 
-use crate::cli::config::{
-    PFiles::CoverageTracePath,
-    PhinkFiles,
+use crate::{
+    cli::config::{
+        PFiles::CoverageTracePath,
+        PhinkFiles,
+    },
+    cover::trace::COV_IDENTIFIER,
 };
 use anyhow::bail;
 use std::{
@@ -204,7 +207,9 @@ impl CoverageTracker {
 
         let filtered_lines: Vec<&str> = lines
             .into_iter()
-            .filter(|line| !(line.contains("ink::env::debug_println!") && line.contains("COV=")))
+            .filter(|line| {
+                !(line.contains("ink::env::debug_println!") && line.contains(COV_IDENTIFIER))
+            })
             .collect();
 
         *html = filtered_lines.join("\n");
