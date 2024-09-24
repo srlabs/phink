@@ -227,6 +227,7 @@ mod tests {
     };
     use frame_support::weights::Weight;
     use std::{
+        fs,
         path::{
             Path,
             PathBuf,
@@ -241,11 +242,11 @@ mod tests {
             cores: Some(1),
             use_honggfuzz: false,
             fuzz_output: Some(tempdir().unwrap().into_path()),
-            instrumented_contract_path: Some(InstrumentedPath::from("sample/dummy")),
+            instrumented_contract_path: Some(InstrumentedPath::from("sample/dns")),
             show_ui: false,
             ..Default::default()
         };
-        ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap()
+        ZiggyConfig::new(config, PathBuf::from("sample/dns")).unwrap()
     }
 
     #[test]
@@ -268,13 +269,47 @@ mod tests {
             database.clone(),
             contract_bridge.clone(),
             config.config.to_owned(),
-        );
+        )?;
 
         let env_builder = EnvironmentBuilder::new(database);
 
-        env_builder.build_env(config.fuzz_output())?;
+        env_builder.build_env(config.clone().fuzz_output())?;
 
-        // todo: asserts here
+        let without_inv_counter = manager.database().messages_with_invariants()?.len();
+
+        assert_eq!(
+            fs::read_dir(config.clone().fuzz_output().join("phink").join("corpus"))
+                .expect("Failed to read directory")
+                .count(),
+            without_inv_counter
+        );
+        assert_eq!(without_inv_counter, 5 + 1); // msg + constructor
+
+        let inv_counter = manager.database().invariants()?.len();
+        assert_eq!(inv_counter, 1);
+
+        assert_eq!(manager.database().messages()?.len(), without_inv_counter);
+
+        let dict_path = config.fuzz_output().join("phink").join("selectors.dict");
+        let dict: String = fs::read_to_string(dict_path.clone())?;
+        assert_eq!(dict_path.iter().count(), 9);
+        assert!(dict.contains("********"));
+        assert!(dict.contains("# Dictionary file for selecto"));
+        assert!(dict.contains("9bae9d5e"));
+        assert!(dict.contains("229b553f"));
+        assert!(dict.contains("b8a4d3d9"));
+        assert!(dict.contains("84a15da1"));
+        assert!(dict.contains("d259f7ba"));
+        assert!(dict.contains("07fcd0b1"));
+        //   1   │ # Dictionary file for selectors
+        //    2   │ # Lines starting with '#' and empty lines are ignored.
+        //    3   │ delimiter="********"
+        //    4   │ "9bae9d5e"
+        //    5   │ "229b553f"
+        //    6   │ "b8a4d3d9"
+        //    7   │ "84a15da1"
+        //    8   │ "d259f7ba"
+        //    9   │ "07fcd0b1"
 
         Ok(())
     }

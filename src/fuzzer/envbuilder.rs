@@ -39,19 +39,23 @@ impl Dict {
 
     pub fn new(phink_file: PhinkFiles) -> io::Result<Dict> {
         let path_buf = phink_file.path(DictPath);
-
-        let mut file = OpenOptions::new()
+        // Create the directory structure if it doesn't exist
+        if let Some(parent) = path_buf.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        // Open the file for writing (create if it doesn't exist)
+        let mut dict_file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
-            .open(&path_buf)?;
+            .open(path_buf.clone())?;
 
-        writeln!(file, "# Dictionary file for selectors")?;
+        writeln!(dict_file, "# Dictionary file for selectors")?;
         writeln!(
-            file,
+            dict_file,
             "# Lines starting with '#' and empty lines are ignored."
         )?;
-        writeln!(file, "delimiter=\"********\"")?;
+        writeln!(dict_file, "delimiter=\"********\"")?;
 
         Ok(Self {
             file_path: path_buf,
@@ -93,14 +97,13 @@ impl EnvironmentBuilder {
     pub fn build_env(self, fuzz_output: PathBuf) -> anyhow::Result<()> {
         let phink_file = PhinkFiles::new(fuzz_output);
 
-        let dict =
-            Dict::new(phink_file.clone()).with_context(|| "Couldn't create a new dictionnary")?;
+        let dict = Dict::new(phink_file.clone())?;
         let corpus_manager = CorpusManager::new(phink_file)
             .with_context(|| "Couldn't create a new corpus manager")?;
 
         for (i, selector) in self
             .database
-            .messages_without_invariants()
+            .messages()
             .with_context(|| "Couldn't load messages")?
             .iter()
             .enumerate()

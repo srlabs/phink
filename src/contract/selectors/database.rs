@@ -33,8 +33,8 @@ impl SelectorDatabase {
         self.messages.extend(messages);
     }
 
-    pub fn messages_without_invariants(self) -> anyhow::Result<Vec<Selector>> {
-        if !self.messages.is_empty() {
+    pub fn messages_with_invariants(self) -> anyhow::Result<Vec<Selector>> {
+        if !self.messages.is_empty() && !self.invariants.is_empty() {
             return Ok(self
                 .messages
                 .into_iter()
@@ -51,7 +51,7 @@ impl SelectorDatabase {
         bail!("No invariants were found in the database")
     }
 
-    pub fn all_messages(self) -> anyhow::Result<Vec<Selector>> {
+    pub fn messages(self) -> anyhow::Result<Vec<Selector>> {
         if !self.messages.is_empty() {
             return Ok(self.messages)
         }

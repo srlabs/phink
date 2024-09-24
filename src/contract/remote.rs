@@ -237,7 +237,7 @@ impl ContractSetup {
             hex::decode(payload.replace(" ", ""))
                 .context("Impossible to hex-decode this. Check your config file")?
         } else {
-            PayloadCrafter::get_constructor(json_specs)?.into()
+            PayloadCrafter::extract_constructor(json_specs)?.into()
         };
 
         let initial_value = Configuration::parse_balance(config.instantiate_initial_value);

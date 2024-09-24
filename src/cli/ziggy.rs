@@ -2,6 +2,7 @@ use crate::{
     cli::config::Configuration,
     fuzzer::parser::MIN_SEED_LEN,
 };
+use io::BufReader;
 use std::io::BufRead;
 
 use serde_derive::{
@@ -155,7 +156,7 @@ impl ZiggyConfig {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
-            .arg(ziggy_command)
+            .arg(ziggy_command.clone())
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
             .env(AflDebug.to_string(), self.afl_debug())
@@ -172,7 +173,7 @@ impl ZiggyConfig {
             .context("Spawning Ziggy was unsuccessfull")?;
 
         if let Some(stdout) = ziggy_child.stdout.take() {
-            let reader = io::BufReader::new(stdout);
+            let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 println!("{}", line?);
             }
@@ -180,7 +181,7 @@ impl ZiggyConfig {
 
         let status = ziggy_child.wait().context("Couldn't wait for Ziggy")?;
         if !status.success() {
-            bail!("`cargo ziggy` failed ({})", status);
+            bail!("`cargo ziggy {ziggy_command}` failed ({})", status);
         }
 
         Ok(())
@@ -213,7 +214,7 @@ impl ZiggyConfig {
             .context("Spawning Ziggy was unsuccessfull")?;
 
         if let Some(stdout) = ziggy_child.stdout.take() {
-            let reader = io::BufReader::new(stdout);
+            let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 println!("{}", line?);
             }

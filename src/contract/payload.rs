@@ -110,7 +110,7 @@ impl PayloadCrafter {
     /// multiple constructors, returns the one that preferably doesn't have
     /// args. If no suitable constructor is found or there is an error in
     /// processing, this function returns `Err`.
-    pub fn get_constructor(json_data: &str) -> anyhow::Result<Selector> {
+    pub fn extract_constructor(json_data: &str) -> anyhow::Result<Selector> {
         let parsed_json: Value = serde_json::from_str(json_data)?;
 
         let constructors = parsed_json["spec"]["constructors"].as_array().unwrap();
@@ -241,7 +241,7 @@ mod test {
         }
         "#;
 
-        let constructor = PayloadCrafter::get_constructor(json_data).unwrap();
+        let constructor = PayloadCrafter::extract_constructor(json_data).unwrap();
         assert_eq!(constructor, [0x12, 0x34, 0x56, 0x78].into());
     }
 
@@ -315,7 +315,7 @@ mod test {
     #[test]
     fn fetch_correct_dns_constructor() {
         let dns_spec = fs::read_to_string("sample/dns/target/ink/dns.json").unwrap();
-        let ctor: Selector = PayloadCrafter::get_constructor(&dns_spec).unwrap();
+        let ctor: Selector = PayloadCrafter::extract_constructor(&dns_spec).unwrap();
 
         // DNS default selectors
         assert_eq!(hex::encode(ctor), "9bae9d5e");

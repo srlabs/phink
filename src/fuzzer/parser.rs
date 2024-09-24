@@ -114,7 +114,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
         if !manager
             .database()
-            .messages_without_invariants()
+            .messages_with_invariants()
             .unwrap()
             .contains(&sec)
         {

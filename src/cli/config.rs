@@ -113,6 +113,10 @@ impl PhinkFiles {
     pub fn new(output: PathBuf) -> Self {
         Self { output }
     }
+
+    pub fn output(self) -> PathBuf {
+        self.output
+    }
     pub fn path(&self, file: PFiles) -> PathBuf {
         const PHINK_PATH: &str = "phink";
         match file {
