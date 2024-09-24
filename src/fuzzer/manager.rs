@@ -79,19 +79,6 @@ impl CampaignManager {
         Arc::clone(&self.transcoder)
     }
 
-    pub fn is_payable(&self, selector: &Selector) -> bool {
-        self.transcoder
-            .lock()
-            .unwrap()
-            .metadata()
-            .spec()
-            .messages()
-            .iter()
-            .find(|msg| msg.selector().to_bytes().eq(selector.as_ref()))
-            .map(|msg| msg.payable())
-            .unwrap_or(false)
-    }
-
     pub fn check_invariants(
         &self,
         all_msg_responses: &[FullContractResponse],

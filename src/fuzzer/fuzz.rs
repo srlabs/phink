@@ -23,7 +23,7 @@ use crate::{
             pretty_print,
             timestamp,
         },
-        envbuilder::EnvironmentBuilder,
+        environment::EnvironmentBuilder,
         fuzz::FuzzingMode::{
             ExecuteOneInput,
             Fuzz,
@@ -92,6 +92,7 @@ impl Fuzzer {
 
     fn should_stop_now(manager: &CampaignManager, messages: Vec<Message>) -> bool {
         // todo: need to refactor this
+
         messages.is_empty()
             || messages.iter().any(|payload| {
                 payload
@@ -113,9 +114,13 @@ impl Fuzzer {
         let messages = PayloadCrafter::extract_all(self.ziggy_config.contract_path.to_owned())
             .context("Couldn't extract all the messages selectors")?;
 
+        let payable_messages = PayloadCrafter::extract_payables(&contract_bridge.json_specs)
+            .context("Couldn't fetch payable messages")?;
+
         let mut database = SelectorDatabase::new();
         database.add_invariants(invariants);
         database.add_messages(messages);
+        database.add_payables(payable_messages);
 
         let manager = CampaignManager::new(
             database.clone(),
@@ -215,17 +220,14 @@ mod tests {
             selectors::database::SelectorDatabase,
         },
         fuzzer::{
-            envbuilder::EnvironmentBuilder,
+            environment::EnvironmentBuilder,
             fuzz::Fuzzer,
             manager::CampaignManager,
         },
         instrumenter::path::InstrumentedPath,
     };
-    use contract_transcode::{
-        AccountId32,
-        ContractMessageTranscoder,
-    };
-    use frame_support::weights::Weight;
+    use contract_transcode::ContractMessageTranscoder;
+
     use std::{
         fs,
         path::{

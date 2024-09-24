@@ -361,7 +361,7 @@ mod tests {
             config.config.fuzz_output,
             Some(PathBuf::from("/tmp/fuzz_output"))
         );
-        assert_eq!(config.contract_path, PathBuf::from("/path/to/contract"));
+        assert_eq!(config.contract_path, PathBuf::from("sample/dummy"));
     }
 
     #[test]

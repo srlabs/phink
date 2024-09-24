@@ -81,6 +81,26 @@ impl PayloadCrafter {
         Ok(all_selectors)
     }
 
+    pub fn extract_payables(json_data: &str) -> Option<Vec<Selector>> {
+        let data: Value = serde_json::from_str(json_data).expect("JSON was not well-formatted");
+
+        Some(
+            data["spec"]["messages"]
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .filter_map(|message| {
+                    if message["payable"].as_bool() == Some(true) {
+                        message["selector"]
+                            .as_str()
+                            .map(|s| Selector::try_from(s).unwrap())
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
+        )
+    }
     /// Extract every selector associated to the invariants defined in the ink!
     /// smart-contract See the documentation of `DEFAULT_PHINK_PREFIX` to know
     /// more about how to create a properties
@@ -210,6 +230,16 @@ mod test {
         assert_eq!(invariants.len(), 2);
         assert_eq!(invariants[0], Selector::from([0x12, 0x34, 0x56, 0x78]));
         assert_eq!(invariants[1], Selector::from([0x23, 0x45, 0x67, 0x89]));
+    }
+
+    #[test]
+    fn test_extract_payable() {
+        let specs = fs::read_to_string("sample/transfer/target/ink/transfer.json").unwrap();
+
+        let invariants = PayloadCrafter::extract_payables(specs.as_str()).unwrap();
+
+        assert_eq!(invariants.len(), 1);
+        assert_eq!(invariants[0], Selector::from([0x47, 0x18, 0x7f, 0x3e])); // 0x47 18 7f 3e
     }
 
     #[test]

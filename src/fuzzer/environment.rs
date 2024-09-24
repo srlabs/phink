@@ -118,3 +118,78 @@ impl EnvironmentBuilder {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{
+        fs,
+        io,
+    };
+    use tempfile::tempdir;
+
+    fn create_test_selector() -> Selector {
+        Selector([0x01, 0x02, 0x03, 0x04])
+    }
+
+    fn create_temp_phink_file(file_name: &str) -> PathBuf {
+        let dir = tempdir().unwrap();
+        dir.path().join(file_name)
+    }
+
+    #[test]
+    fn test_dict_new_creates_file() -> io::Result<()> {
+        let path = create_temp_phink_file("test_dict");
+        let phink_file = PhinkFiles::new(path.clone());
+
+        let dict = Dict::new(phink_file)?;
+        assert!(dict.file_path.exists());
+
+        let contents = fs::read_to_string(dict.file_path)?;
+        assert!(contents.contains("# Dictionary file for selectors"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_dict_entry() -> anyhow::Result<()> {
+        let path = create_temp_phink_file("test_dict");
+        let phink_file = PhinkFiles::new(path.clone());
+        let dict = Dict::new(phink_file)?;
+        let selector = create_test_selector(); //        Selector([0x01, 0x02, 0x03, 0x04])
+        dict.write_dict_entry(&selector)?;
+        let contents = fs::read_to_string(dict.file_path)?;
+        assert!(contents.contains("01020304"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_corpus_manager_new_creates_dir() -> anyhow::Result<()> {
+        let path = create_temp_phink_file("test_corpus");
+        let phink_file = PhinkFiles::new(path.clone());
+
+        let corpus_manager = CorpusManager::new(phink_file)?;
+        assert!(corpus_manager.corpus_dir.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_write_corpus_file() -> io::Result<()> {
+        let path = create_temp_phink_file("test_corpus");
+        let phink_file = PhinkFiles::new(path.clone());
+        let corpus_manager = CorpusManager::new(phink_file).unwrap();
+
+        let selector = create_test_selector();
+        corpus_manager.write_corpus_file(0, &selector)?;
+
+        let file_path = corpus_manager.corpus_dir.join("selector_0.bin");
+        assert!(file_path.exists());
+
+        let data = fs::read(file_path)?;
+        assert_eq!(data[5..9], selector.0);
+
+        Ok(())
+    }
+}

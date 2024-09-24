@@ -5,6 +5,7 @@ use anyhow::bail;
 pub struct SelectorDatabase {
     invariants: Vec<Selector>,
     messages: Vec<Selector>,
+    payable_messages: Vec<Selector>,
 }
 
 impl Default for SelectorDatabase {
@@ -18,9 +19,16 @@ impl SelectorDatabase {
         Self {
             invariants: Vec::default(),
             messages: Vec::default(),
+            payable_messages: Vec::default(),
         }
     }
 
+    pub fn is_payable(&self, selector: &Selector) -> bool {
+        self.payable_messages.contains(selector)
+    }
+    pub fn add_payables(&mut self, selectors: Vec<Selector>) {
+        self.payable_messages.extend(selectors);
+    }
     pub fn exists(&self, selector: Selector) -> bool {
         self.messages.contains(&selector) || self.invariants.contains(&selector)
     }
