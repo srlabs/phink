@@ -103,7 +103,7 @@ impl EnvironmentBuilder {
 
         for (i, selector) in self
             .database
-            .messages()
+            .get_unique_messages()
             .with_context(|| "Couldn't load messages")?
             .iter()
             .enumerate()

@@ -277,20 +277,20 @@ mod tests {
 
         env_builder.build_env(config.clone().fuzz_output())?;
 
-        let without_inv_counter = manager.database().messages_with_invariants()?.len();
+        let get_unique_messages = manager.database().get_unique_messages()?.len();
 
         assert_eq!(
             fs::read_dir(config.clone().fuzz_output().join("phink").join("corpus"))
                 .expect("Failed to read directory")
                 .count(),
-            without_inv_counter
+            get_unique_messages
         );
-        assert_eq!(without_inv_counter, 5 + 1); // msg + constructor
+        assert_eq!(get_unique_messages, 5 + 1); // msg + constructor
 
         let inv_counter = manager.database().invariants()?.len();
         assert_eq!(inv_counter, 1);
 
-        assert_eq!(manager.database().messages()?.len(), without_inv_counter);
+        assert_eq!(manager.database().messages()?.len(), get_unique_messages);
 
         let dict_path = config.fuzz_output().join("phink").join("selectors.dict");
         let dict: String = fs::read_to_string(dict_path.clone())?;

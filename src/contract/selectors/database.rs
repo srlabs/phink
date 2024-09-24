@@ -41,7 +41,7 @@ impl SelectorDatabase {
         self.messages.extend(messages);
     }
 
-    pub fn messages_with_invariants(self) -> anyhow::Result<Vec<Selector>> {
+    pub fn get_unique_messages(self) -> anyhow::Result<Vec<Selector>> {
         if !self.messages.is_empty() && !self.invariants.is_empty() {
             return Ok(self
                 .messages
