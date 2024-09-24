@@ -79,7 +79,7 @@ impl CorpusManager {
         let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
         let file_path = self.corpus_dir.join(format!("selector_{index}.bin"));
         data.extend_from_slice(selector.0.as_ref());
-        data.extend(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
+        data.extend(vec![0x0, 0x0]);
         fs::write(file_path, data)
     }
 }
@@ -111,8 +111,10 @@ impl EnvironmentBuilder {
             corpus_manager
                 .write_corpus_file(i, selector)
                 .with_context(|| "Couldn't write corpus file")?;
-            dict.write_dict_entry(selector)
-                .with_context(|| "Couldn't write the dictionnary entries")?;
+
+            // todo: block this, just to see the benchmarks
+            // dict.write_dict_entry(selector)
+            //     .with_context(|| "Couldn't write the dictionnary entries")?;
         }
 
         Ok(())
