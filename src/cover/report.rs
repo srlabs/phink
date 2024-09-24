@@ -166,8 +166,8 @@ impl CoverageTracker {
     }
 
     pub fn generate(config: ZiggyConfig) -> anyhow::Result<()> {
-        let cov_trace_path = PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
-            .path(CoverageTracePath);
+        let cov_trace_path =
+            PhinkFiles::new(config.to_owned().fuzz_output()).path(CoverageTracePath);
 
         let mut coverage_trace = match File::open(cov_trace_path) {
             Ok(file) => file,

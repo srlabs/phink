@@ -73,23 +73,26 @@ impl Instrumenter {
         let c_path = self.to_owned().z_config.instrumented_path();
         let c_path_str = c_path.to_str().unwrap();
 
-        let wasm_path = fs::read_dir(c_path.join("target/ink/"))
-            .with_context(|| {
-                format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}/target/ink/'")
-            })?
-            .filter_map(|entry| {
-                let path = entry.ok()?.path();
-                if path.is_file() && path.extension().and_then(OsStr::to_str) == Some("wasm") {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .next()
-            .ok_or_else(|| anyhow!("🙅 No .wasm file found in target directory"))?;
+        let wasm_path = match fs::read_dir(c_path.join("target/ink/")) {
+            Ok(entries) => {
+                entries
+                    .filter_map(|entry| {
+                        let path = entry.ok()?.path();
+                        if path.is_file()
+                            && path.extension().and_then(OsStr::to_str) == Some("wasm")
+                        {
+                            Some(path)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                    .ok_or_else(|| anyhow!("🙅 No .wasm file found in target directory"))?
+            }
+            Err(e) => bail!(format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}/target/ink/'. More details: {e:?}"))
+        };
 
         let specs_path = PathBuf::from(wasm_path.to_str().unwrap().replace(".wasm", ".json"));
-
         Ok(InkFilesPath {
             wasm_path,
             specs_path,

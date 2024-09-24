@@ -112,7 +112,12 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             .expect("Slice conversion failed");
         let sec = Selector::from(selector);
 
-        if !manager.database().messages().unwrap().contains(&sec) {
+        if !manager
+            .database()
+            .messages_without_invariants()
+            .unwrap()
+            .contains(&sec)
+        {
             continue;
         }
 
@@ -138,7 +143,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                     input.messages.push(Message {
                         is_payable: manager.is_payable(&sec),
                         payload: encoded_message.into(),
-                        value_token: value as u128, // todo: fix this
+                        value_token: value as u128,
                         message_metadata: metadata.clone(),
                         origin,
                     });

@@ -22,6 +22,7 @@ use crate::{
     },
     instrumenter::instrumentation::Instrumenter,
 };
+use anyhow::Context;
 use clap::Parser;
 use std::{
     env::var,
@@ -108,31 +109,47 @@ fn handle_cli() -> anyhow::Result<()> {
     match cli.command {
         Commands::Instrument(contract_path) => {
             let z_config: ZiggyConfig =
-                ZiggyConfig::new(config.to_owned(), contract_path.contract_path.to_owned());
+                ZiggyConfig::new(config.to_owned(), contract_path.contract_path.to_owned())
+                    .context("Couldn't generate handle the ZiggyConfig")?;
 
             let engine = Instrumenter::new(z_config);
-            engine.to_owned().instrument()?;
-            engine.build()?;
+            engine
+                .to_owned()
+                .instrument()
+                .context("Couldn't instrument")?;
+            engine.build().context("Couldn't run the build")?;
             Ok(())
         }
         Commands::Fuzz(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path).ziggy_fuzz()
+            ZiggyConfig::new(config, contract_path.contract_path)
+                .context("Couldn't generate handle the ZiggyConfig")?
+                .ziggy_fuzz()
         }
         Commands::Run(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path).ziggy_run()
+            ZiggyConfig::new(config, contract_path.contract_path)
+                .context("Couldn't generate handle the ZiggyConfig")?
+                .ziggy_run()
         }
         Commands::Execute {
             seed,
             contract_path,
         } => {
-            let fuzzer = Fuzzer::new(ZiggyConfig::new(config, contract_path))?;
+            let fuzzer = Fuzzer::new(
+                ZiggyConfig::new(config, contract_path)
+                    .context("Couldn't generate handle the ZiggyConfig")?,
+            )?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }
         Commands::HarnessCover(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path).ziggy_cover()
+            ZiggyConfig::new(config, contract_path.contract_path)
+                .context("Couldn't generate handle the ZiggyConfig")?
+                .ziggy_cover()
         }
         Commands::Coverage(contract_path) => {
-            CoverageTracker::generate(ZiggyConfig::new(config, contract_path.contract_path))
+            CoverageTracker::generate(
+                ZiggyConfig::new(config, contract_path.contract_path)
+                    .context("Couldn't generate handle the ZiggyConfig")?,
+            )
         }
     }
 }

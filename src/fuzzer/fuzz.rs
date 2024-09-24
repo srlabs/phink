@@ -1,11 +1,7 @@
 use crate::{
     cli::{
         config::{
-            PFiles::{
-                CorpusPath,
-                CoverageTracePath,
-                DictPath,
-            },
+            PFiles::CoverageTracePath,
             PhinkFiles,
         },
         ziggy::ZiggyConfig,
@@ -27,6 +23,7 @@ use crate::{
             pretty_print,
             timestamp,
         },
+        envbuilder::EnvironmentBuilder,
         fuzz::FuzzingMode::{
             ExecuteOneInput,
             Fuzz,
@@ -44,10 +41,6 @@ use frame_support::__private::BasicExternalities;
 use sp_core::hexdisplay::AsBytesRef;
 use std::{
     fs,
-    io::{
-        self,
-        Write,
-    },
     path::PathBuf,
 };
 
@@ -82,9 +75,7 @@ impl Fuzzer {
                 });
             }
             ExecuteOneInput(seed_path) => {
-                let covpath =
-                    PhinkFiles::new(config.config.fuzz_output.clone().unwrap_or_default())
-                        .path(CoverageTracePath);
+                let covpath = PhinkFiles::new(config.clone().fuzz_output()).path(CoverageTracePath);
                 let _ = fs::remove_file(covpath); // we also reset the cov map, doesn't matter if it fails
                 let manager = self
                     .to_owned()
@@ -94,23 +85,6 @@ impl Fuzzer {
                 let data = fs::read(seed_path).context("Couldn't read the seed")?;
                 self.harness(manager, data.as_bytes_ref());
             }
-        }
-
-        Ok(())
-    }
-
-    // todo: move this to the other file (delete)
-    fn build_corpus_and_dict(self, selectors: Vec<Selector>) -> io::Result<()> {
-        let phink_file = PhinkFiles::new(self.ziggy_config.config.fuzz_output.unwrap_or_default());
-
-        fs::create_dir_all(phink_file.path(CorpusPath))?;
-        let mut dict_file = fs::File::create(phink_file.path(DictPath))?;
-
-        write_dict_header(&mut dict_file)?;
-
-        for (i, selector) in selectors.iter().enumerate() {
-            write_corpus_file(i, selector, phink_file.path(CorpusPath))?;
-            write_dict_entry(&mut dict_file, selector).unwrap();
         }
 
         Ok(())
@@ -137,10 +111,7 @@ impl Fuzzer {
             .context("🙅 No invariants found, check your contract")?;
 
         let messages = PayloadCrafter::extract_all(self.ziggy_config.contract_path.to_owned())
-            .context("Couldn't extract all the messages selectors")?
-            .into_iter()
-            .filter(|s| !invariants.contains(s))
-            .collect();
+            .context("Couldn't extract all the messages selectors")?;
 
         let mut database = SelectorDatabase::new();
         database.add_invariants(invariants);
@@ -152,11 +123,11 @@ impl Fuzzer {
             self.ziggy_config.config.to_owned(),
         );
 
-        // let env_builder: EnvironmentBuilder::new(database.messages());
-        // env_builder.build_env().context("🙅 Couldn't create corpus & dict")?;
+        let env_builder = EnvironmentBuilder::new(database);
 
-        self.build_corpus_and_dict(database.messages()?)
-            .expect(" Failed to create initial corpus");
+        env_builder
+            .build_env(self.ziggy_config.fuzz_output())
+            .context("🙅 Couldn't create corpus entries and dict")?;
 
         println!(
             "\n🚀  Now fuzzing `{}` ({})!\n",
@@ -232,40 +203,81 @@ impl Fuzzer {
     }
 }
 
-fn write_dict_header(dict_file: &mut fs::File) -> io::Result<()> {
-    writeln!(dict_file, "# Dictionary file for selectors")?;
-    writeln!(
-        dict_file,
-        "# Lines starting with '#' and empty lines are ignored."
-    )?;
-
-    writeln!(dict_file, "delimiter=\"\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\"")
-}
-
-fn write_corpus_file(index: usize, selector: &Selector, corpus_dir: PathBuf) -> io::Result<()> {
-    // 00010000 01 fa80c2f6 00
-    let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
-    let file_path = corpus_dir.join(format!("selector_{index}.bin"));
-    data.extend_from_slice(selector.0.as_ref());
-    data.extend(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
-    fs::write(file_path, data)
-}
-
-fn write_dict_entry(dict_file: &mut fs::File, selector: &Selector) -> anyhow::Result<()> {
-    writeln!(dict_file, "\"{}\"", selector)
-        .with_context(|| format!("Couldn't write {selector} into the dict"))?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
-
-    use contract_transcode::ContractMessageTranscoder;
+    use crate::{
+        cli::{
+            config::Configuration,
+            ziggy::ZiggyConfig,
+        },
+        contract::{
+            payload::PayloadCrafter,
+            selectors::database::SelectorDatabase,
+        },
+        fuzzer::{
+            envbuilder::EnvironmentBuilder,
+            fuzz::Fuzzer,
+            manager::CampaignManager,
+        },
+        instrumenter::path::InstrumentedPath,
+    };
+    use contract_transcode::{
+        AccountId32,
+        ContractMessageTranscoder,
+    };
+    use frame_support::weights::Weight;
     use std::{
-        path::Path,
+        path::{
+            Path,
+            PathBuf,
+        },
         sync::Mutex,
     };
+    use tempfile::tempdir;
 
+    fn create_test_config() -> ZiggyConfig {
+        let config = Configuration {
+            verbose: true,
+            cores: Some(1),
+            use_honggfuzz: false,
+            fuzz_output: Some(tempdir().unwrap().into_path()),
+            instrumented_contract_path: Some(InstrumentedPath::from("sample/dummy")),
+            show_ui: false,
+            ..Default::default()
+        };
+        ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap()
+    }
+
+    #[test]
+    fn test_database_and_envbuilder() -> anyhow::Result<()> {
+        let config = create_test_config();
+        let contract_bridge = Fuzzer::new(config.clone())?.setup;
+
+        let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs).unwrap();
+
+        let messages = PayloadCrafter::extract_all(config.contract_path.clone())?
+            .into_iter()
+            .filter(|s| !invariants.contains(s))
+            .collect();
+
+        let mut database = SelectorDatabase::new();
+        database.add_invariants(invariants);
+        database.add_messages(messages);
+
+        let manager = CampaignManager::new(
+            database.clone(),
+            contract_bridge.clone(),
+            config.config.to_owned(),
+        );
+
+        let env_builder = EnvironmentBuilder::new(database);
+
+        env_builder.build_env(config.fuzz_output())?;
+
+        // todo: asserts here
+
+        Ok(())
+    }
     #[test]
     fn test_parse_input() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");

@@ -52,7 +52,10 @@ mod tests {
 
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(TIMEOUT), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
-                ensure!(fuzz_created, "Fuzz output directory wasn't created");
+                ensure!(
+                    fuzz_created,
+                    format!("Fuzz output directory wasn't created ({:?})", fuzz_output)
+                );
                 let dashboard = AFLDashboard::from_output(fuzz_output.clone())?;
 
                 if fuzz_created && dashboard.is_ready() {
@@ -95,8 +98,10 @@ mod tests {
             // While fuzzing, let's perform the tests
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = phink_output.exists();
-                ensure!(fuzz_created, "Fuzz output directory wasn't created");
-
+                ensure!(
+                    fuzz_created,
+                    format!("Fuzz output directory wasn't created ({:?})", fuzz_output)
+                );
                 if fuzz_created {
                     let corpus_res = get_corpus_files(&phink_output.join("corpus"));
                     initial_corpus_len = match corpus_res {
@@ -182,8 +187,10 @@ mod tests {
 
             let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
                 let fuzz_created = fs::metadata(fuzz_output.clone()).is_ok();
-                ensure!(fuzz_created, "Fuzz output directory wasn't created");
-
+                ensure!(
+                    fuzz_created,
+                    format!("Fuzz output directory wasn't created ({:?})", fuzz_output)
+                );
                 if fuzz_created {
                     let log_path = config
                         .fuzz_output

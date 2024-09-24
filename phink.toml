@@ -12,7 +12,7 @@ storage_deposit_limit = "100000000000" # this is commented by default, to set is
 instantiate_initial_value = "0"
 verbose = true
 instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
-show_ui = false
+show_ui = true
 
 [default_gas_limit]
 ref_time = 100000000000

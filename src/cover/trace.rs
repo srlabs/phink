@@ -1,4 +1,4 @@
-pub const COV_IDENTIFIER: &str = "COV="; // todo: apply me to everythin
+pub const COV_IDENTIFIER: &str = "COV=";
 
 #[derive(Clone, Default)]
 pub struct CoverageTrace(Vec<u8>);

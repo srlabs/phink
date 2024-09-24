@@ -105,6 +105,7 @@ pub enum PFiles {
     DictPath,
     CorpusPath,
 }
+#[derive(Clone, Debug)]
 pub struct PhinkFiles {
     output: PathBuf,
 }

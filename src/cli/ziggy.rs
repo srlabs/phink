@@ -2,6 +2,7 @@ use crate::{
     cli::config::Configuration,
     fuzzer::parser::MIN_SEED_LEN,
 };
+use std::io::BufRead;
 
 use serde_derive::{
     Deserialize,
@@ -76,11 +77,17 @@ impl Display for ZiggyConfig {
 }
 
 impl ZiggyConfig {
-    pub fn new(config: Configuration, contract_path: PathBuf) -> Self {
-        Self {
+    pub fn new(config: Configuration, contract_path: PathBuf) -> anyhow::Result<Self> {
+        if !contract_path.exists() {
+            bail!(format!(
+                "{contract_path:?} doesn't exist; couldn't load this contract"
+            ))
+        }
+
+        Ok(Self {
             config,
             contract_path,
-        }
+        })
     }
 
     pub fn instrumented_path(self) -> PathBuf {
@@ -88,6 +95,10 @@ impl ZiggyConfig {
             .instrumented_contract_path
             .unwrap_or_default()
             .path
+    }
+
+    pub fn fuzz_output(self) -> PathBuf {
+        self.config.fuzz_output.unwrap_or_default()
     }
     pub fn afl_debug<'a>(&self) -> &'a str {
         match self.config.verbose {
@@ -141,7 +152,47 @@ impl ZiggyConfig {
         env: Vec<(String, String)>,
         ziggy_command: String,
     ) -> anyhow::Result<()> {
-        use std::io::BufRead;
+        let mut binding = Command::new("cargo");
+        let command_builder = binding
+            .arg("ziggy")
+            .arg(ziggy_command)
+            .env(FromZiggy.to_string(), "1")
+            .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
+            .env(AflDebug.to_string(), self.afl_debug())
+            .stdout(Stdio::piped());
+
+        self.with_allowlist(command_builder)
+            .context("Couldn't use the allowlist")?;
+
+        command_builder.args(args.iter());
+        command_builder.envs(env);
+
+        let mut ziggy_child = command_builder
+            .spawn()
+            .context("Spawning Ziggy was unsuccessfull")?;
+
+        if let Some(stdout) = ziggy_child.stdout.take() {
+            let reader = io::BufReader::new(stdout);
+            for line in reader.lines() {
+                println!("{}", line?);
+            }
+        }
+
+        let status = ziggy_child.wait().context("Couldn't wait for Ziggy")?;
+        if !status.success() {
+            bail!("`cargo ziggy` failed ({})", status);
+        }
+
+        Ok(())
+    }
+
+    // todo
+    fn custom_ui(
+        &self,
+        args: Vec<String>,
+        env: Vec<(String, String)>,
+        ziggy_command: String,
+    ) -> anyhow::Result<()> {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
@@ -184,8 +235,7 @@ impl ZiggyConfig {
     /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
     fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
         if cfg!(not(target_os = "macos")) {
-            let allowlist = PhinkFiles::new(self.config.fuzz_output.to_owned().unwrap_or_default())
-                .path(AllowlistPath);
+            let allowlist = PhinkFiles::new(self.clone().fuzz_output()).path(AllowlistPath);
             command_builder.env(
                 AllowList.to_string(),
                 allowlist
@@ -245,8 +295,7 @@ impl ZiggyConfig {
     }
 
     pub fn ziggy_run(&self) -> anyhow::Result<()> {
-        let covpath = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
-            .path(CoverageTracePath);
+        let covpath = PhinkFiles::new(self.clone().fuzz_output()).path(CoverageTracePath);
 
         // We clean up the old one first
         if fs::remove_file(covpath).is_ok() {
@@ -261,10 +310,10 @@ impl ZiggyConfig {
         Ok(())
     }
 
+    // todo: move this to envbuilder
     /// Builds the LLVM allowlist if it doesn't already exist.
     fn build_llvm_allowlist(&self) -> io::Result<()> {
-        let allowlist_path = PhinkFiles::new(self.config.fuzz_output.clone().unwrap_or_default())
-            .path(AllowlistPath);
+        let allowlist_path = PhinkFiles::new(self.clone().fuzz_output()).path(AllowlistPath);
 
         if allowlist_path.exists() {
             println!("❗ {} already exists... skipping", AllowList);
@@ -298,7 +347,7 @@ mod tests {
             show_ui: false,
             ..Default::default()
         };
-        ZiggyConfig::new(config, PathBuf::from("/path/to/contract"))
+        ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap()
     }
 
     #[test]
@@ -361,7 +410,7 @@ mod tests {
             fuzz_output: Some(temp_dir.path().to_path_buf()),
             ..Default::default()
         };
-        let ziggy_config = ZiggyConfig::new(config, PathBuf::from("/path/to/contract"));
+        let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap();
 
         ziggy_config.build_llvm_allowlist()?;
 
@@ -384,7 +433,7 @@ mod tests {
                 fuzz_output: Some(temp_dir.path().to_path_buf()),
                 ..Default::default()
             };
-            let ziggy_config = ZiggyConfig::new(config, PathBuf::from("/path/to/contract"));
+            let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy"))?;
 
             ziggy_config.build_llvm_allowlist()?;
 

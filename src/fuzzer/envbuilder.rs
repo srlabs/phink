@@ -1,23 +1,117 @@
-use crate::fuzzer::parser::Message;
+use crate::{
+    cli::config::{
+        PFiles::{
+            CorpusPath,
+            DictPath,
+        },
+        PhinkFiles,
+    },
+    contract::selectors::{
+        database::SelectorDatabase,
+        selector::Selector,
+    },
+};
+use anyhow::Context;
+use std::{
+    fs,
+    fs::OpenOptions,
+    io,
+    io::Write,
+    path::PathBuf,
+};
 
-pub struct EnvironmentBuilder();
+pub struct Dict {
+    file_path: PathBuf,
+}
+
+impl Dict {
+    pub fn write_dict_entry(&self, selector: &Selector) -> anyhow::Result<()> {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(&self.file_path)
+            .with_context(|| format!("Failed to open file for appending: {:?}", self.file_path))?;
+
+        writeln!(file, "\"{}\"", selector)
+            .with_context(|| format!("Couldn't write selector '{}' into the dict", selector))?;
+
+        Ok(())
+    }
+
+    pub fn new(phink_file: PhinkFiles) -> io::Result<Dict> {
+        let path_buf = phink_file.path(DictPath);
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&path_buf)?;
+
+        writeln!(file, "# Dictionary file for selectors")?;
+        writeln!(
+            file,
+            "# Lines starting with '#' and empty lines are ignored."
+        )?;
+        writeln!(file, "delimiter=\"********\"")?;
+
+        Ok(Self {
+            file_path: path_buf,
+        })
+    }
+}
+
+pub struct CorpusManager {
+    corpus_dir: PathBuf,
+}
+
+impl CorpusManager {
+    pub fn new(phink_file: PhinkFiles) -> anyhow::Result<CorpusManager> {
+        let corpus_dir = phink_file.path(CorpusPath);
+        fs::create_dir_all(&corpus_dir)?;
+        Ok(Self { corpus_dir })
+    }
+
+    pub fn write_corpus_file(&self, index: usize, selector: &Selector) -> io::Result<()> {
+        // 00010000 01 fa80c2f6 00
+        let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
+        let file_path = self.corpus_dir.join(format!("selector_{index}.bin"));
+        data.extend_from_slice(selector.0.as_ref());
+        data.extend(vec![0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
+        fs::write(file_path, data)
+    }
+}
+
+pub struct EnvironmentBuilder {
+    database: SelectorDatabase,
+}
 
 impl EnvironmentBuilder {
-    pub fn new(messages: Vec<Message>) {}
-    pub fn toz() {
-        // let phink_file =
-        // PhinkFiles::new(self.ziggy_config.config.fuzz_output.unwrap_or_default());
-        //
-        // fs::create_dir_all(phink_file.path(CorpusPath))?;
-        // let mut dict_file = fs::File::create(phink_file.path(DictPath))?;
-        //
-        // write_dict_header(&mut dict_file)?;
-        //
-        // for (i, selector) in selectors.iter().enumerate() {
-        //     write_corpus_file(i, selector, phink_file.path(CorpusPath))?;
-        //     write_dict_entry(&mut dict_file, selector).unwrap();
-        // }
-        //
-        // Ok(())
+    pub fn new(database: SelectorDatabase) -> EnvironmentBuilder {
+        Self { database }
+    }
+
+    /// This function builds both the correct seeds and the dict file for AFL++
+    pub fn build_env(self, fuzz_output: PathBuf) -> anyhow::Result<()> {
+        let phink_file = PhinkFiles::new(fuzz_output);
+
+        let dict =
+            Dict::new(phink_file.clone()).with_context(|| "Couldn't create a new dictionnary")?;
+        let corpus_manager = CorpusManager::new(phink_file)
+            .with_context(|| "Couldn't create a new corpus manager")?;
+
+        for (i, selector) in self
+            .database
+            .messages_without_invariants()
+            .with_context(|| "Couldn't load messages")?
+            .iter()
+            .enumerate()
+        {
+            corpus_manager
+                .write_corpus_file(i, selector)
+                .with_context(|| "Couldn't write corpus file")?;
+            dict.write_dict_entry(selector)
+                .with_context(|| "Couldn't write the dictionnary entries")?;
+        }
+
+        Ok(())
     }
 }
