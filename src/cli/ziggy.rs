@@ -11,28 +11,29 @@ use serde_derive::{
 };
 use std::{
     fs,
-    fs::File,
-    io::Write,
     path::PathBuf,
 };
 
-use crate::cli::{
-    config::{
-        PFiles::{
-            AllowlistPath,
-            CoverageTracePath,
-            DictPath,
+use crate::{
+    cli::{
+        config::{
+            PFiles::{
+                AllowlistPath,
+                CoverageTracePath,
+                DictPath,
+            },
+            PhinkFiles,
         },
-        PhinkFiles,
-    },
-    env::{
-        PhinkEnv,
-        PhinkEnv::{
-            AflDebug,
-            AflForkServerTimeout,
+        env::{
+            PhinkEnv,
+            PhinkEnv::{
+                AflDebug,
+                AflForkServerTimeout,
+            },
         },
+        ui::custom::CustomManager,
     },
-    ui,
+    fuzzer::environment::AllowListBuilder,
 };
 use anyhow::{
     bail,
@@ -62,7 +63,7 @@ pub enum ZiggyCommand {
     Run,
     Cover,
     Build,
-    Fuzz(bool),
+    Fuzz,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -117,31 +118,27 @@ impl ZiggyConfig {
     }
 
     /// This function executes `cargo ziggy 'command' 'args'`
-    fn start(
+    fn build_command(
         &self,
         command: ZiggyCommand,
         args: Vec<String>,
         env: Vec<(String, String)>,
     ) -> anyhow::Result<()> {
-        let mut pop_ui = false;
+        AllowListBuilder::build(self.clone().fuzz_output())
+            .context("Building LLVM allowlist failed")?;
+
         let ziggy_command = match command {
             ZiggyCommand::Run => "run",
             ZiggyCommand::Cover => "cover",
-            ZiggyCommand::Build => {
-                self.build_llvm_allowlist()
-                    .context("Building LLVM allowlist failed")?;
-                "build"
-            }
-            ZiggyCommand::Fuzz(ui) => {
-                pop_ui = ui;
-                "fuzz"
-            }
+            ZiggyCommand::Build => "build",
+            ZiggyCommand::Fuzz => "fuzz",
         };
 
-        if pop_ui {
-            ui::tui::initialize_tui().unwrap();
+        if self.config.show_ui && command == ZiggyCommand::Fuzz {
+            let native = CustomManager::new(args, env, self.to_owned());
+            native.start()?;
         } else {
-            self.native_ui(args, env, ziggy_command.into())?;
+            self.native_ui(args, env, ziggy_command.to_string())?;
         }
 
         Ok(())
@@ -187,54 +184,13 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    // todo
-    fn custom_ui(
-        &self,
-        args: Vec<String>,
-        env: Vec<(String, String)>,
-        ziggy_command: String,
-    ) -> anyhow::Result<()> {
-        let mut binding = Command::new("cargo");
-        let command_builder = binding
-            .arg("ziggy")
-            .arg(ziggy_command)
-            .env(FromZiggy.to_string(), "1")
-            .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
-            .env(AflDebug.to_string(), self.afl_debug())
-            .stdout(Stdio::piped());
-
-        self.with_allowlist(command_builder)
-            .context("Couldn't use the allowlist")?;
-
-        command_builder.args(args.iter());
-        command_builder.envs(env);
-
-        let mut ziggy_child = command_builder
-            .spawn()
-            .context("Spawning Ziggy was unsuccessfull")?;
-
-        if let Some(stdout) = ziggy_child.stdout.take() {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                println!("{}", line?);
-            }
-        }
-
-        let status = ziggy_child.wait().context("Couldn't wait for Ziggy")?;
-        if !status.success() {
-            bail!("`cargo ziggy` failed ({})", status);
-        }
-
-        Ok(())
-    }
-
     /// Add the ALLOWLIST file to a `Command`. This will be done only in not on macOS
     ///     - see https://github.com/rust-lang/rust/issues/127573
     ///     - see https://github.com/rust-lang/rust/issues/127577
     /// # Arguments
     ///
     /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
-    fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
+    pub fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.clone().fuzz_output()).path(AllowlistPath);
             command_builder.env(
@@ -257,7 +213,7 @@ impl ZiggyConfig {
             vec!["".parse()?]
         };
 
-        self.start(ZiggyCommand::Build, build_args, vec![])?;
+        self.build_command(ZiggyCommand::Build, build_args, vec![])?;
 
         println!("🏗️ Ziggy Build completed");
 
@@ -279,15 +235,11 @@ impl ZiggyConfig {
 
         let fuzz_config = vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)];
 
-        self.start(
-            ZiggyCommand::Fuzz(self.config.show_ui),
-            fuzzing_args,
-            fuzz_config,
-        )
+        self.build_command(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
     }
 
     pub fn ziggy_cover(&self) -> anyhow::Result<()> {
-        self.start(
+        self.build_command(
             ZiggyCommand::Cover,
             vec![],
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
@@ -303,33 +255,11 @@ impl ZiggyConfig {
             println!("💨 Removed previous coverage file")
         }
 
-        self.start(
+        self.build_command(
             ZiggyCommand::Run,
             vec![],
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
-        Ok(())
-    }
-
-    // todo: move this to envbuilder
-    /// Builds the LLVM allowlist if it doesn't already exist.
-    fn build_llvm_allowlist(&self) -> io::Result<()> {
-        let allowlist_path = PhinkFiles::new(self.clone().fuzz_output()).path(AllowlistPath);
-
-        if allowlist_path.exists() {
-            println!("❗ {} already exists... skipping", AllowList);
-            return Ok(());
-        }
-
-        fs::create_dir_all(allowlist_path.parent().unwrap())?;
-        let mut allowlist_file = File::create(allowlist_path)?;
-
-        let functions = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
-        for func in &functions {
-            writeln!(allowlist_file, "fun: {}", func)?;
-        }
-
-        println!("✅ {} created successfully", AllowList);
         Ok(())
     }
 }
@@ -413,7 +343,7 @@ mod tests {
         };
         let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap();
 
-        ziggy_config.build_llvm_allowlist()?;
+        AllowListBuilder::build(ziggy_config.fuzz_output())?;
 
         let allowlist_path = PhinkFiles::new(temp_dir.path().to_path_buf()).path(AllowlistPath);
         assert!(allowlist_path.exists());
@@ -436,7 +366,7 @@ mod tests {
             };
             let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy"))?;
 
-            ziggy_config.build_llvm_allowlist()?;
+            AllowListBuilder::build(ziggy_config.clone().fuzz_output())?;
 
             let mut command = Command::new("echo");
             ziggy_config.with_allowlist(&mut command)?;
@@ -467,7 +397,7 @@ mod tests {
 
         env::set_var("CARGO_MANIFEST_DIR", temp_dir.path());
 
-        let result = config.start(
+        let result = config.build_command(
             ZiggyCommand::Build,
             vec!["--no-honggfuzz".to_string()],
             vec![],

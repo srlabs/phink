@@ -1,2 +1,3 @@
+pub mod custom;
 pub mod logs;
-pub mod tui;
+pub mod ratatui;

@@ -108,18 +108,9 @@ impl InputCoverage {
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
             if flat.contains(&(x)) {
-                println!("{:?}", x);
+                // println!("{:?}", x);
                 let _ = black_box(x + 1);
             }
         });
-    }
-
-    pub fn deduplicate(input: &str) -> String {
-        let mut unique_lines = HashSet::new();
-        input
-            .lines()
-            .filter(|&line| unique_lines.insert(line))
-            .collect::<Vec<_>>()
-            .join("\n")
     }
 }

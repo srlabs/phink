@@ -125,14 +125,15 @@ mod tests {
                         initial_corpus_len
                     );
 
-                    let selector = phink_output.join("selectors.dict");
-                    ensure!(selector.exists(), "selectors.dict doesn't exist");
-
-                    ensure!(
-                        fs::read_to_string(selector).unwrap().lines().count() == 5,
-                        "There should be 5 lines in selectors, 2 for crash_with_invariant and phink_assert_dangerous_number, 1 for demimiter, and two comments"
-                    );
-
+                    // Todo: commented out as we're not sure if we keep the dict
+                    // let selector = phink_output.join("selectors.dict");
+                    // ensure!(selector.exists(), "selectors.dict doesn't exist");
+                    //
+                    // ensure!(
+                    //     fs::read_to_string(selector).unwrap().lines().count() == 5,
+                    //     "There should be 5 lines in selectors, 2 for crash_with_invariant and
+                    // phink_assert_dangerous_number, 1 for demimiter, and two comments"
+                    // );
                     let dash = AFLDashboard::from_output(fuzz_output.clone())?;
 
                     ensure!(

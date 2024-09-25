@@ -1,10 +1,14 @@
 use crate::{
-    cli::config::{
-        PFiles::{
-            CorpusPath,
-            DictPath,
+    cli::{
+        config::{
+            PFiles::{
+                AllowlistPath,
+                CorpusPath,
+                DictPath,
+            },
+            PhinkFiles,
         },
-        PhinkFiles,
+        env::PhinkEnv::AllowList,
     },
     contract::selectors::{
         database::SelectorDatabase,
@@ -14,11 +18,41 @@ use crate::{
 use anyhow::Context;
 use std::{
     fs,
-    fs::OpenOptions,
+    fs::{
+        File,
+        OpenOptions,
+    },
     io,
     io::Write,
     path::PathBuf,
 };
+
+pub struct AllowListBuilder {}
+
+impl AllowListBuilder {
+    pub const FUNCTIONS: [&str; 3] = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
+
+    /// Builds the LLVM allowlist if it doesn't already exist.
+
+    pub fn build(fuzz_output: PathBuf) -> io::Result<()> {
+        let allowlist_path = PhinkFiles::new(fuzz_output).path(AllowlistPath);
+
+        if allowlist_path.exists() {
+            println!("❗ {} already exists... skipping", AllowList);
+            return Ok(());
+        }
+
+        fs::create_dir_all(allowlist_path.parent().unwrap())?;
+        let mut allowlist_file = File::create(allowlist_path)?;
+
+        for func in Self::FUNCTIONS {
+            writeln!(allowlist_file, "fun: {}", func)?;
+        }
+
+        println!("✅ {} created successfully", AllowList);
+        Ok(())
+    }
+}
 
 pub struct Dict {
     file_path: PathBuf,
@@ -97,7 +131,7 @@ impl EnvironmentBuilder {
     pub fn build_env(self, fuzz_output: PathBuf) -> anyhow::Result<()> {
         let phink_file = PhinkFiles::new(fuzz_output);
 
-        let dict = Dict::new(phink_file.clone())?;
+        let _dict = Dict::new(phink_file.clone())?;
         let corpus_manager = CorpusManager::new(phink_file)
             .with_context(|| "Couldn't create a new corpus manager")?;
 
@@ -112,7 +146,7 @@ impl EnvironmentBuilder {
                 .write_corpus_file(i, selector)
                 .with_context(|| "Couldn't write corpus file")?;
 
-            // todo: block this, just to see the benchmarks
+            // todo: not sure if we keep the selectors inside the dict
             // dict.write_dict_entry(selector)
             //     .with_context(|| "Couldn't write the dictionnary entries")?;
         }
