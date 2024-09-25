@@ -8,12 +8,12 @@ use std::{
 
 #[derive(Default, Debug, Clone)]
 pub struct AFLProperties {
-    run_time: String,
-    last_new_find: String,
-    last_saved_crash: String,
-    corpus_count: u32,
-    saved_crashes: u32,
-    exec_speed: u32,
+    pub(crate) run_time: String,
+    pub(crate) last_new_find: String,
+    pub(crate) last_saved_crash: String,
+    pub(crate) corpus_count: u32,
+    pub(crate) saved_crashes: u32,
+    pub(crate) exec_speed: u32,
 }
 
 impl AFLProperties {
