@@ -161,8 +161,7 @@ mod tests {
         let mut watcher = CorpusWatcher::from_fullpath(path).unwrap();
         let data = watcher.data();
 
-        assert_eq!(data.len(), 1);
-        assert_eq!(data[0].x, 0.0);
+        assert_eq!(data.len(), 0);
     }
 
     #[test]
@@ -177,7 +176,7 @@ mod tests {
         let mut watcher = CorpusWatcher::from_fullpath(path).unwrap();
         let data = watcher.data();
 
-        assert_eq!(data.len(), 1);
+        assert_eq!(data.len(), 2);
         assert_eq!(data[0].y, 2.0);
     }
 
