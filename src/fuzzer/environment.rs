@@ -33,7 +33,6 @@ impl AllowListBuilder {
     pub const FUNCTIONS: [&str; 3] = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
 
     /// Builds the LLVM allowlist if it doesn't already exist.
-
     pub fn build(fuzz_output: PathBuf) -> io::Result<()> {
         let allowlist_path = PhinkFiles::new(fuzz_output).path(AllowlistPath);
 
@@ -97,6 +96,7 @@ impl Dict {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct CorpusManager {
     corpus_dir: PathBuf,
 }

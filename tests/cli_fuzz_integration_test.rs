@@ -20,13 +20,11 @@ mod tests {
         Result,
     };
     use phink_lib::{
-        cli::{
-            config::Configuration,
-            ui::logs::AFLDashboard,
-        },
+        cli::config::Configuration,
         instrumenter::path::InstrumentedPath,
     };
 
+    use phink_lib::cli::ui::monitor::logs::AFLDashboard;
     use std::{
         fs,
         time::Duration,

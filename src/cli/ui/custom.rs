@@ -63,7 +63,6 @@ impl CustomManager {
 
     pub fn start(self) -> anyhow::Result<()> {
         let (tx, rx) = mpsc::channel();
-        // let self_arc = Arc::new(self.clone());
         let cloned_config = self.ziggy_config.clone();
 
         thread::spawn(move || {
@@ -75,6 +74,7 @@ impl CustomManager {
 
         let ratatui =
             CustomUI::new(cloned_config.fuzz_output()).context("Couldn't create the custom UI ")?;
+
         ratatui.initialize_tui()?;
         Ok(())
     }

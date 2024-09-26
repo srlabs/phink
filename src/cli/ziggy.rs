@@ -135,8 +135,7 @@ impl ZiggyConfig {
         };
 
         if self.config.show_ui && command == ZiggyCommand::Fuzz {
-            let native = CustomManager::new(args, env, self.to_owned());
-            native.start()?;
+            CustomManager::new(args, env, self.to_owned()).start()?;
         } else {
             self.native_ui(args, env, ziggy_command.to_string())?;
         }

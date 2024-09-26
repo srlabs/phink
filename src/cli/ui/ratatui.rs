@@ -1,13 +1,12 @@
-use crate::cli::ui::logs::{
-    AFLDashboard,
-    AFLProperties,
+use crate::cli::ui::monitor::{
+    corpus::CorpusWatcher,
+    logs::AFLDashboard,
 };
 use crossterm::{
     event,
     event::Event,
 };
 use ratatui::{
-    backend::Backend,
     layout::{
         Constraint,
         Direction,
@@ -32,22 +31,26 @@ use ratatui::{
 };
 use std::{
     path::PathBuf,
+    thread,
     time::Duration,
 };
 
 #[derive(Clone, Debug)]
 pub struct CustomUI {
     afl_dashboard: AFLDashboard,
+    corpus_watcher: CorpusWatcher,
 }
 
 impl CustomUI {
+    const REFRESH_MS: u64 = 500;
     pub fn new(output: PathBuf) -> anyhow::Result<CustomUI> {
         Ok(Self {
-            afl_dashboard: AFLDashboard::from_output(output)?,
+            afl_dashboard: AFLDashboard::from_output(output.to_owned())?,
+            corpus_watcher: CorpusWatcher::from_output(output)?,
         })
     }
 
-    fn ui(self, f: &mut Frame, data: AFLProperties) {
+    fn ui(self, f: &mut Frame) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
@@ -59,10 +62,10 @@ impl CustomUI {
                 ]
                 .as_ref(),
             )
-            .split(f.size());
+            .split(f.area());
 
         self.clone().render_title(f, chunks[0]);
-        self.clone().render_stats(f, chunks[1], data);
+        self.clone().render_stats(f, chunks[1]);
         self.render_chart(f, chunks[2]);
     }
 
@@ -77,7 +80,9 @@ impl CustomUI {
         f.render_widget(title, area);
     }
 
-    fn render_stats(self, f: &mut Frame, area: Rect, data: AFLProperties) {
+    fn render_stats(self, f: &mut Frame, area: Rect) {
+        let data = self.afl_dashboard.read_properties().unwrap();
+
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -99,27 +104,19 @@ impl CustomUI {
         f.render_widget(right_stats, chunks[1]);
     }
 
-    fn render_chart(self, f: &mut Frame, area: Rect) {
+    fn render_chart(mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
             .split(area);
 
-        let chart_data = vec![
-            (0.0, 5.0),
-            (1.0, 6.0),
-            (2.0, 7.0),
-            (3.0, 8.0),
-            (4.0, 4.0),
-            (5.0, 3.0),
-            (6.0, 5.0),
-        ];
+        let corpus_counter: &[(f64, f64)] = &self.corpus_watcher.as_tuple_slice();
 
         let dataset = vec![Dataset::default()
             .name("Executions")
             .marker(symbols::Marker::Braille)
             .style(Style::default().fg(Color::Cyan))
-            .data(&chart_data)];
+            .data(corpus_counter)];
 
         let chart = Chart::new(dataset)
             .block(
@@ -156,12 +153,11 @@ impl CustomUI {
         terminal.clear()?;
 
         loop {
-            terminal.draw(|f| {
-                self.clone()
-                    .ui(f, self.afl_dashboard.read_properties().unwrap())
-            })?;
+            terminal.draw(|f| self.clone().ui(f))?;
 
-            if event::poll(Duration::from_millis(250))? {
+            thread::sleep(Duration::from_millis(Self::REFRESH_MS));
+
+            if event::poll(Duration::from_millis(Self::REFRESH_MS))? {
                 if let Event::Key(key) = crossterm::event::read()? {
                     if key.kind == event::KeyEventKind::Press
                         && key.code == event::KeyCode::Char('q')

@@ -104,6 +104,7 @@ pub enum PFiles {
     AllowlistPath,
     DictPath,
     CorpusPath,
+    AFLLog,
 }
 #[derive(Clone, Debug)]
 pub struct PhinkFiles {
@@ -124,6 +125,7 @@ impl PhinkFiles {
             PFiles::AllowlistPath => self.output.join(PHINK_PATH).join("allowlist.txt"),
             PFiles::DictPath => self.output.join(PHINK_PATH).join("selectors.dict"),
             PFiles::CorpusPath => self.output.join(PHINK_PATH).join("corpus"),
+            PFiles::AFLLog => self.output.join(PHINK_PATH).join("logs").join("afl.log"),
         }
     }
 }
