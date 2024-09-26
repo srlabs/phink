@@ -72,8 +72,7 @@ impl CustomManager {
 
         rx.recv()??;
 
-        let ratatui =
-            CustomUI::new(cloned_config.fuzz_output()).context("Couldn't create the custom UI ")?;
+        let ratatui = CustomUI::new(&cloned_config).context("Couldn't create the custom UI ")?;
 
         ratatui.initialize_tui()?;
         Ok(())

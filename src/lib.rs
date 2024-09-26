@@ -1,4 +1,5 @@
 #![feature(os_str_display)]
+#![feature(duration_millis_float)]
 #![recursion_limit = "1024"]
 
 extern crate core;

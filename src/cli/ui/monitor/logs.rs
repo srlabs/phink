@@ -18,6 +18,7 @@ pub struct AFLProperties {
     pub(crate) corpus_count: u32,
     pub(crate) saved_crashes: u32,
     pub(crate) exec_speed: u32,
+    pub(crate) stability: f64,
 }
 
 impl AFLProperties {
@@ -63,6 +64,12 @@ impl FromStr for AFLProperties {
             .captures(s)
         {
             props.last_saved_crash = cap[1].to_string();
+        }
+
+        if let Some(cap) = Regex::new(r"stability : (.+?)\s+│").unwrap().captures(s) {
+            let percentage_str = cap[1].to_string().replace("%", "");
+            let percentage: f64 = percentage_str.parse().unwrap();
+            props.stability = percentage / 100.0;
         }
 
         props.corpus_count = extract_value(s, r"corpus count : (\d+)").unwrap_or_default();
@@ -197,7 +204,7 @@ mod tests {
 │ arithmetics : 0/0, 0/0, 0/0                        │  pend fav : 0         │
 │  known ints : 0/0, 0/0, 0/0                        │ own finds : 0         │
 │  dictionary : 0/0, 0/0, 0/0, 0/0                   │  imported : 4         │
-│havoc/splice : 0/514k, 0/992k                       │ stability : 100.00%   │
+│havoc/splice : 0/514k, 0/992k                       │ stability : 97.42%   │
 │py/custom/rq : unused, unused, unused, unused       ├───────────────────────┘
 │    trim/eff : disabled, n/a                        │          [cpu023: 51%]
 └─ strategy: explore ────────── state: started :-) ──┘
@@ -217,6 +224,7 @@ mod tests {
         assert_eq!(properties.last_new_find, "0 days, 0 hrs, 2 min, 49 sec");
         assert_eq!(properties.last_saved_crash, "none seen yet");
         assert_eq!(properties.corpus_count, 5);
+        assert_eq!(properties.stability, 0.9742000000000001);
 
         Ok(())
     }

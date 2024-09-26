@@ -3,11 +3,9 @@ use crate::cli::config::{
     PhinkFiles,
 };
 use anyhow::bail;
-use chrono::Utc;
 use std::{
     fs,
     path::PathBuf,
-    slice::Iter,
     time::UNIX_EPOCH,
 };
 
@@ -55,23 +53,49 @@ impl CorpusWatcher {
         self.data().iter().map(|entry| (entry.x, entry.y)).collect()
     }
 
+    // pub fn data(&mut self) -> Vec<PlotEntry> {
+    //     let mut data: Vec<PlotEntry> = Vec::new();
+    //     if let Ok(entries) = fs::read_dir(&self.corpus_folder) {
+    //         let entries: Vec<_> = entries.filter_map(Result::ok).collect();
+    //         for (i, entry) in entries.into_iter().enumerate() {
+    //             if let Ok(metadata) = entry.metadata() {
+    //                 if let Ok(created_time) = metadata.created() {
+    //                     if let Ok(duration_since_epoch) = created_time.duration_since(UNIX_EPOCH)
+    // {                         // println!("{:?}", entry.path());
+    //                         data.push(PlotEntry::new(
+    //                             duration_since_epoch.as_millis_f64(),
+    //                             i as f64,
+    //                         ));
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     data.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+    //     data
+    // }
     pub fn data(&mut self) -> Vec<PlotEntry> {
         let mut data: Vec<PlotEntry> = Vec::new();
         if let Ok(entries) = fs::read_dir(&self.corpus_folder) {
-            let entries: Vec<_> = entries.filter_map(Result::ok).collect();
-            let count = entries.len() as f64;
-            for entry in entries {
-                if let Ok(metadata) = entry.metadata() {
-                    if let Ok(created_time) = metadata.created() {
-                        if let Ok(duration_since_epoch) = created_time.duration_since(UNIX_EPOCH) {
-                            let x = duration_since_epoch.as_secs() as f64;
-                            data.push(PlotEntry::new(x, count));
-                        }
-                    }
-                }
+            let mut entries: Vec<_> = entries.filter_map(Result::ok).collect();
+
+            // Sort entries by their creation time
+            entries.sort_by_key(|entry| entry.metadata().unwrap().created().unwrap());
+
+            for (i, entry) in entries.into_iter().enumerate() {
+                let x = entry
+                    .metadata()
+                    .unwrap()
+                    .created()
+                    .unwrap()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs_f64();
+
+                data.push(PlotEntry::new(x, i as f64));
             }
         }
-        data.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
+
         data
     }
 }
@@ -127,7 +151,7 @@ mod tests {
         sleep(Duration::from_secs(1)); // Sleep to ensure different timestamp
         let data_after_one_file = watcher.data();
         assert_eq!(data_after_one_file.len(), 1217);
-        assert_eq!(data_after_one_file.first().unwrap().y, 1217f64); // One file, so y should be 1
+        assert_eq!(data_after_one_file.get(3).unwrap().y, 3f64); // One file, so y should be 1
 
         // Add another file and check again
         let mut temp_file = NamedTempFile::new_in(corpus_path.clone())?;
@@ -136,12 +160,12 @@ mod tests {
         sleep(Duration::from_secs(1)); // Sleep to ensure different timestamp
         let data_after_one_file = watcher.data();
         assert_eq!(data_after_one_file.len(), 1218);
-        assert_eq!(data_after_one_file.get(2).unwrap().y, 1218f64); // Two files, so y should be 2
+        assert_eq!(data_after_one_file.get(2).unwrap().y, 2f64); // Two files, so y should be 2
 
         // Check that x values (timestamps) are increasing
         let second = data_after_one_file.get(40).unwrap().x; // we do 40 because if we take 2, it'll have the same timestamp
         let first = data_after_one_file.first().unwrap().x;
-        // println!("second: {} & first: {}", second, first);
+        println!("second: {} & first: {}", second, first);
         assert!(second > first);
         Ok(())
     }
