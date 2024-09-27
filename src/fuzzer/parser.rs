@@ -13,6 +13,10 @@ use crate::{
 use contract_transcode::Value;
 use serde_derive::Serialize;
 use sp_core::crypto::AccountId32;
+use std::fmt::{
+    Display,
+    Formatter,
+};
 use OriginFuzzingOption::{
     DisableOriginFuzzing,
     EnableOriginFuzzing,
@@ -61,6 +65,12 @@ impl Message {
                 String::new()
             }
         )
+    }
+}
+
+impl Display for Message {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.message_metadata.to_string().as_str())
     }
 }
 

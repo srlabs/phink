@@ -10,7 +10,10 @@ use crate::cli::{
         AFL_FORKSRV_INIT_TMOUT,
     },
 };
-use anyhow::Context;
+use anyhow::{
+    bail,
+    Context,
+};
 use std::{
     process::{
         Child,
@@ -19,6 +22,11 @@ use std::{
     },
     sync::mpsc,
     thread,
+    thread::sleep,
+    time::{
+        Duration,
+        Instant,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -73,10 +81,23 @@ impl CustomManager {
 
         let child: Child = rx.recv()??;
 
-        let mut ratatui =
-            CustomUI::new(&cloned_config).context("Couldn't create the custom UI ")?;
+        let mut ratatui = CustomUI::new(&cloned_config);
+        let start_time = Instant::now();
 
-        ratatui.initialize_tui(child)?;
+        loop {
+            if start_time.elapsed() > Duration::new(30, 0) {
+                bail!("Couldn't instantiate the custom UI within 30 seconds...");
+            }
+            if ratatui.is_err() {
+                println!("Waiting for AFL++ to finish the dry run ");
+                ratatui = CustomUI::new(&cloned_config);
+                sleep(Duration::from_millis(100));
+            } else {
+                break;
+            }
+        }
+
+        ratatui.unwrap().initialize_tui(child)?;
         Ok(())
     }
 }

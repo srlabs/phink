@@ -30,6 +30,7 @@ use ratatui::{
         Rect,
     },
     style::{
+        palette::tailwind,
         Color,
         Modifier,
         Style,
@@ -40,10 +41,13 @@ use ratatui::{
         Span,
     },
     widgets::{
+        block::Title,
         Block,
         Borders,
         Gauge,
+        Padding,
         Paragraph,
+        Sparkline,
     },
     Frame,
 };
@@ -59,12 +63,14 @@ use std::{
     },
     time::Duration,
 };
+use tailwind::SLATE;
 
 #[derive(Clone, Debug)]
 pub struct CustomUI {
     ziggy_config: ZiggyConfig,
     afl_dashboard: AFLDashboard,
     corpus_watcher: CorpusWatcher,
+    fuzzing_speed: Vec<u64>,
 }
 
 impl CustomUI {
@@ -77,6 +83,7 @@ impl CustomUI {
                 .context("Couldn't create AFL dashboard")?,
             corpus_watcher: CorpusWatcher::from_output(output)
                 .context("Couldn't create the corpus watcher")?,
+            fuzzing_speed: vec![],
         })
     }
 
@@ -144,10 +151,11 @@ impl CustomUI {
         f.render_widget(title, area);
     }
 
-    fn render_stats(&self, f: &mut Frame, area: Rect) {
+    fn render_stats(&mut self, f: &mut Frame, area: Rect) {
         let data = self.afl_dashboard.read_properties();
-
         if let Ok(afl) = data {
+            self.fuzzing_speed.push(afl.exec_speed.into());
+
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -164,7 +172,7 @@ impl CustomUI {
                 .split(chunks[1]);
 
             self.stats_left(f, afl.borrow(), left_chunks[0]);
-            self.metrics_right(f, afl.borrow(), right_chunk[0]);
+            self.speed_right(f, right_chunk[0]);
         }
     }
 
@@ -174,6 +182,7 @@ impl CustomUI {
             .margin(1)
             .constraints([Constraint::Percentage(70), Constraint::Min(1)].as_ref())
             .split(area);
+        let crash_style = Self::if_crash(data);
 
         let paragraph = Paragraph::new(Vec::from([
             Line::from(vec![
@@ -197,45 +206,6 @@ impl CustomUI {
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
-        ]))
-        .block(Block::default().borders(Borders::ALL).title("Statistics"));
-
-        frame.render_widget(paragraph, chunks[0]);
-
-        self.create_stability_display(frame, chunks[1], data);
-    }
-
-    fn create_stability_display(&self, frame: &mut Frame, area: Rect, data: &AFLProperties) {
-        let label = format!("{:.2}%", data.stability * 100.0);
-        let gauge = Gauge::default()
-            .gauge_style(Style::default().fg(Color::DarkGray).bg(Color::White))
-            .use_unicode(true)
-            .label(label)
-            .bold()
-            .ratio(data.stability);
-
-        let block = Block::default()
-            .title("System Stability")
-            .borders(Borders::ALL)
-            .style(Style::default().fg(Color::LightCyan).bg(Color::Black));
-
-        let paragraph = Paragraph::new(vec![Line::raw("Fuzzing stability")])
-            .block(block)
-            .wrap(ratatui::widgets::Wrap { trim: true });
-
-        frame.render_widget(paragraph, area);
-        frame.render_widget(gauge, area);
-    }
-    fn metrics_right(&self, frame: &mut Frame, data: &AFLProperties, area: Rect) {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .margin(1)
-            .constraints([Constraint::Percentage(100)].as_ref())
-            .split(area);
-
-        let crash_style = Self::if_crash(data);
-
-        let paragraph = Paragraph::new(Vec::from([
             Line::from(vec![
                 Span::raw("Corpus count: "),
                 Span::styled(
@@ -252,9 +222,28 @@ impl CustomUI {
                 ),
             ]),
         ]))
-        .block(Block::default().borders(Borders::ALL).title("Metrics"));
+        .block(Block::default().borders(Borders::ALL).title("Statistics"));
 
         frame.render_widget(paragraph, chunks[0]);
+    }
+
+    fn speed_right(&self, frame: &mut Frame, area: Rect) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([Constraint::Percentage(90)].as_ref())
+            .split(area);
+
+        let sparkline = Sparkline::default()
+            .block(
+                Block::new()
+                    .borders(Borders::LEFT | Borders::RIGHT)
+                    .title("Execution speed evolution"),
+            )
+            .data(&self.fuzzing_speed)
+            .style(Style::default().fg(Color::Red));
+
+        frame.render_widget(sparkline, chunks[0]);
     }
 
     fn if_crash(data: &AFLProperties) -> Span {
@@ -294,8 +283,7 @@ impl CustomUI {
         if let Some(seeds) = seed_displayer.load() {
             seed_info_text = seeds
                 .iter()
-                .enumerate()
-                .map(|(i, seed)| format!("Seed {}: {}", i + 1, seed))
+                .map(|seed| seed.to_string())
                 .collect::<Vec<String>>()
                 .join("\n");
         }

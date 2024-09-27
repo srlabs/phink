@@ -168,16 +168,16 @@ impl Fuzzer {
                 responses.push(result);
             }
         });
-        // panic!("xxxxxxxx");
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config.show_ui {
-            let mut seeder = SeedWriter::new(
+            let seeder = SeedWriter::new(
                 decoded_msgs.to_owned(),
                 coverage.to_owned(),
                 responses.clone(),
             );
-            if seeder.should_save() {
+
+            if SeedWriter::should_save() {
                 seeder.save(self.clone().ziggy_config.fuzz_output());
             }
         }
