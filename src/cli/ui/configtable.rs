@@ -130,7 +130,7 @@ impl Paint for Configuration {
                     .title("Configuration"),
             )
             .highlight_style(selected_style)
-            .widths([Constraint::Percentage(40), Constraint::Percentage(60)])
+            .widths([Constraint::Percentage(25), Constraint::Percentage(75)])
             .column_spacing(1)
             .highlight_style(Style::default().add_modifier(Modifier::BOLD))
             .highlight_symbol("> ")

@@ -27,6 +27,7 @@ use ratatui::{
         Constraint,
         Direction,
         Layout,
+        Margin,
         Rect,
     },
     style::{
@@ -36,6 +37,7 @@ use ratatui::{
         Style,
         Stylize,
     },
+    symbols,
     text::{
         Line,
         Span,
@@ -105,7 +107,7 @@ impl CustomUI {
         self.render_title(f, chunks[0]);
         self.render_stats(f, chunks[1]);
         self.render_chart_and_config(f, chunks[2]);
-        self.render_seed(f, chunks[3])?;
+        self.render_bottom(f, chunks[3])?;
         Ok(())
     }
 
@@ -231,19 +233,62 @@ impl CustomUI {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
-            .constraints([Constraint::Percentage(90)].as_ref())
+            .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
         let sparkline = Sparkline::default()
             .block(
                 Block::new()
-                    .borders(Borders::LEFT | Borders::RIGHT)
-                    .title("Execution speed evolution"),
+                    .borders(Borders::ALL)
+                    .title("Execution speed evolution (exec/s)"),
             )
             .data(&self.fuzzing_speed)
-            .style(Style::default().fg(Color::Red));
+            .style(Style::default().fg(Color::Red))
+            .bar_set(symbols::bar::NINE_LEVELS);
+
+        // Add some stats
+        let stats_chunk = chunks[0].inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        });
+        let stats = [
+            format!(
+                "Max: {:.2}",
+                self.fuzzing_speed
+                    .iter()
+                    .max_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap_or(&0)
+            ),
+            format!(
+                "Min: {:.2}",
+                self.fuzzing_speed
+                    .iter()
+                    .min_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap_or(&0)
+            ),
+            format!(
+                "Avg: {:.2}",
+                self.fuzzing_speed.iter().sum::<u64>() / self.fuzzing_speed.len() as u64
+            ),
+        ];
 
         frame.render_widget(sparkline, chunks[0]);
+        for (i, stat) in stats.iter().enumerate() {
+            let stat_layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(100)])
+                .split(Rect {
+                    x: stats_chunk.x,
+                    y: stats_chunk.y + i as u16,
+                    width: stats_chunk.width,
+                    height: 1,
+                });
+
+            frame.render_widget(
+                Paragraph::new(stat.as_str()).style(Style::default().add_modifier(Modifier::BOLD)),
+                stat_layout[0],
+            );
+        }
     }
 
     fn if_crash(data: &AFLProperties) -> Span {
@@ -276,7 +321,22 @@ impl CustomUI {
         f.render_widget(chart_manager.create_chart(), chunks[0]);
     }
 
-    fn render_seed(&self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+    fn render_bottom(&self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+        let bottom_parts = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .split(area);
+
+        let seed_info = self.display_fuzzed_seed();
+        f.render_widget(seed_info, bottom_parts[0]);
+
+        let idkyet = self.display_fuzzed_seed(); // display_idkwhat_yet();
+        f.render_widget(idkyet, bottom_parts[1]);
+
+        Ok(())
+    }
+
+    fn display_fuzzed_seed(&self) -> Paragraph {
         let seed_displayer = SeedDisplayer::new(self.clone().ziggy_config.fuzz_output());
 
         let mut seed_info_text: String = String::new();
@@ -288,16 +348,16 @@ impl CustomUI {
                 .join("\n");
         }
 
-        let seed_info = Paragraph::new(seed_info_text).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("Last fuzzed messages"),
-        );
-
-        f.render_widget(seed_info, area);
-
-        Ok(())
+        let seed_info = Paragraph::new(seed_info_text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Last fuzzed messages"),
+            )
+            .bold();
+        seed_info
     }
+
     pub fn initialize_tui(&mut self, mut child: Child) -> anyhow::Result<()> {
         let stdout = std::io::stdout();
         let backend = ratatui::backend::CrosstermBackend::new(stdout);
