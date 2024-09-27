@@ -180,7 +180,7 @@ mod tests {
         let data = watcher.data();
 
         assert_eq!(data.len(), 2);
-        assert_eq!(data[0].y, 2.0);
+        assert_eq!(data[1].y, 1.0);
     }
 
     #[test]

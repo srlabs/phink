@@ -15,25 +15,6 @@ use crate::{
 };
 use anyhow::Context;
 use frame_support::weights::Weight;
-use ratatui::{
-    layout::Rect,
-    style::{
-        Color,
-        Modifier,
-        Style,
-    },
-    text::{
-        Line,
-        Span,
-    },
-    widgets::{
-        Block,
-        Borders,
-        List,
-        ListItem,
-    },
-    Frame,
-};
 use serde_derive::{
     Deserialize,
     Serialize,
@@ -182,85 +163,6 @@ impl TryFrom<&PathBuf> for Configuration {
 }
 
 impl Configuration {
-    pub fn render_config(&self, f: &mut Frame, area: Rect) {
-        // Helper function to create list items for optional fields
-        fn format_option<'a, T: std::fmt::Debug>(
-            label: &'a str,
-            option: &'a Option<T>,
-        ) -> ListItem<'a> {
-            let opt = format!("{:?}", option)
-                .replace("Some", "")
-                .trim_start_matches('(')
-                .trim_end_matches(')')
-                .to_string();
-
-            let opt_2 = opt
-                .trim_start_matches("\"")
-                .trim_end_matches("\"")
-                .to_string();
-
-            ListItem::new(Line::from(vec![
-                Span::raw(format!("{}: ", label)),
-                Span::styled(opt_2, Style::default().fg(Color::Yellow)),
-            ]))
-        }
-
-        let items = vec![
-            format_option("\nCores used", &self.cores),
-            ListItem::new(Line::from(vec![
-                Span::raw("Using Honggfuzz: "),
-                Span::styled(
-                    format!("{}", self.use_honggfuzz),
-                    Style::default().fg(Color::Yellow),
-                ),
-            ])),
-            format_option("Deployer address", &self.deployer_address),
-            format_option("Max messages per exec", &self.max_messages_per_exec),
-            format_option("Report path", &self.report_path),
-            ListItem::new(Line::from(vec![
-                Span::raw("Fuzzing origin: "),
-                Span::styled(
-                    format!("{}", self.fuzz_origin),
-                    Style::default().fg(Color::Yellow),
-                ),
-            ])),
-            format_option("Default gas limit", &self.default_gas_limit),
-            format_option("Storage deposit limit", &self.storage_deposit_limit),
-            format_option("Instantiate initial value", &self.instantiate_initial_value),
-            format_option("Constructor payload", &self.constructor_payload),
-            ListItem::new(Line::from(vec![
-                Span::raw("Verbose mode: "),
-                Span::styled(
-                    format!("{}", self.verbose),
-                    Style::default().fg(Color::Yellow),
-                ),
-            ])),
-            format_option(
-                "Path to instrumented contract",
-                &self.instrumented_contract_path,
-            ),
-            format_option("Fuzz output folder", &self.fuzz_output),
-            ListItem::new(Line::from(vec![
-                Span::raw("Custom UI: "),
-                Span::styled(
-                    format!("{}", self.show_ui),
-                    Style::default().fg(Color::Yellow),
-                ),
-            ])),
-        ];
-
-        let config_list = List::new(items)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Configuration"),
-            )
-            .style(Style::default().fg(Color::White))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_symbol("> ");
-
-        f.render_widget(config_list, area);
-    }
     pub fn should_fuzz_origin(&self) -> OriginFuzzingOption {
         match self.fuzz_origin {
             true => EnableOriginFuzzing,

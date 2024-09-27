@@ -1,5 +1,9 @@
+use chrono::DateTime;
 use ratatui::{
-    layout::Constraint,
+    layout::{
+        Alignment,
+        Constraint,
+    },
     style::{
         Color,
         Style,
@@ -24,10 +28,8 @@ pub struct ChartManager<'a> {
 }
 
 impl<'a> ChartManager<'a> {
-    pub fn new(corpus_counter: &'a [(f64, f64)]) -> Self {
-        Self {
-            f64_array: corpus_counter,
-        }
+    pub fn new(f64_array: &'a [(f64, f64)]) -> Self {
+        Self { f64_array }
     }
 
     fn get_x_values(&self) -> Vec<f64> {
@@ -45,45 +47,49 @@ impl<'a> ChartManager<'a> {
     fn find_min(values: &[f64]) -> f64 {
         values.iter().cloned().fold(f64::INFINITY, f64::min)
     }
-
-    pub fn get_first_x(&self) -> String {
+    fn timestamp_to_str(unix_timestamp: f64) -> String {
+        DateTime::from_timestamp(unix_timestamp as i64, 0)
+            .unwrap()
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string()
+    }
+    pub fn get_first_x(&self) -> f64 {
         let x_values = self.get_x_values();
-        format!("{:.1}", Self::find_min(&x_values))
+        Self::find_min(&x_values)
     }
 
-    pub fn get_middle_x(&self) -> String {
+    pub fn get_middle_x(&self) -> f64 {
         let x_values = self.get_x_values();
         let min_x = Self::find_min(&x_values);
         let max_x = Self::find_max(&x_values);
-        format!("{:.1}", (min_x + max_x) / 2.0)
+        (min_x + max_x) / 2.0
     }
 
-    pub fn get_max_x(&self) -> String {
+    pub fn get_max_x(&self) -> f64 {
         let x_values = self.get_x_values();
-        format!("{:.1}", Self::find_max(&x_values))
+        Self::find_max(&x_values)
     }
 
-    pub fn get_first_y(&self) -> String {
+    pub fn get_first_y(&self) -> f64 {
         let y_values = self.get_y_values();
-        format!("{:.1}", Self::find_min(&y_values))
+        Self::find_min(&y_values)
     }
 
-    pub fn get_middle_y(&self) -> String {
+    pub fn get_middle_y(&self) -> f64 {
         let y_values = self.get_y_values();
         let min_y = Self::find_min(&y_values);
         let max_y = Self::find_max(&y_values);
-        format!("{:.1}", (min_y + max_y) / 2.0)
+        (min_y + max_y) / 2.0
     }
 
-    fn get_max_y(&self) -> String {
+    fn get_max_y(&self) -> f64 {
         let y_values = self.get_y_values();
-        format!("{:.1}", Self::find_max(&y_values))
+        Self::find_max(&y_values)
     }
 
     pub fn create_chart(&self) -> Chart {
         let dataset = vec![Dataset::default()
-            .name("Number of entries")
-            .marker(Marker::Dot)
+            .marker(Marker::Braille)
             .graph_type(GraphType::Line)
             .style(Style::default().fg(Color::Cyan))
             .data(self.f64_array)];
@@ -93,27 +99,29 @@ impl<'a> ChartManager<'a> {
                 Block::bordered().title(
                     Title::default()
                         .content("Corpus evolution over time".cyan().bold())
-                        .alignment(ratatui::layout::Alignment::Center),
+                        .alignment(Alignment::Center),
                 ),
             )
             .x_axis(
                 Axis::default()
                     .title("Time")
                     .style(Style::default().fg(Color::Gray))
+                    .bounds([self.get_first_x(), self.get_max_x()])
                     .labels([
-                        self.get_first_x().bold(),
-                        Span::from(self.get_middle_x()),
-                        self.get_max_x().bold(),
+                        Self::timestamp_to_str(self.get_first_x()).bold(),
+                        Span::from(Self::timestamp_to_str(self.get_middle_x())),
+                        Self::timestamp_to_str(self.get_max_x()).bold(),
                     ]),
             )
             .y_axis(
                 Axis::default()
                     .title("Number of entries")
                     .style(Style::default().fg(Color::Gray))
+                    .bounds([self.get_first_y(), self.get_max_y()])
                     .labels([
-                        self.get_first_y().bold(),
-                        Span::from(self.get_middle_y()),
-                        self.get_max_y().bold(),
+                        self.get_first_y().to_string().bold(),
+                        Span::from(self.get_middle_y().to_string()),
+                        self.get_max_y().to_string().bold(),
                     ]),
             )
             .legend_position(Some(LegendPosition::TopLeft))

@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use crate::cli::{
     ui::{
         chart::ChartManager,
@@ -17,7 +15,6 @@ use ratatui::{
     crossterm::event::{
         self,
         Event,
-        KeyCode,
     },
     layout::{
         Alignment,
@@ -32,27 +29,16 @@ use ratatui::{
         Style,
         Stylize,
     },
-    symbols::{
-        self,
-        Marker,
-    },
     text::{
         Line,
         Span,
     },
     widgets::{
-        block::Title,
-        Axis,
         Block,
         Borders,
-        Chart,
-        Dataset,
         Gauge,
-        GraphType,
-        LegendPosition,
         Paragraph,
     },
-    DefaultTerminal,
     Frame,
 };
 use std::{
@@ -86,8 +72,9 @@ impl CustomUI {
             .constraints(
                 [
                     Constraint::Length(10),
-                    Constraint::Length(8),
-                    Constraint::Min(8),
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(30),
                 ]
                 .as_ref(),
             )
@@ -96,49 +83,21 @@ impl CustomUI {
         self.clone().render_title(f, chunks[0]);
         self.clone().render_stats(f, chunks[1]);
         self.clone().render_chart_and_config(f, chunks[2]);
+        self.clone().render_seed(f, chunks[3]);
     }
 
     fn render_chart_and_config(self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
+            .margin(1)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(area);
 
         self.clone().render_chart(f, chunks[0]);
+        // self.clone().render_seed(f, chunks[0]);
         self.ziggy_config.config.render_config(f, chunks[1]);
-        // self.render_config(f, chunks[1]);
     }
 
-    // fn render_config(&self, f: &mut Frame, area: Rect) {
-    //     let item = ListItem::new(Line::from(vec![
-    //         Span::raw("Cores: "),
-    //         Span::styled(
-    //             format!("{:?}", self.ziggy_config.config.cores),
-    //             Style::default().fg(Color::Yellow),
-    //         ),
-    //     ]));
-    //
-    //     let item2 = ListItem::new(Line::from(vec![
-    //         Span::raw("Use Honggfuzz: "),
-    //         Span::styled(
-    //             format!("{}", self.ziggy_config.config.use_honggfuzz),
-    //             Style::default().fg(Color::Yellow),
-    //         ),
-    //     ]));
-    //     let items: Vec<ListItem> = vec![item, item2];
-    //
-    //     let config_list = List::new(items)
-    //         .block(
-    //             Block::default()
-    //                 .borders(Borders::ALL)
-    //                 .title("Configuration"),
-    //         )
-    //         .style(Style::default().fg(Color::White))
-    //         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-    //         .highlight_symbol("> ");
-    //
-    //     f.render_widget(config_list, area);
-    // }
     fn render_octopus(self, f: &mut Frame, area: Rect) {
         let ascii_art = r#"
 ,---.
@@ -154,7 +113,7 @@ impl CustomUI {
                     .fg(Color::Magenta)
                     .add_modifier(Modifier::BOLD),
             )
-            .alignment(ratatui::layout::Alignment::Center);
+            .alignment(Alignment::Center);
 
         f.render_widget(octopus, area);
     }
@@ -166,7 +125,7 @@ impl CustomUI {
                     .fg(Color::Magenta)
                     .add_modifier(Modifier::BOLD),
             )
-            .alignment(ratatui::layout::Alignment::Center);
+            .alignment(Alignment::Center);
         f.render_widget(title, area);
     }
 
@@ -183,9 +142,13 @@ impl CustomUI {
             .constraints([Constraint::Min(0)].as_ref())
             .split(chunks[0]);
 
-        let right_stats = self.clone().metrics_right(&data);
+        let right_chunk = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(0)].as_ref())
+            .split(chunks[1]);
+
         self.stats_left(f, data.borrow(), left_chunks[0]);
-        f.render_widget(right_stats, chunks[1]);
+        self.metrics_right(f, data.borrow(), right_chunk[0]);
     }
 
     fn stats_left(&self, frame: &mut Frame, data: &AFLProperties, area: Rect) {
@@ -223,18 +186,50 @@ impl CustomUI {
         frame.render_widget(paragraph, chunks[0]);
 
         // Create the gauge for stability
-        let label = format!("Stability: {:.2}%", data.stability * 100.0);
+        // let label = format!("Stability: {:.2}%", data.stability * 100.0);
+        // let gauge = Gauge::default()
+        //     .gauge_style(Style::default().fg(Color::DarkGray).bg(Color::White))
+        //     .use_unicode(true)
+        //     .label(label)
+        //     .ratio(data.stability);
+        //
+        // frame.render_widget(gauge, chunks[1]);
+
+        self.create_stability_display(frame, chunks[1], data);
+    }
+
+    fn create_stability_display(&self, frame: &mut Frame, area: Rect, data: &AFLProperties) {
+        let label = format!("{:.2}%", data.stability * 100.0);
         let gauge = Gauge::default()
             .gauge_style(Style::default().fg(Color::DarkGray).bg(Color::White))
             .use_unicode(true)
             .label(label)
+            .bold()
             .ratio(data.stability);
 
-        frame.render_widget(gauge, chunks[1]);
-    }
+        // Create a styled block with borders
+        let block = Block::default()
+            .title("System Stability")
+            .borders(Borders::ALL)
+            .style(Style::default().fg(Color::LightCyan).bg(Color::Black));
 
-    fn metrics_right(self, data: &AFLProperties) -> Paragraph {
-        Paragraph::new(Vec::from([
+        // Create a paragraph with the gauge inside
+        let paragraph = Paragraph::new(vec![Line::raw("Fuzzing stability")])
+            .block(block)
+            .wrap(ratatui::widgets::Wrap { trim: true });
+
+        // Render the paragraph with the gauge inside
+        frame.render_widget(paragraph, area);
+        frame.render_widget(gauge, area);
+    }
+    fn metrics_right(&self, frame: &mut Frame, data: &AFLProperties, area: Rect) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([Constraint::Percentage(100)].as_ref())
+            .split(area);
+
+        let paragraph = Paragraph::new(Vec::from([
             Line::from(vec![
                 Span::raw("Corpus count: "),
                 Span::styled(
@@ -252,32 +247,34 @@ impl CustomUI {
             Line::from(vec![
                 Span::raw("Execution speed: "),
                 Span::styled(
-                    format!("{} exec/sec", data.exec_speed),
+                    format!("{} execs/sec", data.exec_speed),
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
         ]))
-        .block(Block::default().borders(Borders::ALL).title("Metrics"))
+        .block(Block::default().borders(Borders::ALL).title("Metrics"));
+
+        frame.render_widget(paragraph, chunks[0]);
     }
 
     fn render_chart(mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Percentage(70), Constraint::Percentage(30)].as_ref())
+            .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
         let corpus_counter: &[(f64, f64)] = &self.corpus_watcher.as_tuple_slice();
 
-        // println!("{:?}", corpus_counter);
-
         let chart_manager = ChartManager::new(corpus_counter);
         f.render_widget(chart_manager.create_chart(), chunks[0]);
+    }
 
+    fn render_seed(self, f: &mut Frame, area: Rect) {
         let seed_info =
             Paragraph::new(format!("Current Seed: {}", "currentseed")) // todo
                 .block(Block::default().borders(Borders::ALL).title("Current Seed"));
 
-        f.render_widget(seed_info, chunks[1]);
+        f.render_widget(seed_info, area);
     }
     pub fn initialize_tui(&self) -> anyhow::Result<()> {
         let stdout = std::io::stdout();

@@ -44,7 +44,7 @@ use std::{
     path::PathBuf,
 };
 
-pub const MAX_MESSAGES_PER_EXEC: usize = 1; // One execution contains maximum 4 messages.
+pub const MAX_MESSAGES_PER_EXEC: usize = 1; // One execution contains maximum 1 message.
 
 pub enum FuzzingMode {
     ExecuteOneInput(PathBuf),
