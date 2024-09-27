@@ -17,7 +17,6 @@ use crate::cli::{
     ziggy::ZiggyConfig,
 };
 use anyhow::Context;
-use crossterm::event::KeyCode;
 use ratatui::{
     crossterm::event::{
         self,
@@ -51,8 +50,13 @@ use ratatui::{
 use std::{
     borrow::Borrow,
     process::Child,
-    sync::mpsc,
-    thread,
+    sync::{
+        atomic::{
+            AtomicBool,
+            Ordering,
+        },
+        Arc,
+    },
     time::Duration,
 };
 
@@ -76,7 +80,7 @@ impl CustomUI {
         })
     }
 
-    fn ui(self, f: &mut Frame) -> anyhow::Result<()> {
+    fn ui(&mut self, f: &mut Frame) -> anyhow::Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
@@ -91,25 +95,25 @@ impl CustomUI {
             )
             .split(f.area());
 
-        self.clone().render_title(f, chunks[0]);
-        self.clone().render_stats(f, chunks[1]);
-        self.clone().render_chart_and_config(f, chunks[2]);
-        self.clone().render_seed(f, chunks[3])?;
+        self.render_title(f, chunks[0]);
+        self.render_stats(f, chunks[1]);
+        self.render_chart_and_config(f, chunks[2]);
+        self.render_seed(f, chunks[3])?;
         Ok(())
     }
 
-    fn render_chart_and_config(self, f: &mut Frame, area: Rect) {
+    fn render_chart_and_config(&mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(area);
 
-        self.clone().render_chart(f, chunks[0]);
+        self.render_chart(f, chunks[0]);
         self.ziggy_config.config.render(f, chunks[1]);
     }
 
-    fn render_octopus(self, f: &mut Frame, area: Rect) {
+    fn render_octopus(&self, f: &mut Frame, area: Rect) {
         let ascii_art = r#"
 ,---.
 ( @ @ )
@@ -128,7 +132,7 @@ impl CustomUI {
 
         f.render_widget(octopus, area);
     }
-    fn render_title(self, f: &mut Frame, area: Rect) {
+    fn render_title(&self, f: &mut Frame, area: Rect) {
         self.render_octopus(f, area);
         let title = Paragraph::new("Phink Fuzzing Dashboard")
             .style(
@@ -140,7 +144,7 @@ impl CustomUI {
         f.render_widget(title, area);
     }
 
-    fn render_stats(self, f: &mut Frame, area: Rect) {
+    fn render_stats(&self, f: &mut Frame, area: Rect) {
         let data = self.afl_dashboard.read_properties();
 
         if let Ok(afl) = data {
@@ -271,7 +275,7 @@ impl CustomUI {
         crash_style
     }
 
-    fn render_chart(mut self, f: &mut Frame, area: Rect) {
+    fn render_chart(&mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Percentage(100)].as_ref())
@@ -283,8 +287,8 @@ impl CustomUI {
         f.render_widget(chart_manager.create_chart(), chunks[0]);
     }
 
-    fn render_seed(self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
-        let seed_displayer = SeedDisplayer::new(self.ziggy_config.fuzz_output());
+    fn render_seed(&self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+        let seed_displayer = SeedDisplayer::new(self.clone().ziggy_config.fuzz_output());
 
         let mut seed_info_text: String = String::new();
         if let Some(seeds) = seed_displayer.load() {
@@ -306,45 +310,44 @@ impl CustomUI {
 
         Ok(())
     }
-    pub fn initialize_tui(&self, mut child: Child) -> anyhow::Result<()> {
+    pub fn initialize_tui(&mut self, mut child: Child) -> anyhow::Result<()> {
         let stdout = std::io::stdout();
         let backend = ratatui::backend::CrosstermBackend::new(stdout);
         let mut terminal = ratatui::Terminal::new(backend)?;
 
         terminal.clear()?;
 
-        let (tx, rx) = mpsc::channel();
+        let running = Arc::new(AtomicBool::new(true));
+        let r = running.clone();
 
-        let input_handle = thread::spawn(move || {
-            loop {
-                if event::poll(Duration::from_millis(100)).unwrap() {
-                    if let Event::Key(key) = event::read().unwrap() {
-                        // If we CTRL+C, we send the exit signal
-                        if key.code == KeyCode::Char('c')
-                            && key.modifiers.contains(event::KeyModifiers::CONTROL)
-                        {
-                            tx.send(()).unwrap();
-                            break;
-                        }
-                    }
-                }
-            }
-        });
+        ctrlc::set_handler(move || {
+            r.store(false, Ordering::SeqCst);
+        })?;
 
-        loop {
-            if rx.try_recv().is_ok() {
-                break;
-            }
+        while running.load(Ordering::SeqCst) {
             terminal.draw(|f| {
-                if let Err(err) = self.clone().ui(f) {
+                if let Err(err) = self.ui(f) {
                     eprintln!("{:?}", err);
                 }
             })?;
-            thread::sleep(Duration::from_millis(Self::REFRESH_MS));
-        }
 
+            if event::poll(Duration::from_millis(Self::REFRESH_MS))? {
+                if let Event::Key(key) = crossterm::event::read()? {
+                    if key.kind == event::KeyEventKind::Press
+                        && key.code == event::KeyCode::Char('q')
+                    {
+                        let _ = child.kill();
+                        break;
+                    }
+                }
+            }
+        }
         let _ = child.kill();
-        input_handle.join().unwrap();
+
+        println!(
+            "👋 It was nice fuzzing with you. Killing PID {}. Bye bye! ",
+            child.id()
+        );
 
         terminal.clear()?;
         Ok(())

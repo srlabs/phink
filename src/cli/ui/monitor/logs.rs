@@ -1,8 +1,5 @@
 use crate::cli::{
-    config::{
-        PFiles,
-        PhinkFiles,
-    },
+    config::PFiles,
     ui::traits::FromPath,
 };
 use anyhow::bail;

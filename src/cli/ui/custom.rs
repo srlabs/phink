@@ -71,11 +71,12 @@ impl CustomManager {
             tx.send(fuzzer_pid).unwrap();
         });
 
-        let pid: Child = rx.recv()??;
+        let child: Child = rx.recv()??;
 
-        let ratatui = CustomUI::new(&cloned_config).context("Couldn't create the custom UI ")?;
+        let mut ratatui =
+            CustomUI::new(&cloned_config).context("Couldn't create the custom UI ")?;
 
-        ratatui.initialize_tui(pid)?;
+        ratatui.initialize_tui(child)?;
         Ok(())
     }
 }

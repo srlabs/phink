@@ -66,7 +66,8 @@ quote = { version = "1.0.36" }
 proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
 rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
-regex = "1.10.4"
+ctrlc = { version = "3.4.5" }
+regex = { version = "1.10.4" }
 ratatui = { version = "0.28.0", features = ["all-widgets"] }
 crossterm = { version = "0.28.1" }
 chrono = { version = "0.4" }

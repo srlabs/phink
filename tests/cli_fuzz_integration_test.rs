@@ -24,7 +24,10 @@ mod tests {
         instrumenter::path::InstrumentedPath,
     };
 
-    use phink_lib::cli::ui::monitor::logs::AFLDashboard;
+    use phink_lib::cli::ui::{
+        monitor::logs::AFLDashboard,
+        traits::FromPath,
+    };
     use std::{
         fs,
         time::Duration,
