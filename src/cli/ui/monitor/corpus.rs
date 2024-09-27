@@ -53,27 +53,6 @@ impl CorpusWatcher {
         self.data().iter().map(|entry| (entry.x, entry.y)).collect()
     }
 
-    // pub fn data(&mut self) -> Vec<PlotEntry> {
-    //     let mut data: Vec<PlotEntry> = Vec::new();
-    //     if let Ok(entries) = fs::read_dir(&self.corpus_folder) {
-    //         let entries: Vec<_> = entries.filter_map(Result::ok).collect();
-    //         for (i, entry) in entries.into_iter().enumerate() {
-    //             if let Ok(metadata) = entry.metadata() {
-    //                 if let Ok(created_time) = metadata.created() {
-    //                     if let Ok(duration_since_epoch) = created_time.duration_since(UNIX_EPOCH)
-    // {                         // println!("{:?}", entry.path());
-    //                         data.push(PlotEntry::new(
-    //                             duration_since_epoch.as_millis_f64(),
-    //                             i as f64,
-    //                         ));
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     data.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap());
-    //     data
-    // }
     pub fn data(&mut self) -> Vec<PlotEntry> {
         let mut data: Vec<PlotEntry> = Vec::new();
         if let Ok(entries) = fs::read_dir(&self.corpus_folder) {

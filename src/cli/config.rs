@@ -40,10 +40,6 @@ use serde_derive::{
 };
 use sp_core::crypto::AccountId32;
 use std::{
-    fmt::{
-        Display,
-        Formatter,
-    },
     fs,
     fs::File,
     io::Write,
@@ -192,50 +188,60 @@ impl Configuration {
             label: &'a str,
             option: &'a Option<T>,
         ) -> ListItem<'a> {
-            let opt = format!("{:?}", option).replace("Some", "");
+            let opt = format!("{:?}", option)
+                .replace("Some", "")
+                .trim_start_matches('(')
+                .trim_end_matches(')')
+                .to_string();
+
+            let opt_2 = opt
+                .trim_start_matches("\"")
+                .trim_end_matches("\"")
+                .to_string();
+
             ListItem::new(Line::from(vec![
                 Span::raw(format!("{}: ", label)),
-                Span::styled(opt, Style::default().fg(Color::Yellow)),
+                Span::styled(opt_2, Style::default().fg(Color::Yellow)),
             ]))
         }
 
         let items = vec![
-            format_option("\nCores", &self.cores),
+            format_option("\nCores used", &self.cores),
             ListItem::new(Line::from(vec![
-                Span::raw("Use Honggfuzz: "),
+                Span::raw("Using Honggfuzz: "),
                 Span::styled(
                     format!("{}", self.use_honggfuzz),
                     Style::default().fg(Color::Yellow),
                 ),
             ])),
-            format_option("Deployer Address", &self.deployer_address),
-            format_option("Max Messages Per Exec", &self.max_messages_per_exec),
-            format_option("Report Path", &self.report_path),
+            format_option("Deployer address", &self.deployer_address),
+            format_option("Max messages per exec", &self.max_messages_per_exec),
+            format_option("Report path", &self.report_path),
             ListItem::new(Line::from(vec![
-                Span::raw("Fuzz Origin: "),
+                Span::raw("Fuzzing origin: "),
                 Span::styled(
                     format!("{}", self.fuzz_origin),
                     Style::default().fg(Color::Yellow),
                 ),
             ])),
-            format_option("Default Gas Limit", &self.default_gas_limit),
-            format_option("Storage Deposit Limit", &self.storage_deposit_limit),
-            format_option("Instantiate Initial Value", &self.instantiate_initial_value),
-            format_option("Constructor Payload", &self.constructor_payload),
+            format_option("Default gas limit", &self.default_gas_limit),
+            format_option("Storage deposit limit", &self.storage_deposit_limit),
+            format_option("Instantiate initial value", &self.instantiate_initial_value),
+            format_option("Constructor payload", &self.constructor_payload),
             ListItem::new(Line::from(vec![
-                Span::raw("Verbose: "),
+                Span::raw("Verbose mode: "),
                 Span::styled(
                     format!("{}", self.verbose),
                     Style::default().fg(Color::Yellow),
                 ),
             ])),
             format_option(
-                "Instrumented Contract Path",
+                "Path to instrumented contract",
                 &self.instrumented_contract_path,
             ),
-            format_option("Fuzz Output", &self.fuzz_output),
+            format_option("Fuzz output folder", &self.fuzz_output),
             ListItem::new(Line::from(vec![
-                Span::raw("Show UI: "),
+                Span::raw("Custom UI: "),
                 Span::styled(
                     format!("{}", self.show_ui),
                     Style::default().fg(Color::Yellow),

@@ -1,19 +1,26 @@
+use std::time::Instant;
+
 use crate::cli::{
-    ui::monitor::{
-        corpus::CorpusWatcher,
-        logs::{
-            AFLDashboard,
-            AFLProperties,
+    ui::{
+        chart::ChartManager,
+        monitor::{
+            corpus::CorpusWatcher,
+            logs::{
+                AFLDashboard,
+                AFLProperties,
+            },
         },
     },
     ziggy::ZiggyConfig,
 };
-use crossterm::{
-    event,
-    event::Event,
-};
 use ratatui::{
+    crossterm::event::{
+        self,
+        Event,
+        KeyCode,
+    },
     layout::{
+        Alignment,
         Constraint,
         Direction,
         Layout,
@@ -23,26 +30,29 @@ use ratatui::{
         Color,
         Modifier,
         Style,
+        Stylize,
     },
-    symbols,
+    symbols::{
+        self,
+        Marker,
+    },
     text::{
         Line,
         Span,
-        Text,
     },
     widgets::{
+        block::Title,
         Axis,
         Block,
         Borders,
         Chart,
         Dataset,
         Gauge,
-        LineGauge,
-        List,
-        ListItem,
+        GraphType,
+        LegendPosition,
         Paragraph,
-        Sparkline,
     },
+    DefaultTerminal,
     Frame,
 };
 use std::{
@@ -260,30 +270,8 @@ impl CustomUI {
 
         // println!("{:?}", corpus_counter);
 
-        let dataset = vec![Dataset::default()
-            .name("Executions")
-            .marker(symbols::Marker::Dot)
-            .style(Style::default().fg(Color::Cyan))
-            .data(corpus_counter)];
-
-        let chart = Chart::new(dataset)
-            .block(
-                Block::default()
-                    .title("Execution Speed Over Time")
-                    .borders(Borders::ALL),
-            )
-            .x_axis(
-                Axis::default()
-                    .title("Time")
-                    .style(Style::default().fg(Color::Gray)),
-            )
-            .y_axis(
-                Axis::default()
-                    .title("Executions/sec")
-                    .style(Style::default().fg(Color::Gray)),
-            );
-
-        f.render_widget(chart, chunks[0]);
+        let chart_manager = ChartManager::new(corpus_counter);
+        f.render_widget(chart_manager.create_chart(), chunks[0]);
 
         let seed_info =
             Paragraph::new(format!("Current Seed: {}", "currentseed")) // todo
