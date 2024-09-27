@@ -375,7 +375,7 @@ mod test {
         let constructor = "crash_with_invariant";
         let data = transcoder.encode(constructor, ["\"\""]).unwrap();
         let hex = hex::encode(data);
-        println!("{:?}", hex);
+        // println!("{:?}", hex);
     }
 
     #[test]
@@ -399,7 +399,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 1, "No messages decoded");
         assert_eq!(
@@ -441,7 +441,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 1, "No messages decoded");
         assert_eq!(
@@ -458,7 +458,7 @@ mod test {
                 .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
             assert!(hex.is_ok(), "Decoding wasn't Ok");
 
-            println!("{:?}", hex.unwrap());
+            // println!("{:?}", hex.unwrap());
         }
         Ok(())
     }
@@ -485,7 +485,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 1, "No messages decoded");
         assert_eq!(
@@ -535,7 +535,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 2, "No messages decoded");
         assert_eq!(
@@ -584,7 +584,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 2, "Tree parsed but  we put only two max");
 

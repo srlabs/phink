@@ -51,7 +51,6 @@ mod tests {
     #[test]
     fn test_display_for_default_instrumentedpath() {
         let inst = InstrumentedPath::default();
-        println!("{}", inst);
         assert_eq!(inst.to_string(), "/tmp/ink_fuzzed_1");
     }
 }

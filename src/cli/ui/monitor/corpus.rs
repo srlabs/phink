@@ -144,7 +144,7 @@ mod tests {
         // Check that x values (timestamps) are increasing
         let second = data_after_one_file.get(40).unwrap().x; // we do 40 because if we take 2, it'll have the same timestamp
         let first = data_after_one_file.first().unwrap().x;
-        println!("second: {} & first: {}", second, first);
+        // println!("second: {} & first: {}", second, first);
         assert!(second > first);
         Ok(())
     }

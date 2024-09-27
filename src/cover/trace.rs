@@ -1,6 +1,11 @@
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
+
 pub const COV_IDENTIFIER: &str = "COV=";
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct CoverageTrace(Vec<u8>);
 
 impl From<Vec<u8>> for CoverageTrace {

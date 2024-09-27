@@ -179,14 +179,17 @@ pub fn try_cleanup_instrumented(config: &Configuration) {
 /// matter
 pub fn try_cleanup_fuzzoutput(config: &Configuration) {
     let output = config.clone().fuzz_output.unwrap_or_default();
-    match fs::remove_dir_all(&output) {
-        Ok(()) => {
-            println!("Removed {}", output.display());
-        }
-        Err(_) => {
-            println!("*DIDN'T* removed {}", output.display());
-        }
-    };
+    let result = fs::remove_dir_all(&output);
+    if config.verbose {
+        match result {
+            Ok(()) => {
+                println!("Removed {}", output.display());
+            }
+            Err(_) => {
+                println!("*DIDN'T* removed {}", output.display());
+            }
+        };
+    }
 }
 
 /// Simple `phink` bin pop from cargo to instrument `contract_path`

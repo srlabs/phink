@@ -1,4 +1,7 @@
-use crate::cli::config::Configuration;
+use crate::cli::{
+    config::Configuration,
+    ui::traits::Paint,
+};
 use ratatui::{
     layout::{
         Constraint,
@@ -49,8 +52,8 @@ impl TableColors {
     }
 }
 
-impl Configuration {
-    pub fn render_config(&self, f: &mut Frame, area: Rect) {
+impl Paint for Configuration {
+    fn render(&self, f: &mut Frame, area: Rect) {
         // Helper function to format optional fields
         fn format_option<T: std::fmt::Debug>(option: &Option<T>) -> String {
             match option {

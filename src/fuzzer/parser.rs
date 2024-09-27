@@ -7,7 +7,12 @@ use crate::{
     },
     fuzzer::manager::CampaignManager,
 };
-use contract_transcode::Value;
+use contract_transcode::{
+    Map,
+    Value,
+};
+use serde::Deserializer;
+use serde_derive::Serialize;
 use OriginFuzzingOption::{
     DisableOriginFuzzing,
     EnableOriginFuzzing,
@@ -26,7 +31,7 @@ pub struct Data<'a> {
     pub max_messages_per_exec: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Message {
     pub is_payable: bool,
     pub payload: Vec<u8>,
@@ -35,13 +40,13 @@ pub struct Message {
     pub origin: Origin,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct OneInput {
     pub messages: Vec<Message>,
     pub fuzz_option: OriginFuzzingOption,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct Origin(pub u8);
 impl Default for Origin {
     fn default() -> Self {
@@ -128,10 +133,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
-                    // println!("{:?}", metadata);
-
                     input.messages.push(Message {
-                        // is_payable: manager.is_payable(&slctr),
                         is_payable: manager.database().is_payable(&slctr),
                         payload: encoded_message.into(),
                         value_token: value as u128,

@@ -4,6 +4,7 @@ use crate::{
             PFiles::CoverageTracePath,
             PhinkFiles,
         },
+        ui::seed::SeedDisplayer,
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -19,10 +20,7 @@ use crate::{
     },
     cover::coverage::InputCoverage,
     fuzzer::{
-        engine::{
-            pretty_print,
-            timestamp,
-        },
+        engine::timestamp,
         environment::EnvironmentBuilder,
         fuzz::FuzzingMode::{
             ExecuteOneInput,
@@ -171,6 +169,17 @@ impl Fuzzer {
             }
         });
 
+        if self.ziggy_config.config.show_ui {
+            let mut seeder = SeedDisplayer::new(
+                decoded_msgs.to_owned(),
+                coverage.to_owned(),
+                all_msg_responses.clone(),
+            );
+            if seeder.should_save() {
+                seeder.save(self.clone().ziggy_config.fuzz_output());
+            }
+        }
+
         all_msg_responses
     }
 
@@ -200,7 +209,7 @@ impl Fuzzer {
                 .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            pretty_print(all_msg_responses, decoded_msgs);
+            crate::fuzzer::engine::pretty_print(all_msg_responses, decoded_msgs);
         }
 
         // We now fake the coverage

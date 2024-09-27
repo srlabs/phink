@@ -102,6 +102,7 @@ impl ZiggyConfig {
     pub fn fuzz_output(self) -> PathBuf {
         self.config.fuzz_output.unwrap_or_default()
     }
+
     pub fn afl_debug<'a>(&self) -> &'a str {
         match self.config.verbose {
             true => "1",

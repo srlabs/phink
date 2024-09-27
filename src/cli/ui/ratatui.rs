@@ -8,6 +8,7 @@ use crate::cli::{
                 AFLProperties,
             },
         },
+        traits::Paint,
     },
     ziggy::ZiggyConfig,
 };
@@ -94,8 +95,7 @@ impl CustomUI {
             .split(area);
 
         self.clone().render_chart(f, chunks[0]);
-        // self.clone().render_seed(f, chunks[0]);
-        self.ziggy_config.config.render_config(f, chunks[1]);
+        self.ziggy_config.config.render(f, chunks[1]);
     }
 
     fn render_octopus(self, f: &mut Frame, area: Rect) {
@@ -184,16 +184,6 @@ impl CustomUI {
         .block(Block::default().borders(Borders::ALL).title("Statistics"));
 
         frame.render_widget(paragraph, chunks[0]);
-
-        // Create the gauge for stability
-        // let label = format!("Stability: {:.2}%", data.stability * 100.0);
-        // let gauge = Gauge::default()
-        //     .gauge_style(Style::default().fg(Color::DarkGray).bg(Color::White))
-        //     .use_unicode(true)
-        //     .label(label)
-        //     .ratio(data.stability);
-        //
-        // frame.render_widget(gauge, chunks[1]);
 
         self.create_stability_display(frame, chunks[1], data);
     }

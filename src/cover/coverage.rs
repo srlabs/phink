@@ -5,6 +5,10 @@ use crate::{
     },
     cover::trace::CoverageTrace,
 };
+use serde_derive::{
+    Deserialize,
+    Serialize,
+};
 use std::{
     collections::HashSet,
     fmt,
@@ -18,7 +22,7 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct InputCoverage {
     /// One input might contains multiple messages
     messages_coverage: Vec<MessageCoverage>,
@@ -29,7 +33,7 @@ pub struct InputCoverage {
 }
 
 /// This struct represent the coverage of one message.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MessageCoverage {
     /// A map where the key is the ID of the parsed value of COV=..., and the value is
     /// the number of times this coverage point was hit.

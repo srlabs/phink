@@ -1,7 +1,10 @@
 use crate::{
-    cli::config::OriginFuzzingOption::{
-        DisableOriginFuzzing,
-        EnableOriginFuzzing,
+    cli::{
+        config::OriginFuzzingOption::{
+            DisableOriginFuzzing,
+            EnableOriginFuzzing,
+        },
+        ui::seed::LAST_SEED_FILENAME,
     },
     contract::{
         remote::{
@@ -70,12 +73,6 @@ pub struct Configuration {
     pub show_ui: bool,
 }
 
-// impl Display for Configuration {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         write!(f)
-//     }
-// }
-
 impl Default for Configuration {
     fn default() -> Self {
         Self {
@@ -97,7 +94,7 @@ impl Default for Configuration {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum OriginFuzzingOption {
     EnableOriginFuzzing,
     #[default]
@@ -111,6 +108,7 @@ pub enum PFiles {
     DictPath,
     CorpusPath,
     AFLLog,
+    LastSeed,
 }
 #[derive(Clone, Debug)]
 pub struct PhinkFiles {
@@ -132,6 +130,12 @@ impl PhinkFiles {
             PFiles::DictPath => self.output.join(PHINK_PATH).join("selectors.dict"),
             PFiles::CorpusPath => self.output.join(PHINK_PATH).join("corpus"),
             PFiles::AFLLog => self.output.join(PHINK_PATH).join("logs").join("afl.log"),
+            PFiles::LastSeed => {
+                self.output
+                    .join(PHINK_PATH)
+                    .join("logs")
+                    .join(LAST_SEED_FILENAME)
+            }
         }
     }
 }
