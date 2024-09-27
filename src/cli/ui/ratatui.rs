@@ -8,10 +8,16 @@ use crate::cli::{
                 AFLProperties,
             },
         },
-        traits::Paint,
+        seed::SeedDisplayer,
+        traits::{
+            FromPath,
+            Paint,
+        },
     },
     ziggy::ZiggyConfig,
 };
+use anyhow::Context;
+use crossterm::event::KeyCode;
 use ratatui::{
     crossterm::event::{
         self,
@@ -44,6 +50,8 @@ use ratatui::{
 };
 use std::{
     borrow::Borrow,
+    process::Child,
+    sync::mpsc,
     thread,
     time::Duration,
 };
@@ -61,12 +69,14 @@ impl CustomUI {
         let output = ziggy_config.clone().fuzz_output();
         Ok(Self {
             ziggy_config: ziggy_config.clone(),
-            afl_dashboard: AFLDashboard::from_output(output.clone())?,
-            corpus_watcher: CorpusWatcher::from_output(output)?,
+            afl_dashboard: AFLDashboard::from_output(output.clone())
+                .context("Couldn't create AFL dashboard")?,
+            corpus_watcher: CorpusWatcher::from_output(output)
+                .context("Couldn't create the corpus watcher")?,
         })
     }
 
-    fn ui(self, f: &mut Frame) {
+    fn ui(self, f: &mut Frame) -> anyhow::Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
@@ -84,7 +94,8 @@ impl CustomUI {
         self.clone().render_title(f, chunks[0]);
         self.clone().render_stats(f, chunks[1]);
         self.clone().render_chart_and_config(f, chunks[2]);
-        self.clone().render_seed(f, chunks[3]);
+        self.clone().render_seed(f, chunks[3])?;
+        Ok(())
     }
 
     fn render_chart_and_config(self, f: &mut Frame, area: Rect) {
@@ -130,25 +141,27 @@ impl CustomUI {
     }
 
     fn render_stats(self, f: &mut Frame, area: Rect) {
-        let data = self.afl_dashboard.read_properties().unwrap();
+        let data = self.afl_dashboard.read_properties();
 
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(area);
+        if let Ok(afl) = data {
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(area);
 
-        let left_chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(0)].as_ref())
-            .split(chunks[0]);
+            let left_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(0)].as_ref())
+                .split(chunks[0]);
 
-        let right_chunk = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(0)].as_ref())
-            .split(chunks[1]);
+            let right_chunk = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(0)].as_ref())
+                .split(chunks[1]);
 
-        self.stats_left(f, data.borrow(), left_chunks[0]);
-        self.metrics_right(f, data.borrow(), right_chunk[0]);
+            self.stats_left(f, afl.borrow(), left_chunks[0]);
+            self.metrics_right(f, afl.borrow(), right_chunk[0]);
+        }
     }
 
     fn stats_left(&self, frame: &mut Frame, data: &AFLProperties, area: Rect) {
@@ -197,18 +210,15 @@ impl CustomUI {
             .bold()
             .ratio(data.stability);
 
-        // Create a styled block with borders
         let block = Block::default()
             .title("System Stability")
             .borders(Borders::ALL)
             .style(Style::default().fg(Color::LightCyan).bg(Color::Black));
 
-        // Create a paragraph with the gauge inside
         let paragraph = Paragraph::new(vec![Line::raw("Fuzzing stability")])
             .block(block)
             .wrap(ratatui::widgets::Wrap { trim: true });
 
-        // Render the paragraph with the gauge inside
         frame.render_widget(paragraph, area);
         frame.render_widget(gauge, area);
     }
@@ -219,6 +229,8 @@ impl CustomUI {
             .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
+        let crash_style = Self::if_crash(data);
+
         let paragraph = Paragraph::new(Vec::from([
             Line::from(vec![
                 Span::raw("Corpus count: "),
@@ -227,13 +239,7 @@ impl CustomUI {
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
-            Line::from(vec![
-                Span::raw("Saved crashes: "),
-                Span::styled(
-                    data.saved_crashes.to_string(),
-                    Style::default().add_modifier(Modifier::BOLD),
-                ),
-            ]),
+            Line::from(vec![Span::raw("Saved crashes: "), crash_style]),
             Line::from(vec![
                 Span::raw("Execution speed: "),
                 Span::styled(
@@ -245,6 +251,24 @@ impl CustomUI {
         .block(Block::default().borders(Borders::ALL).title("Metrics"));
 
         frame.render_widget(paragraph, chunks[0]);
+    }
+
+    fn if_crash(data: &AFLProperties) -> Span {
+        let crash_style = if data.saved_crashes > 0 {
+            Span::styled(
+                data.saved_crashes.to_string(),
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED)
+                    .fg(Color::Red),
+            )
+        } else {
+            Span::styled(
+                data.saved_crashes.to_string(),
+                Style::default().add_modifier(Modifier::BOLD),
+            )
+        };
+        crash_style
     }
 
     fn render_chart(mut self, f: &mut Frame, area: Rect) {
@@ -259,33 +283,68 @@ impl CustomUI {
         f.render_widget(chart_manager.create_chart(), chunks[0]);
     }
 
-    fn render_seed(self, f: &mut Frame, area: Rect) {
-        let seed_info =
-            Paragraph::new(format!("Current Seed: {}", "currentseed")) // todo
-                .block(Block::default().borders(Borders::ALL).title("Current Seed"));
+    fn render_seed(self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+        let seed_displayer = SeedDisplayer::new(self.ziggy_config.fuzz_output());
+
+        let mut seed_info_text: String = String::new();
+        if let Some(seeds) = seed_displayer.load() {
+            seed_info_text = seeds
+                .iter()
+                .enumerate()
+                .map(|(i, seed)| format!("Seed {}: {}", i + 1, seed))
+                .collect::<Vec<String>>()
+                .join("\n");
+        }
+
+        let seed_info = Paragraph::new(seed_info_text).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Last fuzzed messages"),
+        );
 
         f.render_widget(seed_info, area);
+
+        Ok(())
     }
-    pub fn initialize_tui(&self) -> anyhow::Result<()> {
+    pub fn initialize_tui(&self, mut child: Child) -> anyhow::Result<()> {
         let stdout = std::io::stdout();
         let backend = ratatui::backend::CrosstermBackend::new(stdout);
         let mut terminal = ratatui::Terminal::new(backend)?;
 
         terminal.clear()?;
 
-        loop {
-            terminal.draw(|f| self.clone().ui(f))?;
-            thread::sleep(Duration::from_millis(Self::REFRESH_MS));
-            if event::poll(Duration::from_millis(Self::REFRESH_MS))? {
-                if let Event::Key(key) = crossterm::event::read()? {
-                    if key.kind == event::KeyEventKind::Press
-                        && key.code == event::KeyCode::Char('q')
-                    {
-                        break;
+        let (tx, rx) = mpsc::channel();
+
+        let input_handle = thread::spawn(move || {
+            loop {
+                if event::poll(Duration::from_millis(100)).unwrap() {
+                    if let Event::Key(key) = event::read().unwrap() {
+                        // If we CTRL+C, we send the exit signal
+                        if key.code == KeyCode::Char('c')
+                            && key.modifiers.contains(event::KeyModifiers::CONTROL)
+                        {
+                            tx.send(()).unwrap();
+                            break;
+                        }
                     }
                 }
             }
+        });
+
+        loop {
+            if rx.try_recv().is_ok() {
+                break;
+            }
+            terminal.draw(|f| {
+                if let Err(err) = self.clone().ui(f) {
+                    eprintln!("{:?}", err);
+                }
+            })?;
+            thread::sleep(Duration::from_millis(Self::REFRESH_MS));
         }
+
+        let _ = child.kill();
+        input_handle.join().unwrap();
 
         terminal.clear()?;
         Ok(())

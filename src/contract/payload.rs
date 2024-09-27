@@ -375,6 +375,7 @@ mod test {
         let constructor = "crash_with_invariant";
         let data = transcoder.encode(constructor, ["\"\""]).unwrap();
         let hex = hex::encode(data);
+        assert_eq!(hex, "fa80c2f600")
         // println!("{:?}", hex);
     }
 

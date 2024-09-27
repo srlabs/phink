@@ -1,6 +1,9 @@
-use crate::cli::config::{
-    PFiles,
-    PhinkFiles,
+use crate::cli::{
+    config::{
+        PFiles,
+        PhinkFiles,
+    },
+    ui::traits::FromPath,
 };
 use anyhow::bail;
 use regex::Regex;
@@ -84,25 +87,19 @@ pub struct AFLDashboard {
     pub log_fullpath: PathBuf,
 }
 
+impl FromPath for AFLDashboard {
+    type Output = AFLDashboard;
+
+    fn create_instance(log_fullpath: PathBuf) -> Self::Output {
+        AFLDashboard { log_fullpath }
+    }
+
+    fn get_pfile_type() -> PFiles {
+        PFiles::AFLLog
+    }
+}
+
 impl AFLDashboard {
-    pub fn from_fullpath(log_fullpath: PathBuf) -> anyhow::Result<AFLDashboard> {
-        match log_fullpath.exists() {
-            true => Ok(Self { log_fullpath }),
-            false => bail!("The fullpath isn't correct"),
-        }
-    }
-
-    pub fn from_output(output: PathBuf) -> anyhow::Result<AFLDashboard> {
-        let path = PhinkFiles::new(output).path(PFiles::AFLLog);
-
-        match path.exists() {
-            true => Self::from_fullpath(path),
-            false => {
-                bail!(format!("Couldn't spot {:?}", path))
-            }
-        }
-    }
-
     /// Read and parse properties from the log file
     pub fn read_properties(&self) -> anyhow::Result<AFLProperties> {
         let content = fs::read_to_string(&self.log_fullpath)?;
@@ -110,7 +107,6 @@ impl AFLDashboard {
         let delimiter = "AFL";
         let dashboards: Vec<&str> = content.split(delimiter).collect();
 
-        // Get the last dashboard, prefixing it with "AFL" again
         if let Some(last_dashboard) = dashboards.last() {
             let last_dashboard = format!("{}{}", delimiter, last_dashboard);
 

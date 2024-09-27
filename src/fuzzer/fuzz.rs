@@ -4,7 +4,7 @@ use crate::{
             PFiles::CoverageTracePath,
             PhinkFiles,
         },
-        ui::seed::SeedDisplayer,
+        ui::seed::SeedWriter,
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -69,7 +69,7 @@ impl Fuzzer {
             Fuzz => {
                 let manager = self.clone().init_fuzzer()?;
                 ziggy::fuzz!(|data: &[u8]| {
-                    Self::harness(&self, manager.to_owned(), data);
+                    self.harness(manager.to_owned(), data);
                 });
             }
             ExecuteOneInput(seed_path) => {
@@ -147,7 +147,7 @@ impl Fuzzer {
         chain: &mut BasicExternalities,
         coverage: &mut InputCoverage,
     ) -> Vec<FullContractResponse> {
-        let mut all_msg_responses = Vec::new();
+        let mut responses = Vec::new();
 
         chain.execute_with(|| {
             for message in &decoded_msgs.messages {
@@ -165,27 +165,28 @@ impl Fuzzer {
                 );
 
                 coverage.add_cov(&result.clone().debug_message());
-                all_msg_responses.push(result);
+                responses.push(result);
             }
         });
+        // panic!("xxxxxxxx");
 
+        // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config.show_ui {
-            let mut seeder = SeedDisplayer::new(
+            let mut seeder = SeedWriter::new(
                 decoded_msgs.to_owned(),
                 coverage.to_owned(),
-                all_msg_responses.clone(),
+                responses.clone(),
             );
             if seeder.should_save() {
                 seeder.save(self.clone().ziggy_config.fuzz_output());
             }
         }
 
-        all_msg_responses
+        responses
     }
 
     pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
         let decoded_msgs: OneInput = parse_input(input, manager.to_owned());
-
         if Self::should_stop_now(&manager, decoded_msgs.messages.to_owned()) {
             return;
         }

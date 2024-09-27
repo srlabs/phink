@@ -316,6 +316,13 @@ mod tests {
             phink_files.path(PFiles::CorpusPath),
             output.join("phink").join("corpus")
         );
+
+        let lastseed = output.join("phink").join("logs").join(LAST_SEED_FILENAME);
+        assert_eq!(phink_files.path(PFiles::LastSeed), lastseed);
+        assert_eq!(
+            lastseed.to_str().unwrap(),
+            "/tmp/phink_output/phink/logs/last_seed.phink"
+        );
     }
 
     #[test]

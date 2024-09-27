@@ -1,6 +1,12 @@
-use crate::cli::config::{
-    PFiles,
-    PhinkFiles,
+use crate::cli::{
+    config::{
+        PFiles,
+        PhinkFiles,
+    },
+    ui::{
+        monitor::logs::AFLDashboard,
+        traits::FromPath,
+    },
 };
 use anyhow::bail;
 use std::{
@@ -32,23 +38,21 @@ impl From<PlotEntry> for (f64, f64) {
     }
 }
 
-impl CorpusWatcher {
-    pub fn from_fullpath(corpus_folder: PathBuf) -> anyhow::Result<CorpusWatcher> {
-        match corpus_folder.exists() {
-            true => Ok(Self { corpus_folder }),
-            false => bail!("The fullpath isn't correct"),
+impl FromPath for CorpusWatcher {
+    type Output = CorpusWatcher;
+
+    fn create_instance(log_fullpath: PathBuf) -> Self::Output {
+        CorpusWatcher {
+            corpus_folder: log_fullpath,
         }
     }
 
-    pub fn from_output(output: PathBuf) -> anyhow::Result<CorpusWatcher> {
-        let path = PhinkFiles::new(output).path(PFiles::CorpusPath);
-        match path.exists() {
-            true => Self::from_fullpath(path),
-            false => {
-                bail!(format!("Couldn't spot {:?}", path))
-            }
-        }
+    fn get_pfile_type() -> PFiles {
+        PFiles::CorpusPath
     }
+}
+
+impl CorpusWatcher {
     pub fn as_tuple_slice(&mut self) -> Vec<(f64, f64)> {
         self.data().iter().map(|entry| (entry.x, entry.y)).collect()
     }

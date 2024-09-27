@@ -68,7 +68,8 @@ pub type EventRecord = frame_system::EventRecord<
     <Runtime as frame_system::Config>::RuntimeEvent,
     <Runtime as frame_system::Config>::Hash,
 >;
-type ContractResponse = ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
+pub type ContractResponse =
+    ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
 
 #[derive(Clone)]
 pub struct FullContractResponse(ContractResponse);
@@ -81,6 +82,10 @@ impl Display for FullContractResponse {
     }
 }
 impl FullContractResponse {
+    pub fn get_response(&self) -> &ContractResponse {
+        &self.0
+    }
+
     pub fn from_contract_result(
         c: ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>,
     ) -> Self {

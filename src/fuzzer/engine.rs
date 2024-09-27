@@ -20,7 +20,6 @@ use prettytable::{
     Row,
     Table,
 };
-use sp_core::crypto::AccountId32;
 use std::println;
 
 /// Pretty print the result of `OneInput`
@@ -32,27 +31,7 @@ pub fn pretty_print(responses: Vec<FullContractResponse>, one_input: OneInput) {
 
     for (response, message) in responses.iter().zip(&one_input.messages) {
         let call_description = message.message_metadata.to_string();
-
-        let reply = response.get();
-        let debug = format!(
-            "⛽️ Gas required: {}\n\
-             🔥 Gas consumed: {}\n\
-             🧑 Origin: {:?} ({})\n\
-             💾 Storage deposit: {:?}{}",
-            reply.gas_required,
-            reply.gas_consumed,
-            message.origin,
-            AccountId32::new([message.origin.into(); 32]),
-            reply.storage_deposit,
-            if message.is_payable {
-                format!(
-                    "\n💸 Message was payable and {} units were transferred",
-                    message.value_token
-                )
-            } else {
-                String::new()
-            }
-        );
+        let debug = message.display_with_reply(response.get());
 
         table.add_row(Row::new(vec![
             Cell::new(&call_description),

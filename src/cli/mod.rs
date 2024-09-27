@@ -34,7 +34,7 @@ pub fn format_error(e: anyhow::Error) -> String {
         message = format!(
             "{}\n{}\n{}",
             message,
-            "Backtrace ->".yellow(),
+            "More informations ->".yellow(),
             e.backtrace()
         )
     }

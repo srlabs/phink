@@ -13,6 +13,7 @@ use crate::cli::{
 use anyhow::Context;
 use std::{
     process::{
+        Child,
         Command,
         Stdio,
     },
@@ -36,7 +37,7 @@ impl CustomManager {
         }
     }
 
-    pub fn cmd_fuzz(self) -> anyhow::Result<()> {
+    pub fn cmd_fuzz(self) -> anyhow::Result<Child> {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
@@ -54,11 +55,11 @@ impl CustomManager {
         command_builder.args(self.args.iter());
         command_builder.envs(self.env);
 
-        command_builder
+        let child = command_builder
             .spawn()
-            .context("Spawning Ziggy was unsuccessfull")?;
+            .context("Spawning Ziggy was unsuccessful")?;
 
-        Ok(())
+        Ok(child)
     }
 
     pub fn start(self) -> anyhow::Result<()> {
@@ -66,15 +67,15 @@ impl CustomManager {
         let cloned_config = self.ziggy_config.clone();
 
         thread::spawn(move || {
-            let result = self.cmd_fuzz();
-            tx.send(result).unwrap();
+            let fuzzer_pid = self.cmd_fuzz();
+            tx.send(fuzzer_pid).unwrap();
         });
 
-        rx.recv()??;
+        let pid: Child = rx.recv()??;
 
         let ratatui = CustomUI::new(&cloned_config).context("Couldn't create the custom UI ")?;
 
-        ratatui.initialize_tui()?;
+        ratatui.initialize_tui(pid)?;
         Ok(())
     }
 }

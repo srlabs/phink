@@ -1,18 +1,18 @@
 use crate::{
     cli::config::OriginFuzzingOption,
     contract::{
-        remote::BalanceOf,
+        remote::{
+            BalanceOf,
+            ContractResponse,
+        },
         runtime::Runtime,
         selectors::selector::Selector,
     },
     fuzzer::manager::CampaignManager,
 };
-use contract_transcode::{
-    Map,
-    Value,
-};
-use serde::Deserializer;
+use contract_transcode::Value;
 use serde_derive::Serialize;
+use sp_core::crypto::AccountId32;
 use OriginFuzzingOption::{
     DisableOriginFuzzing,
     EnableOriginFuzzing,
@@ -38,6 +38,30 @@ pub struct Message {
     pub value_token: BalanceOf<Runtime>,
     pub message_metadata: Value,
     pub origin: Origin,
+}
+
+impl Message {
+    pub fn display_with_reply(&self, reply: &ContractResponse) -> String {
+        format!(
+            "⛽️ Gas required: {}\n\
+             🔥 Gas consumed: {}\n\
+             🧑 Origin: {:?} ({})\n\
+             💾 Storage deposit: {:?}{}",
+            reply.gas_required,
+            reply.gas_consumed,
+            self.origin,
+            AccountId32::new([self.origin.into(); 32]),
+            reply.storage_deposit,
+            if self.is_payable {
+                format!(
+                    "\n💸 Message was payable and {} units were transferred",
+                    self.value_token
+                )
+            } else {
+                String::new()
+            }
+        )
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
