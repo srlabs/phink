@@ -35,8 +35,6 @@ pub struct InputCoverage {
 /// This struct represent the coverage of one message.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MessageCoverage {
-    /// A map where the key is the ID of the parsed value of COV=..., and the value is
-    /// the number of times this coverage point was hit.
     pub cov_ids: Vec<u64>,
 }
 
@@ -49,6 +47,17 @@ impl Debug for InputCoverage {
 }
 
 impl InputCoverage {
+    pub fn coverage_len(&self) -> usize {
+        self.messages_coverage
+            .iter()
+            .map(|msg| msg.cov_ids.len())
+            .sum()
+    }
+
+    pub fn messages_coverage(&self) -> &Vec<MessageCoverage> {
+        &self.messages_coverage
+    }
+
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = coverage.parse_coverage();
         self.raw_from_debug.push(coverage.clone());
@@ -57,17 +66,14 @@ impl InputCoverage {
     }
 
     pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
-        // Create a HashSet to store unique coverage IDs
         let mut unique_cov_ids = HashSet::new();
 
-        // Collect all coverage IDs from MessageCoverage into the HashSet
         for message in &self.messages_coverage {
             for &cov_id in &message.cov_ids {
                 unique_cov_ids.insert(cov_id);
             }
         }
 
-        // Convert HashSet to a sorted Vec of Strings
         let mut trace_strings: Vec<String> = unique_cov_ids
             .into_iter()
             .map(|id| id.to_string())
@@ -95,18 +101,9 @@ impl InputCoverage {
     }
 
     #[allow(unused_doc_comments)]
+    #[allow(clippy::unnecessary_cast)]
     #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self, flat: Vec<u64>) {
-        #[cfg(not(fuzzing))]
-        {
-            println!(
-                "[🚧DEBUG TRACE] Detected {} messages traces",
-                self.messages_coverage.clone().len(),
-            );
-            println!("[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n", &flat);
-        }
-
-        #[allow(clippy::unnecessary_cast)]
         /// We assume that the instrumentation will never insert more than
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest

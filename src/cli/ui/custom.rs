@@ -1,4 +1,8 @@
 use crate::cli::{
+    config::{
+        PFiles,
+        PhinkFiles,
+    },
     env::PhinkEnv::{
         AflDebug,
         AflForkServerTimeout,
@@ -15,6 +19,7 @@ use anyhow::{
     Context,
 };
 use std::{
+    fs,
     process::{
         Child,
         Command,
@@ -38,6 +43,12 @@ pub struct CustomManager {
 
 impl CustomManager {
     pub fn new(args: Vec<String>, env: Vec<(String, String)>, ziggy_config: ZiggyConfig) -> Self {
+        // If it exists, we remove the `LAST_SEED_FILENAME`
+        let _ = fs::remove_file(
+            PhinkFiles::new(ziggy_config.config.fuzz_output.clone().unwrap())
+                .path(PFiles::LastSeed),
+        );
+
         Self {
             args,
             env,
@@ -83,13 +94,16 @@ impl CustomManager {
 
         let mut ratatui = CustomUI::new(&cloned_config);
         let start_time = Instant::now();
-
+        let mut print_err = true;
         loop {
-            if start_time.elapsed() > Duration::new(30, 0) {
-                bail!("Couldn't instantiate the custom UI within 30 seconds...");
+            if start_time.elapsed() > Duration::new(120, 0) {
+                bail!("Couldn't instantiate the custom UI within 120 seconds...");
             }
             if ratatui.is_err() {
-                println!("Waiting for AFL++ to finish the dry run ");
+                if print_err {
+                    println!("⏰ Waiting for AFL++ to finish the dry run ");
+                    print_err = false;
+                }
                 ratatui = CustomUI::new(&cloned_config);
                 sleep(Duration::from_millis(100));
             } else {

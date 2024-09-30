@@ -4,6 +4,7 @@ use crate::{
         remote::{
             BalanceOf,
             ContractResponse,
+            FullContractResponse,
         },
         runtime::Runtime,
         selectors::selector::Selector,
@@ -11,6 +12,11 @@ use crate::{
     fuzzer::manager::CampaignManager,
 };
 use contract_transcode::Value;
+use prettytable::{
+    Cell,
+    Row,
+    Table,
+};
 use serde_derive::Serialize;
 use sp_core::crypto::AccountId32;
 use std::fmt::{
@@ -66,6 +72,23 @@ impl Message {
             }
         )
     }
+    pub fn print(&self) -> String {
+        format!(
+            "Payload:\t0x{}\n\
+             Origin:\t{:?} (identifier: {})\n\
+             {}\
+             Message:\t{:?}\n\n",
+            hex::encode(&self.payload),
+            AccountId32::new([self.origin.into(); 32]),
+            self.origin.0,
+            if self.is_payable {
+                format!("Transfered: {}\n", self.value_token)
+            } else {
+                String::new()
+            },
+            self.to_string()
+        )
+    }
 }
 
 impl Display for Message {
@@ -78,6 +101,28 @@ impl Display for Message {
 pub struct OneInput {
     pub messages: Vec<Message>,
     pub fuzz_option: OriginFuzzingOption,
+}
+
+impl OneInput {
+    /// Pretty print the result of `OneInput`
+    #[allow(dead_code)]
+    pub fn pretty_print(&self, responses: Vec<FullContractResponse>) {
+        println!("\n🌱 Executing new seed");
+        let mut table = Table::new();
+        table.add_row(Row::new(vec![Cell::new("Message"), Cell::new("Details")]));
+
+        for (response, message) in responses.iter().zip(&self.messages) {
+            let call_description = message.message_metadata.to_string();
+            let debug = message.display_with_reply(response.get());
+
+            table.add_row(Row::new(vec![
+                Cell::new(&call_description),
+                Cell::new(&debug),
+            ]));
+        }
+
+        table.printstd();
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

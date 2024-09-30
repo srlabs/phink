@@ -174,11 +174,13 @@ impl Fuzzer {
             let seeder = SeedWriter::new(
                 decoded_msgs.to_owned(),
                 coverage.to_owned(),
-                responses.clone(),
+                // responses.clone(),
             );
 
             if SeedWriter::should_save() {
-                seeder.save(self.clone().ziggy_config.fuzz_output());
+                seeder
+                    .save(self.clone().ziggy_config.fuzz_output())
+                    .unwrap();
             }
         }
 
@@ -200,6 +202,8 @@ impl Fuzzer {
 
         chain.execute_with(|| manager.check_invariants(&all_msg_responses, &decoded_msgs));
 
+        let flatten_coverage = coverage.flatten_cov();
+
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
         // of performance) Simply comment out the following line :)
@@ -210,11 +214,20 @@ impl Fuzzer {
                 .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            crate::fuzzer::engine::pretty_print(all_msg_responses, decoded_msgs);
+            decoded_msgs.pretty_print(all_msg_responses);
+
+            println!(
+                "[🚧DEBUG TRACE] Detected {} messages traces",
+                coverage.messages_coverage().clone().len(),
+            );
+            println!(
+                "[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n",
+                &flatten_coverage
+            );
         }
 
         // We now fake the coverage
-        coverage.redirect_coverage(coverage.flatten_cov());
+        coverage.redirect_coverage(flatten_coverage);
     }
 }
 

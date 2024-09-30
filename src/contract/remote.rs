@@ -71,8 +71,8 @@ pub type EventRecord = frame_system::EventRecord<
 pub type ContractResponse =
     ContractResult<Result<ExecReturnValue, DispatchError>, u128, EventRecord>;
 
-#[derive(Clone)]
-pub struct FullContractResponse(ContractResponse);
+#[derive(Clone, scale_info::TypeInfo)]
+pub struct FullContractResponse(pub ContractResponse);
 
 impl Display for FullContractResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -250,7 +250,7 @@ impl ContractSetup {
         let instantiate = Contracts::bare_instantiate(
             who.clone(),
             initial_value.unwrap_or(0),
-            config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
+            config.default_gas_limit.unwrap_or_default(),
             None,
             Code::Existing(code_hash),
             data,

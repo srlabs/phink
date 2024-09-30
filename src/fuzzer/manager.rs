@@ -12,13 +12,10 @@ use crate::{
         },
     },
     cover::coverage::InputCoverage,
-    fuzzer::{
-        engine::pretty_print,
-        parser::{
-            Message,
-            OneInput,
-            Origin,
-        },
+    fuzzer::parser::{
+        Message,
+        OneInput,
+        Origin,
     },
 };
 use anyhow::{
@@ -85,6 +82,10 @@ impl CampaignManager {
         decoded_msgs: &OneInput,
     ) {
         let first = decoded_msgs.messages[0].to_owned();
+
+        // We print the details only when we don't fuzz, so when we run a seed for instance,
+        // otherwise this will pollute the AFL logs
+        #[cfg(not(fuzzing))]
         all_msg_responses
             .iter()
             .filter(|response| response.is_trapped())
@@ -102,22 +103,15 @@ impl CampaignManager {
     }
 
     pub fn display_trap(&self, message: Message, response: FullContractResponse) {
-        // We print the details only when we don't fuzz, so when we run a seed
-        // for instance, otherwise this will pollute the AFL logs
-        #[cfg(not(fuzzing))]
-        {
-            println!("\n🤯 A trapped contract got caught! Let's dive into it");
-            println!("\n🐛 IMPORTANT STACKTRACE : {}\n", response);
-            println!("🎉 Find below the trace that caused that trapped contract");
+        println!("\n🤯 A trapped contract got caught! Let's dive into it");
+        println!("\n🐛 IMPORTANT STACKTRACE : {}\n", response);
+        println!("🎉 Find below the trace that caused that trapped contract");
 
-            pretty_print(
-                vec![response.clone()],
-                OneInput {
-                    messages: vec![message.clone()],
-                    fuzz_option: self.configuration.should_fuzz_origin(),
-                },
-            );
-        }
+        let input = OneInput {
+            messages: vec![message.clone()],
+            fuzz_option: self.configuration.should_fuzz_origin(),
+        };
+        input.pretty_print(vec![response.clone()]);
 
         // Artificially trigger a bug for AFL
         panic!("\n🫡  Job is done! Please, don't mind the backtrace below/above.\n\n");
@@ -141,7 +135,7 @@ impl CampaignManager {
             println!("\n🤯 An invariant got caught! Let's dive into it");
             println!("\n🫵  This was caused by `{hex}`\n");
             println!("🎉 Find below the trace that caused that invariant");
-            pretty_print(responses, decoded_msg);
+            decoded_msg.pretty_print(responses);
         }
         // Artificially trigger a bug for AFL
         panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");

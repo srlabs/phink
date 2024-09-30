@@ -31,7 +31,6 @@ use ratatui::{
         Rect,
     },
     style::{
-        palette::tailwind,
         Color,
         Modifier,
         Style,
@@ -41,13 +40,11 @@ use ratatui::{
     text::{
         Line,
         Span,
+        Text,
     },
     widgets::{
-        block::Title,
         Block,
         Borders,
-        Gauge,
-        Padding,
         Paragraph,
         Sparkline,
     },
@@ -65,7 +62,6 @@ use std::{
     },
     time::Duration,
 };
-use tailwind::SLATE;
 
 #[derive(Clone, Debug)]
 pub struct CustomUI {
@@ -73,6 +69,7 @@ pub struct CustomUI {
     afl_dashboard: AFLDashboard,
     corpus_watcher: CorpusWatcher,
     fuzzing_speed: Vec<u64>,
+    seed_text: Text<'static>,
 }
 
 impl CustomUI {
@@ -85,7 +82,8 @@ impl CustomUI {
                 .context("Couldn't create AFL dashboard")?,
             corpus_watcher: CorpusWatcher::from_output(output)
                 .context("Couldn't create the corpus watcher")?,
-            fuzzing_speed: vec![],
+            fuzzing_speed: Vec::new(),
+            seed_text: Text::from(""),
         })
     }
 
@@ -95,7 +93,7 @@ impl CustomUI {
             .margin(1)
             .constraints(
                 [
-                    Constraint::Length(10),
+                    Constraint::Length(7),
                     Constraint::Percentage(20),
                     Constraint::Percentage(50),
                     Constraint::Percentage(30),
@@ -114,7 +112,6 @@ impl CustomUI {
     fn render_chart_and_config(&mut self, f: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .margin(1)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(area);
 
@@ -155,6 +152,7 @@ impl CustomUI {
 
     fn render_stats(&mut self, f: &mut Frame, area: Rect) {
         let data = self.afl_dashboard.read_properties();
+
         if let Ok(afl) = data {
             self.fuzzing_speed.push(afl.exec_speed.into());
 
@@ -182,9 +180,8 @@ impl CustomUI {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
-            .constraints([Constraint::Percentage(70), Constraint::Min(1)].as_ref())
+            .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
-        let crash_style = Self::if_crash(data);
 
         let paragraph = Paragraph::new(Vec::from([
             Line::from(vec![
@@ -215,7 +212,6 @@ impl CustomUI {
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
-            Line::from(vec![Span::raw("Saved crashes: "), crash_style]),
             Line::from(vec![
                 Span::raw("Execution speed: "),
                 Span::styled(
@@ -223,8 +219,15 @@ impl CustomUI {
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
+            Line::from(vec![Span::raw("Saved crashes: "), data.span_if_crash()]),
         ]))
-        .block(Block::default().borders(Borders::ALL).title("Statistics"));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Statistics")
+                .bold()
+                .title_alignment(Alignment::Center),
+        );
 
         frame.render_widget(paragraph, chunks[0]);
     }
@@ -240,13 +243,14 @@ impl CustomUI {
             .block(
                 Block::new()
                     .borders(Borders::ALL)
-                    .title("Execution speed evolution (exec/s)"),
+                    .title("Execution speed evolution (execs/s)")
+                    .bold()
+                    .title_alignment(Alignment::Center),
             )
             .data(&self.fuzzing_speed)
             .style(Style::default().fg(Color::Red))
             .bar_set(symbols::bar::NINE_LEVELS);
 
-        // Add some stats
         let stats_chunk = chunks[0].inner(Margin {
             vertical: 1,
             horizontal: 1,
@@ -285,28 +289,14 @@ impl CustomUI {
                 });
 
             frame.render_widget(
-                Paragraph::new(stat.as_str()).style(Style::default().add_modifier(Modifier::BOLD)),
+                Paragraph::new(stat.as_str()).style(
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::ITALIC),
+                ),
                 stat_layout[0],
             );
         }
-    }
-
-    fn if_crash(data: &AFLProperties) -> Span {
-        let crash_style = if data.saved_crashes > 0 {
-            Span::styled(
-                data.saved_crashes.to_string(),
-                Style::default()
-                    .add_modifier(Modifier::BOLD)
-                    .add_modifier(Modifier::UNDERLINED)
-                    .fg(Color::Red),
-            )
-        } else {
-            Span::styled(
-                data.saved_crashes.to_string(),
-                Style::default().add_modifier(Modifier::BOLD),
-            )
-        };
-        crash_style
     }
 
     fn render_chart(&mut self, f: &mut Frame, area: Rect) {
@@ -321,41 +311,46 @@ impl CustomUI {
         f.render_widget(chart_manager.create_chart(), chunks[0]);
     }
 
-    fn render_bottom(&self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+    fn render_bottom(&mut self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
         let bottom_parts = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+            .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
         let seed_info = self.display_fuzzed_seed();
         f.render_widget(seed_info, bottom_parts[0]);
 
-        let idkyet = self.display_fuzzed_seed(); // display_idkwhat_yet();
-        f.render_widget(idkyet, bottom_parts[1]);
-
         Ok(())
     }
 
-    fn display_fuzzed_seed(&self) -> Paragraph {
+    fn display_fuzzed_seed(&mut self) -> Paragraph {
         let seed_displayer = SeedDisplayer::new(self.clone().ziggy_config.fuzz_output());
+        let seed_info_text: String = match seed_displayer.load() {
+            None => String::new(),
+            Some(e) => e.to_string(),
+        };
 
-        let mut seed_info_text: String = String::new();
-        if let Some(seeds) = seed_displayer.load() {
-            seed_info_text = seeds
-                .iter()
-                .map(|seed| seed.to_string())
-                .collect::<Vec<String>>()
-                .join("\n");
+        self.seed_text.lines.clear();
+
+        if !seed_info_text.is_empty() {
+            self.seed_text.extend(Line::raw(seed_info_text));
+        } else {
+            self.seed_text.extend(Line::styled(
+                "Running the seeds, please wait until we actually start fuzzing",
+                Style::new().fg(Color::Green).bold(),
+            ));
         }
 
-        let seed_info = Paragraph::new(seed_info_text)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Last fuzzed messages"),
-            )
-            .bold();
-        seed_info
+        Paragraph::new(self.seed_text.clone()).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default())
+                .title(Span::styled(
+                    "Last Fuzzed Messages",
+                    Style::default().add_modifier(Modifier::BOLD),
+                ))
+                .title_alignment(Alignment::Center),
+        )
     }
 
     pub fn initialize_tui(&mut self, mut child: Child) -> anyhow::Result<()> {
@@ -391,13 +386,13 @@ impl CustomUI {
             }
         }
         let _ = child.kill();
+        terminal.clear()?;
 
         println!(
             "👋 It was nice fuzzing with you. Killing PID {}. Bye bye! ",
             child.id()
         );
 
-        terminal.clear()?;
         Ok(())
     }
 }

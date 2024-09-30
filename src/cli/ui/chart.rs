@@ -91,14 +91,14 @@ impl<'a> ChartManager<'a> {
         let dataset = vec![Dataset::default()
             .marker(Marker::Braille)
             .graph_type(GraphType::Line)
-            .style(Style::default().fg(Color::Cyan))
+            .style(Style::default().fg(Color::Green))
             .data(self.f64_array)];
 
         Chart::new(dataset)
             .block(
                 Block::bordered().title(
                     Title::default()
-                        .content("Corpus evolution over time".cyan().bold())
+                        .content("Corpus evolution over time".bold())
                         .alignment(Alignment::Center),
                 ),
             )

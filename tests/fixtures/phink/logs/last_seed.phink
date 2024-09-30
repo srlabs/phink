@@ -1,2 +1,12 @@
--X------X- crash_with_invariant { data: ' }
--X------X- crash_with_invariant { data:  }
+Got 4 cov. size with 2 messages.
+
+Payload: 0xfa80c2f600
+Origin: 0101010101010101010101010101010101010101010101010101010101010101 (5C62Ck4U...) (identifier: 1)
+Message: "crash_with_invariant { data:  }"
+
+
+Payload: 0xfa80c2f6082325
+Origin: 0101010101010101010101010101010101010101010101010101010101010101 (5C62Ck4U...) (identifier: 1)
+Message: "crash_with_invariant { data: #% }"
+
+

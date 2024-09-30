@@ -8,6 +8,7 @@ use ratatui::{
         Rect,
     },
     prelude::{
+        Alignment,
         Color,
         Modifier,
         Style,
@@ -75,7 +76,11 @@ impl Paint for Configuration {
         let x4 = &format_option(&self.max_messages_per_exec);
         let x5 = &format_option(&self.report_path);
         let x6 = &self.fuzz_origin.to_string();
-        let x7 = &format_option(&self.default_gas_limit);
+        let x7 = format!(
+            "ref_time = {}\nproof_size = {}",
+            &self.default_gas_limit.unwrap_or_default().ref_time(),
+            &self.default_gas_limit.unwrap_or_default().proof_size()
+        );
         let x8 = &format_option(&self.storage_deposit_limit);
         let x9 = &format_option(&self.constructor_payload);
         let x10 = &self.verbose.to_string();
@@ -93,7 +98,7 @@ impl Paint for Configuration {
             Row::new(vec!["Max messages per exec", x4]),
             Row::new(vec!["Report path", x5]),
             Row::new(vec!["Fuzzing origin", x6]),
-            Row::new(vec!["Default gas limit", x7]),
+            Row::new(vec!["Default gas limit", &x7]),
             Row::new(vec!["Storage deposit limit", x8]),
             Row::new(vec!["Instantiate initial value", x]),
             Row::new(vec!["Constructor payload", x9]),
@@ -116,18 +121,19 @@ impl Paint for Configuration {
         let selected_style = Style::default()
             .add_modifier(Modifier::REVERSED)
             .fg(colors.selected_style_fg);
-        let header_style = Style::default().fg(colors.header_fg).bg(colors.header_bg);
+        let header_style = Style::default()
+            .fg(colors.header_fg)
+            .bg(colors.header_bg)
+            .bold();
 
         let table = Table::new(rows, [Constraint::Length(5), Constraint::Length(5)])
-            .header(
-                Row::new(vec!["Setting", "Value"])
-                    .style(header_style)
-                    .bold(),
-            )
+            .header(Row::new(vec!["Setting", "Value"]).style(header_style))
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Configuration"),
+                    .title("Configuration")
+                    .bold()
+                    .title_alignment(Alignment::Center),
             )
             .highlight_style(selected_style)
             .widths([Constraint::Percentage(25), Constraint::Percentage(75)])

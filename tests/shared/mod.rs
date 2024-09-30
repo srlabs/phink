@@ -55,7 +55,6 @@ pub const DEFAULT_TEST_PHINK_TOML: &str = "phink_temp_test.toml";
 ///     Ok(())
 /// });
 /// ```
-
 pub fn with_modified_phink_config<F>(config: &Configuration, executed_test: F) -> Result<()>
 where
     F: FnOnce() -> Result<()>,
@@ -122,6 +121,8 @@ where
             .unwrap_or_default(),
         false,
     );
+
+    child.wait()?;
 
     let start_time = Instant::now();
 

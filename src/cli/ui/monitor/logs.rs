@@ -3,6 +3,14 @@ use crate::cli::{
     ui::traits::FromPath,
 };
 use anyhow::bail;
+use ratatui::{
+    style::{
+        Color,
+        Modifier,
+        Style,
+    },
+    text::Span,
+};
 use regex::Regex;
 use std::{
     fs,
@@ -12,22 +20,37 @@ use std::{
 
 #[derive(Default, Debug, Clone)]
 pub struct AFLProperties {
-    pub(crate) run_time: String,
-    pub(crate) last_new_find: String,
-    pub(crate) last_saved_crash: String,
-    pub(crate) corpus_count: u32,
-    pub(crate) saved_crashes: u32,
-    pub(crate) exec_speed: u32,
-    pub(crate) stability: f64,
+    pub run_time: String,
+    pub last_new_find: String,
+    pub last_saved_crash: String,
+    pub corpus_count: u32,
+    pub saved_crashes: u32,
+    pub exec_speed: u32,
+    pub stability: f64,
 }
 
 impl AFLProperties {
     pub fn crashed(&self) -> bool {
-        self.saved_crashes > 1
+        self.saved_crashes > 0
     }
 
-    pub fn crashes(&self) -> u32 {
-        self.saved_crashes
+    pub fn span_if_crash(&self) -> Span {
+        let crashes = &self.saved_crashes;
+        if crashes > &0 {
+            Span::styled(
+                format!("{} (you have some crashes, please check!!)", crashes),
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED)
+                    .underline_color(Color::Red)
+                    .fg(Color::Red),
+            )
+        } else {
+            Span::styled(
+                crashes.to_string(),
+                Style::default().add_modifier(Modifier::BOLD),
+            )
+        }
     }
 }
 
@@ -37,7 +60,7 @@ impl FromStr for AFLProperties {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut props = AFLProperties::default();
 
-        // Helper function to extract value using regex
+        // Function to extract value using regex
         fn extract_value<T: FromStr>(text: &str, pattern: &str) -> Option<T> {
             Regex::new(pattern)
                 .ok()?
@@ -99,7 +122,7 @@ impl FromPath for AFLDashboard {
 impl AFLDashboard {
     /// Read and parse properties from the log file
     pub fn read_properties(&self) -> anyhow::Result<AFLProperties> {
-        let content = fs::read_to_string(&self.log_fullpath)?;
+        let content = self.show_log()?;
 
         let delimiter = "AFL";
         let dashboards: Vec<&str> = content.split(delimiter).collect();
@@ -114,6 +137,10 @@ impl AFLDashboard {
             return Self::parse_properties(&cleaned)
         }
         bail!("Couldn't parse the set of dashboards of AFL")
+    }
+
+    pub fn show_log(&self) -> std::io::Result<String> {
+        fs::read_to_string(&self.log_fullpath)
     }
 
     // Function to parse properties using regex
