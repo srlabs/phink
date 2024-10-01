@@ -1,5 +1,6 @@
 use crate::cli::{
     config::Configuration,
+    ui,
     ui::traits::Paint,
 };
 use ratatui::{
@@ -27,6 +28,7 @@ use ratatui::{
     },
     Frame,
 };
+use ui::ratatui::CTOR_VALUE;
 
 const PALETTE: Palette = tailwind::RED;
 struct TableColors {
@@ -82,7 +84,8 @@ impl Paint for Configuration {
             &self.default_gas_limit.unwrap_or_default().proof_size()
         );
         let x8 = &format_option(&self.storage_deposit_limit);
-        let x9 = &format_option(&self.constructor_payload);
+        let x9 = CTOR_VALUE.get().unwrap().to_string();
+
         let x10 = &self.verbose.to_string();
         let x11 = &self
             .instrumented_contract_path
@@ -101,7 +104,7 @@ impl Paint for Configuration {
             Row::new(vec!["Default gas limit", &x7]),
             Row::new(vec!["Storage deposit limit", x8]),
             Row::new(vec!["Instantiate initial value", x]),
-            Row::new(vec!["Constructor payload", x9]),
+            Row::new(vec!["Constructor payload", &x9]),
             Row::new(vec!["Verbose mode", x10]),
             Row::new(vec!["Path to instrumented contract", x11]),
             Row::new(vec!["Fuzz output folder", x12]),

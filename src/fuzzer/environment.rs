@@ -27,7 +27,7 @@ use std::{
     path::PathBuf,
 };
 
-pub struct AllowListBuilder {}
+pub struct AllowListBuilder;
 
 impl AllowListBuilder {
     pub const FUNCTIONS: [&str; 3] = ["redirect_coverage*", "should_stop_now*", "parse_input*"];
@@ -72,11 +72,9 @@ impl Dict {
 
     pub fn new(phink_file: PhinkFiles) -> io::Result<Dict> {
         let path_buf = phink_file.path(DictPath);
-        // Create the directory structure if it doesn't exist
         if let Some(parent) = path_buf.parent() {
             fs::create_dir_all(parent)?;
         }
-        // Open the file for writing (create if it doesn't exist)
         let mut dict_file = OpenOptions::new()
             .write(true)
             .create(true)

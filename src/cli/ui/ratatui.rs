@@ -1,23 +1,27 @@
-use crate::cli::{
-    ui::{
-        chart::ChartManager,
-        monitor::{
-            corpus::CorpusWatcher,
-            logs::{
-                AFLDashboard,
-                AFLProperties,
+use crate::{
+    cli::{
+        ui::{
+            chart::ChartManager,
+            monitor::{
+                corpus::CorpusWatcher,
+                logs::{
+                    AFLDashboard,
+                    AFLProperties,
+                },
+            },
+            seed::SeedDisplayer,
+            traits::{
+                FromPath,
+                Paint,
             },
         },
-        seed::SeedDisplayer,
-        traits::{
-            FromPath,
-            Paint,
-        },
+        ziggy::ZiggyConfig,
     },
-    ziggy::ZiggyConfig,
+    instrumenter::instrumentation::Instrumenter,
 };
 use anyhow::Context;
 use backend::CrosstermBackend;
+use contract_transcode::ContractMessageTranscoder;
 use ratatui::{
     backend,
     layout::{
@@ -58,6 +62,7 @@ use std::{
             Ordering,
         },
         Arc,
+        OnceLock,
     },
     thread::sleep,
     time::Duration,
@@ -71,9 +76,35 @@ pub struct CustomUI {
     fuzzing_speed: Vec<u64>,
 }
 
+pub static CTOR_VALUE: OnceLock<String> = OnceLock::new();
+
 impl CustomUI {
     pub fn new(ziggy_config: &ZiggyConfig) -> anyhow::Result<CustomUI> {
+        CTOR_VALUE.get_or_init(|| {
+            if let Ok(maybe_metadata) = Instrumenter::new(ziggy_config.clone()).find() {
+                if let Ok(transcoder) = ContractMessageTranscoder::load(maybe_metadata.specs_path) {
+                    if let Some(ctor) = ziggy_config.clone().config.constructor_payload {
+                        return if let Ok(encoded_bytes) = hex::decode(ctor) {
+                            if let Ok(str) =
+                                transcoder.decode_contract_constructor(&mut &encoded_bytes[..])
+                            {
+                                str.to_string()
+                            } else {
+                                "Couldn't decode {encoded_bytes}".to_string()
+                            }
+                        } else {
+                            "Double check your constructor in your `phink.toml`".to_string()
+                        }
+                    }
+                } else {
+                    return "Couldn't load the JSON specs".parse().unwrap()
+                }
+            }
+            " - ".into()
+        });
+
         let output = ziggy_config.clone().fuzz_output();
+
         Ok(Self {
             ziggy_config: ziggy_config.clone(),
             afl_dashboard: AFLDashboard::from_output(output.clone())

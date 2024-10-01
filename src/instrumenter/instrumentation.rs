@@ -87,7 +87,7 @@ impl Instrumenter {
                         }
                     })
                     .next()
-                    .ok_or_else(|| anyhow!("🙅 No .wasm file found in target directory"))?
+                    .ok_or_else(|| anyhow!("No .wasm file found in target directory"))?
             }
             Err(e) => bail!(format!("It seems that your contract is not compiled into `target/ink`. Please, ensure that your WASM blob and the JSON specs are stored in '{c_path_str}/target/ink/'. More details: {e:?}"))
         };
@@ -131,7 +131,8 @@ impl Instrumenter {
         } else {
             bail!(
                 "It seems that your instrumented smart contract did not compile properly. \
-        Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance.",
+        Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance.\
+        Also, make sur that your Cargo.toml contains the `phink` feature.",
             )
         }
 

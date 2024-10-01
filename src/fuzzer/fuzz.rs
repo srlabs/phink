@@ -340,6 +340,27 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn test_decode_constructor() {
+        let metadata_path =
+            Path::new("sample/multi-contract-caller/target/ink/multi_contract_caller.json");
+        let transcoder = Mutex::new(
+            ContractMessageTranscoder::load(metadata_path)
+                .expect("Failed to load `ContractMessageTranscoder`"),
+        );
+
+        let encoded_bytes =
+            hex::decode("9BAE9D5E5C1100007B000000ACAC0000CC5B763F7AA51000F4BD3F32F51151FF017FD22F9404D0308AFBDB3DE6F2E030E23910AC7DCDBB41BC52F1F2F923E49BAF32E9587DCD4D43D50408B62431D7B79C1A506DBEC4785423DDF36E66E2BEBA6CFEFCDD4F5708DFA3388E48").unwrap();
+        let result = transcoder
+            .lock()
+            .unwrap()
+            .decode_contract_constructor(&mut &encoded_bytes[..])
+            .unwrap();
+        // println!("{}", result);
+        let expected = "new { init_value: 4444, version: 123, accumulator_code_hash: 0xacac0000cc5b763f7aa51000f4bd3f32f51151ff017fd22f9404d0308afbdb3d, adder_code_hash: 0xe6f2e030e23910ac7dcdbb41bc52f1f2f923e49baf32e9587dcd4d43d50408b6, subber_code_hash: 0x2431d7b79c1a506dbec4785423ddf36e66e2beba6cfefcdd4f5708dfa3388e48 }";
+        assert_eq!(result.to_string(), expected);
+    }
+
+    #[test]
     fn test_parse_input() {
         let metadata_path = Path::new("sample/dns/target/ink/dns.json");
         let transcoder = Mutex::new(
