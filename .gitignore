@@ -18,6 +18,7 @@ PATH_TEST_*/
 phink_temp_test.toml
 instrumented_*/
 output*/
+phink
 
 # Compilation targets
 target
