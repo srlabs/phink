@@ -75,12 +75,20 @@ phink fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output o
 
 ## Example
 
-#### Creating an invariant
+#### Adding some invariants
 
 Below are some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs)
 contract.
 
-  ```rust
+1. Add the `phink` feature to your `Cargo.toml`
+```toml
+[features]
+...
+phink = []
+```
+
+2. Create your invariants as below:
+```rust
 #[cfg(feature = "phink")]
 #[ink(impl)]
 impl DomainNameService {
