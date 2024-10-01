@@ -131,7 +131,7 @@ impl Instrumenter {
         } else {
             bail!(
                 "It seems that your instrumented smart contract did not compile properly. \
-        Please go to {p_display}, edit the source code, and run `cargo contract build` again.",
+        Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance.",
             )
         }
 
