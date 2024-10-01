@@ -111,7 +111,10 @@ impl CustomManager {
             }
         }
 
-        ratatui.unwrap().initialize_tui(child)?;
+        ratatui
+            .context("Couldn't create ratatui with 'new'")?
+            .initialize_tui(child)
+            .context("Couldn't initialize ratatui")?;
         Ok(())
     }
 }

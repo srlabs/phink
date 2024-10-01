@@ -17,11 +17,9 @@ use crate::cli::{
     ziggy::ZiggyConfig,
 };
 use anyhow::Context;
+use backend::CrosstermBackend;
 use ratatui::{
-    crossterm::event::{
-        self,
-        Event,
-    },
+    backend,
     layout::{
         Alignment,
         Constraint,
@@ -52,6 +50,7 @@ use ratatui::{
 };
 use std::{
     borrow::Borrow,
+    io,
     process::Child,
     sync::{
         atomic::{
@@ -60,6 +59,7 @@ use std::{
         },
         Arc,
     },
+    thread::sleep,
     time::Duration,
 };
 
@@ -69,11 +69,9 @@ pub struct CustomUI {
     afl_dashboard: AFLDashboard,
     corpus_watcher: CorpusWatcher,
     fuzzing_speed: Vec<u64>,
-    seed_text: Text<'static>,
 }
 
 impl CustomUI {
-    const REFRESH_MS: u64 = 500;
     pub fn new(ziggy_config: &ZiggyConfig) -> anyhow::Result<CustomUI> {
         let output = ziggy_config.clone().fuzz_output();
         Ok(Self {
@@ -83,14 +81,13 @@ impl CustomUI {
             corpus_watcher: CorpusWatcher::from_output(output)
                 .context("Couldn't create the corpus watcher")?,
             fuzzing_speed: Vec::new(),
-            seed_text: Text::from(""),
         })
     }
 
     fn ui(&mut self, f: &mut Frame) -> anyhow::Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .margin(1)
+            .margin(0)
             .constraints(
                 [
                     Constraint::Length(7),
@@ -105,7 +102,8 @@ impl CustomUI {
         self.render_title(f, chunks[0]);
         self.render_stats(f, chunks[1]);
         self.render_chart_and_config(f, chunks[2]);
-        self.render_bottom(f, chunks[3])?;
+        self.render_bottom(f, chunks[3])
+            .context("Couldn't render the bottom span")?;
         Ok(())
     }
 
@@ -264,13 +262,6 @@ impl CustomUI {
                     .unwrap_or(&0)
             ),
             format!(
-                "Min: {:.2}",
-                self.fuzzing_speed
-                    .iter()
-                    .min_by(|a, b| a.partial_cmp(b).unwrap())
-                    .unwrap_or(&0)
-            ),
-            format!(
                 "Avg: {:.2}",
                 self.fuzzing_speed.iter().sum::<u64>() / self.fuzzing_speed.len() as u64
             ),
@@ -324,24 +315,34 @@ impl CustomUI {
     }
 
     fn display_fuzzed_seed(&mut self) -> Paragraph {
-        let seed_displayer = SeedDisplayer::new(self.clone().ziggy_config.fuzz_output());
-        let seed_info_text: String = match seed_displayer.load() {
-            None => String::new(),
-            Some(e) => e.to_string(),
-        };
+        let mut seed_text: Text = Default::default();
+        let seed_info_text: String =
+            match SeedDisplayer::new(self.clone().ziggy_config.fuzz_output()).load() {
+                None => String::new(),
+                Some(e) => e.to_string(),
+            };
 
-        self.seed_text.lines.clear();
+        let legend = Line::styled(
+            "Details of the fuzzed seeds",
+            Style::default().fg(Color::Yellow).italic(),
+        );
+
+        seed_text.push_line(legend);
+        seed_text.push_line(Line::styled("", Style::default()));
 
         if !seed_info_text.is_empty() {
-            self.seed_text.extend(Line::raw(seed_info_text));
+            seed_text.extend(Line::styled(seed_info_text, Style::default().bold()));
         } else {
-            self.seed_text.extend(Line::styled(
+            seed_text.extend(Line::styled(
                 "Running the seeds, please wait until we actually start fuzzing",
-                Style::new().fg(Color::Green).bold(),
+                Style::default().fg(Color::Green).bold(),
             ));
         }
 
-        Paragraph::new(self.seed_text.clone()).block(
+        // TODO: why the fuckdoesn't it pritn correctly the text. it's not about the message it's
+        // about the whole text and the first few characters only
+
+        Paragraph::new(seed_text.clone()).block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default())
@@ -354,11 +355,10 @@ impl CustomUI {
     }
 
     pub fn initialize_tui(&mut self, mut child: Child) -> anyhow::Result<()> {
-        let stdout = std::io::stdout();
-        let backend = ratatui::backend::CrosstermBackend::new(stdout);
-        let mut terminal = ratatui::Terminal::new(backend)?;
-
-        terminal.clear()?;
+        let backend = CrosstermBackend::new(io::stdout());
+        let mut terminal =
+            ratatui::Terminal::new(backend).context("Couldn't create the terminal backend")?;
+        terminal.clear().context("Couldn't clear the terminal")?;
 
         let running = Arc::new(AtomicBool::new(true));
         let r = running.clone();
@@ -369,29 +369,20 @@ impl CustomUI {
 
         while running.load(Ordering::SeqCst) {
             terminal.draw(|f| {
+                sleep(Duration::from_millis(500));
                 if let Err(err) = self.ui(f) {
                     eprintln!("{:?}", err);
                 }
             })?;
-
-            if event::poll(Duration::from_millis(Self::REFRESH_MS))? {
-                if let Event::Key(key) = crossterm::event::read()? {
-                    if key.kind == event::KeyEventKind::Press
-                        && key.code == event::KeyCode::Char('q')
-                    {
-                        let _ = child.kill();
-                        break;
-                    }
-                }
-            }
         }
-        let _ = child.kill();
-        terminal.clear()?;
 
-        println!(
-            "👋 It was nice fuzzing with you. Killing PID {}. Bye bye! ",
-            child.id()
-        );
+        let i = child.id();
+
+        terminal.clear()?;
+        child
+            .kill()
+            .context(format!("Couldn't kill the child n°{i}"))?;
+        println!("👋 It was nice fuzzing with you. Killing PID {i}. Bye bye! ",);
 
         Ok(())
     }

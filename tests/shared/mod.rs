@@ -105,6 +105,7 @@ where
 /// });
 /// ensure!(test_passed.is_ok());
 /// ```
+#[allow(clippy::zombie_processes)]
 pub fn ensure_while_fuzzing<F>(
     config: &Configuration,
     timeout: Duration,
@@ -121,8 +122,6 @@ where
             .unwrap_or_default(),
         false,
     );
-
-    child.wait()?;
 
     let start_time = Instant::now();
 

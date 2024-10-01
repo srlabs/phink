@@ -86,7 +86,7 @@ impl Message {
             } else {
                 String::new()
             },
-            self.to_string()
+            self.message_metadata
         )
     }
 }
