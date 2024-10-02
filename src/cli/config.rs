@@ -79,8 +79,8 @@ impl Default for Configuration {
             cores: Some(1),
             use_honggfuzz: false,
             fuzz_origin: false,
-            deployer_address: ContractSetup::DEFAULT_DEPLOYER.into(),
-            max_messages_per_exec: MAX_MESSAGES_PER_EXEC.into(),
+            deployer_address: Some(ContractSetup::DEFAULT_DEPLOYER),
+            max_messages_per_exec: Some(MAX_MESSAGES_PER_EXEC),
             report_path: Some(PathBuf::from("output/coverage_report")),
             default_gas_limit: Some(ContractSetup::DEFAULT_GAS_LIMIT),
             storage_deposit_limit: Some("100000000000".into()),
@@ -88,7 +88,7 @@ impl Default for Configuration {
             constructor_payload: None,
             verbose: true,
             instrumented_contract_path: Some(InstrumentedPath::default()),
-            fuzz_output: None,
+            fuzz_output: Some(PathBuf::from("output")),
             show_ui: true,
         }
     }
