@@ -4,7 +4,6 @@ cores = 2 # set it to 1 for single-core
 max_messages_per_exec = 4
 report_path = "output/phink/contract_coverage"
 fuzz_output = "output"
-use_honggfuzz = false # obligatory for MacOS users
 fuzz_origin = false
 deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Alice (Origin(1))
 constructor_payload = "9BAE9D5E"

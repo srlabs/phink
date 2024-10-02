@@ -89,7 +89,7 @@ pub struct ZiggyConfig {
 }
 
 impl Display for ZiggyConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", serde_json::to_string(self).unwrap())
     }
 }
@@ -100,6 +100,10 @@ impl ZiggyConfig {
             bail!(format!(
                 "{contract_path:?} doesn't exist; couldn't load this contract"
             ))
+        }
+
+        if config.use_honggfuzz {
+            bail!("Please, set use_honggfuzz to `false`, as we do not currently support Honggfuzz due to ALLOW_LIST limitation in Honggfuzz")
         }
 
         Ok(Self {
