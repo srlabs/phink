@@ -108,7 +108,7 @@ impl DomainNameService {
     #[ink(message)]
     #[cfg(feature = "phink")]
     pub fn phink_assert_dangerous_number(&self) {
-        let FORBIDDEN_NUMBER = 69;
+        let FORBIDDEN_NUMBER = 42;
         assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
     }
 }
