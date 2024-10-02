@@ -105,7 +105,7 @@ impl<'a> ChartManager<'a> {
             .x_axis(
                 Axis::default()
                     .title("Time")
-                    .style(Style::default().fg(Color::Gray))
+                    .style(Style::default().fg(Color::Gray).italic())
                     .bounds([self.get_first_x(), self.get_max_x()])
                     .labels([
                         Self::timestamp_to_str(self.get_first_x()).bold(),
@@ -116,6 +116,7 @@ impl<'a> ChartManager<'a> {
             .y_axis(
                 Axis::default()
                     .title("Number of entries")
+                    .italic()
                     .style(Style::default().fg(Color::Gray))
                     .bounds([self.get_first_y(), self.get_max_y()])
                     .labels([

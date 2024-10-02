@@ -79,7 +79,7 @@ impl Paint for Configuration {
         let x5 = &format_option(&self.report_path);
         let x6 = &self.fuzz_origin.to_string();
         let x7 = format!(
-            "ref_time = {}\nproof_size = {}",
+            "ref_time = {} proof_size = {}",
             &self.default_gas_limit.unwrap_or_default().ref_time(),
             &self.default_gas_limit.unwrap_or_default().proof_size()
         );
@@ -137,7 +137,7 @@ impl Paint for Configuration {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Configuration")
+                .title("Configuration (phink.toml)")
                 .bold()
                 .title_alignment(Alignment::Center),
         )

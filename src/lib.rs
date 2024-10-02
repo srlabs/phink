@@ -23,7 +23,10 @@ use crate::{
     },
     instrumenter::instrumentation::Instrumenter,
 };
-use anyhow::Context;
+use anyhow::{
+    bail,
+    Context,
+};
 use clap::Parser;
 use std::{
     env::var,
@@ -105,7 +108,14 @@ pub fn main() {
 
 fn handle_cli() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let config: Configuration = Configuration::try_from(&cli.config).unwrap_or_default();
+    let conf = &cli.config;
+    if !conf.exists() {
+        bail!(format!(
+            "No configuration found at {}, please create a phink.toml",
+            conf.to_str().unwrap(),
+        ))
+    }
+    let config: Configuration = Configuration::try_from(conf).unwrap_or_default();
 
     match cli.command {
         Commands::Instrument(contract_path) => {

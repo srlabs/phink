@@ -54,6 +54,7 @@ use ratatui::{
 };
 use std::{
     borrow::Borrow,
+    fmt::Write,
     io,
     process::Child,
     sync::{
@@ -172,7 +173,7 @@ impl CustomUI {
         let title = Paragraph::new("Phink Fuzzing Dashboard")
             .style(
                 Style::default()
-                    .fg(Color::Magenta)
+                    .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             )
             .alignment(Alignment::Center);
@@ -345,6 +346,21 @@ impl CustomUI {
         Ok(())
     }
 
+    // Keeps ASCII graphic characters and whitespace as-is.
+    // Replaces other characters with a caret (^) followed by the corresponding ASCII character
+    // (similar to how bat does it). A null byte (\0) would be displayed as ^@
+    // A carriage return (\r) would be displayed as ^M
+    // Other control characters would be displayed as ^A, ^B, etc.
+    fn escape_non_printable(s: &str) -> String {
+        let mut result = String::with_capacity(s.len());
+        for byte in s.bytes() {
+            match byte {
+                0x20..=0x7E | b'\n' | b'\t' => result.push(byte as char),
+                _ => write!(result, "^{}", byte.wrapping_add(64) as char).unwrap(),
+            }
+        }
+        result
+    }
     fn display_fuzzed_seed(&mut self) -> Paragraph {
         let mut seed_text: Text = Default::default();
         let seed_info_text: String =
@@ -353,25 +369,17 @@ impl CustomUI {
                 Some(e) => e.to_string(),
             };
 
-        let legend = Line::styled(
-            "Details of the fuzzed seeds",
-            Style::default().fg(Color::Yellow).italic(),
-        );
-
-        seed_text.push_line(legend);
-        seed_text.push_line(Line::styled("", Style::default()));
-
         if !seed_info_text.is_empty() {
-            seed_text.extend(Line::styled(seed_info_text, Style::default().bold()));
+            let escaped_text = Self::escape_non_printable(&seed_info_text);
+            for line in escaped_text.lines() {
+                seed_text.push_line(Line::styled(line.to_string(), Style::default()));
+            }
         } else {
-            seed_text.extend(Line::styled(
-                "Running the seeds, please wait until we actually start fuzzing",
-                Style::default().fg(Color::Green).bold(),
+            seed_text.push_span(Span::styled(
+                "Running the seeds, please wait until we actually start fuzzing...",
+                Style::default().fg(Color::Yellow),
             ));
         }
-
-        // TODO: why the fuckdoesn't it pritn correctly the text. it's not about the message it's
-        // about the whole text and the first few characters only
 
         Paragraph::new(seed_text.clone()).block(
             Block::default()
