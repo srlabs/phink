@@ -1,3 +1,10 @@
+// This is a Substrate runtime configuration that includes the `pallet_contracts`
+// to execute ink! smart contracts. However, this runtime configuration is flexible
+// and the `pallet_contracts` can be replaced or customized as needed. The design
+// allows for the combination of multiple pallets to tailor blockchain functionalities
+// to specific use cases. Developers are encouraged to modify the types and behaviors
+// according to their project requirements while retaining essential components.
+
 use crate::contract::remote::BalanceOf;
 use frame_support::{
     construct_runtime,
