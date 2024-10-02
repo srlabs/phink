@@ -167,14 +167,11 @@ impl ZiggyConfig {
             .env(AflDebug.to_string(), self.afl_debug())
             .stdout(Stdio::piped());
 
-        match ziggy_command {
-            ZiggyCommand::Run => {
-                command_builder.args(vec![
-                    "--inputs",
-                    self.to_owned().instrumented_path().to_str().unwrap(),
-                ]);
-            }
-            _ => {}
+        if ziggy_command == ZiggyCommand::Run {
+            command_builder.args(vec![
+                "--inputs",
+                self.to_owned().fuzz_output().to_str().unwrap(),
+            ]);
         }
 
         self.with_allowlist(command_builder)
