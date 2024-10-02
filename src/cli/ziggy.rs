@@ -17,6 +17,7 @@ use std::{
 use crate::{
     cli::{
         config::{
+            PFiles,
             PFiles::{
                 AllowlistPath,
                 CoverageTracePath,
@@ -170,7 +171,10 @@ impl ZiggyConfig {
         if ziggy_command == ZiggyCommand::Run {
             command_builder.args(vec![
                 "--inputs",
-                self.to_owned().fuzz_output().to_str().unwrap(),
+                PhinkFiles::new(self.to_owned().fuzz_output())
+                    .path(PFiles::CorpusPath)
+                    .to_str()
+                    .unwrap(),
             ]);
         }
 
