@@ -41,7 +41,10 @@ use anyhow::{
 };
 use std::{
     cmp::PartialEq,
-    fmt::Display,
+    fmt::{
+        Display,
+        Formatter,
+    },
     io::{
         self,
     },
@@ -64,6 +67,18 @@ pub enum ZiggyCommand {
     Cover,
     Build,
     Fuzz,
+}
+
+impl Display for ZiggyCommand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let cmd: &str = match &self {
+            ZiggyCommand::Run => "run",
+            ZiggyCommand::Cover => "cover",
+            ZiggyCommand::Build => "build",
+            ZiggyCommand::Fuzz => "fuzz",
+        };
+        write!(f, "{}", cmd)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -128,17 +143,10 @@ impl ZiggyConfig {
         AllowListBuilder::build(self.clone().fuzz_output())
             .context("Building LLVM allowlist failed")?;
 
-        let ziggy_command = match command {
-            ZiggyCommand::Run => "run",
-            ZiggyCommand::Cover => "cover",
-            ZiggyCommand::Build => "build",
-            ZiggyCommand::Fuzz => "fuzz",
-        };
-
         if self.config.show_ui && command == ZiggyCommand::Fuzz {
             CustomManager::new(args, env, self.to_owned()).start()?;
         } else {
-            self.native_ui(args, env, ziggy_command.to_string())?;
+            self.native_ui(args, env, command)?;
         }
 
         Ok(())
@@ -148,16 +156,26 @@ impl ZiggyConfig {
         &self,
         args: Vec<String>,
         env: Vec<(String, String)>,
-        ziggy_command: String,
+        ziggy_command: ZiggyCommand,
     ) -> anyhow::Result<()> {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
-            .arg(ziggy_command.clone())
+            .arg(ziggy_command.to_string())
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
             .env(AflDebug.to_string(), self.afl_debug())
             .stdout(Stdio::piped());
+
+        match ziggy_command {
+            ZiggyCommand::Run => {
+                command_builder.args(vec![
+                    "--inputs",
+                    self.to_owned().instrumented_path().to_str().unwrap(),
+                ]);
+            }
+            _ => {}
+        }
 
         self.with_allowlist(command_builder)
             .context("Couldn't use the allowlist")?;

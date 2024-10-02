@@ -129,22 +129,25 @@ impl Paint for Configuration {
             .bg(colors.header_bg)
             .bold();
 
-        let table = Table::new(rows, [Constraint::Length(5), Constraint::Length(5)])
-            .header(Row::new(vec!["Setting", "Value"]).style(header_style))
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title("Configuration")
-                    .bold()
-                    .title_alignment(Alignment::Center),
-            )
-            .highlight_style(selected_style)
-            .widths([Constraint::Percentage(25), Constraint::Percentage(75)])
-            .column_spacing(1)
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_symbol("> ")
-            .bg(colors.buffer_bg)
-            .highlight_spacing(HighlightSpacing::Always);
+        let table = Table::new(
+            rows,
+            [Constraint::Percentage(50), Constraint::Percentage(50)],
+        )
+        .header(Row::new(vec!["Setting", "Value"]).style(header_style))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Configuration")
+                .bold()
+                .title_alignment(Alignment::Center),
+        )
+        .highlight_style(selected_style)
+        .widths([Constraint::Percentage(25), Constraint::Percentage(75)])
+        .column_spacing(1)
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol("> ")
+        .bg(colors.buffer_bg)
+        .highlight_spacing(HighlightSpacing::Always);
 
         f.render_widget(table, area);
     }

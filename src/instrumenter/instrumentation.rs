@@ -117,7 +117,7 @@ impl Instrumenter {
             .current_dir(path.as_path())
             .env("RUST_BACKTRACE", "1")
             .env("CLIPPY_CONF_DIR", clippy_d)
-            .args(["contract", "build", "--features=phink"])
+            .args(["contract", "build", "--release", "--features=phink"])
             .output()?;
 
         if output.status.success() {
