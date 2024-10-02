@@ -65,9 +65,10 @@ impl SeedWriter {
 
         writeln!(
             writer,
-            "Got {} coverage size with {} message(s).\n",
+            "Got {} coverage size with {} message(s) : {:?}\n",
             self.coverage.coverage_len(),
-            self.input.messages.len()
+            self.input.messages.len(),
+            self.coverage.messages_coverage()
         )?;
 
         for message in self.input.messages.iter() {

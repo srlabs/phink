@@ -202,7 +202,7 @@ impl Fuzzer {
 
         chain.execute_with(|| manager.check_invariants(&all_msg_responses, &decoded_msgs));
 
-        let flatten_coverage = coverage.flatten_cov();
+        let flatten_coverage = coverage.messages_coverage();
 
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose

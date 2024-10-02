@@ -282,7 +282,7 @@ impl CustomUI {
                     .title_alignment(Alignment::Center),
             )
             .data(speed_vec)
-            .style(Style::default().fg(Color::Red))
+            .style(Style::default().fg(Color::White))
             .bar_set(symbols::bar::NINE_LEVELS);
 
         let stats_chunk = chunks[0].inner(Margin {
@@ -316,14 +316,12 @@ impl CustomUI {
                     height: 1,
                 });
 
-            frame.render_widget(
-                Paragraph::new(stat.as_str()).style(
-                    Style::default()
-                        .fg(Color::White)
-                        .add_modifier(Modifier::ITALIC),
-                ),
-                stat_layout[0],
+            let paragraph = Paragraph::new(stat.as_str()).style(
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::ITALIC),
             );
+            frame.render_widget(paragraph, stat_layout[0]);
         }
     }
 
