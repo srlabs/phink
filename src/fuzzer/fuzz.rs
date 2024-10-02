@@ -209,6 +209,8 @@ impl Fuzzer {
         // of performance) Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
+            decoded_msgs.pretty_print(all_msg_responses);
+
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage
                 .save(manager.config().fuzz_output.unwrap_or_default())

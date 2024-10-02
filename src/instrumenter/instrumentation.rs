@@ -113,11 +113,13 @@ impl Instrumenter {
 
         phink_log!(self, "✂️ Creating `{}` to bypass errors", clippy_d);
 
+        // We must NOT compile in release mode (--release), otherwise we won't receive the
+        // debug_pritntln
         let output = Command::new("cargo")
             .current_dir(path.as_path())
             .env("RUST_BACKTRACE", "1")
             .env("CLIPPY_CONF_DIR", clippy_d)
-            .args(["contract", "build", "--release", "--features=phink"])
+            .args(["contract", "build", "--features=phink"])
             .output()?;
 
         if output.status.success() {
