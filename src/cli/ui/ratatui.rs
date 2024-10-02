@@ -54,6 +54,7 @@ use ratatui::{
 };
 use std::{
     borrow::Borrow,
+    collections::VecDeque,
     fmt::Write,
     io,
     process::Child,
@@ -74,7 +75,7 @@ pub struct CustomUI {
     ziggy_config: ZiggyConfig,
     afl_dashboard: AFLDashboard,
     corpus_watcher: CorpusWatcher,
-    fuzzing_speed: Vec<u64>,
+    fuzzing_speed: VecDeque<u64>,
 }
 
 pub static CTOR_VALUE: OnceLock<String> = OnceLock::new();
@@ -112,7 +113,7 @@ impl CustomUI {
                 .context("Couldn't create AFL dashboard")?,
             corpus_watcher: CorpusWatcher::from_output(output)
                 .context("Couldn't create the corpus watcher")?,
-            fuzzing_speed: Vec::new(),
+            fuzzing_speed: VecDeque::new(),
         })
     }
 
@@ -179,8 +180,7 @@ impl CustomUI {
         let data = self.afl_dashboard.read_properties();
 
         if let Ok(afl) = data {
-            self.fuzzing_speed.push(afl.exec_speed.into());
-
+            self.update_fuzzing_speed(afl.exec_speed.into());
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
@@ -257,13 +257,22 @@ impl CustomUI {
         frame.render_widget(paragraph, chunks[0]);
     }
 
-    fn speed_right(&self, frame: &mut Frame, area: Rect) {
+    fn update_fuzzing_speed(&mut self, new_speed: u64) {
+        const MAX_POINTS: usize = 100; // Adjust as needed
+
+        self.fuzzing_speed.push_back(new_speed);
+        if self.fuzzing_speed.len() > MAX_POINTS {
+            self.fuzzing_speed.pop_front();
+        }
+    }
+    fn speed_right(&mut self, frame: &mut Frame, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
             .constraints([Constraint::Percentage(100)].as_ref())
             .split(area);
 
+        let speed_vec = &self.fuzzing_speed.make_contiguous();
         let sparkline = Sparkline::default()
             .block(
                 Block::new()
@@ -272,7 +281,7 @@ impl CustomUI {
                     .bold()
                     .title_alignment(Alignment::Center),
             )
-            .data(&self.fuzzing_speed)
+            .data(speed_vec)
             .style(Style::default().fg(Color::Red))
             .bar_set(symbols::bar::NINE_LEVELS);
 
@@ -280,6 +289,9 @@ impl CustomUI {
             vertical: 1,
             horizontal: 1,
         });
+
+        frame.render_widget(sparkline, chunks[0]);
+
         let stats = [
             format!(
                 "Max: {:.2}",
@@ -293,8 +305,6 @@ impl CustomUI {
                 self.fuzzing_speed.iter().sum::<u64>() / self.fuzzing_speed.len() as u64
             ),
         ];
-
-        frame.render_widget(sparkline, chunks[0]);
         for (i, stat) in stats.iter().enumerate() {
             let stat_layout = Layout::default()
                 .direction(Direction::Horizontal)
