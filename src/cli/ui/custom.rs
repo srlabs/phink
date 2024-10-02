@@ -36,13 +36,17 @@ use std::{
 
 #[derive(Clone, Debug)]
 pub struct CustomManager {
-    args: Vec<String>,
+    args: Option<Vec<String>>,
     env: Vec<(String, String)>,
     ziggy_config: ZiggyConfig,
 }
 
 impl CustomManager {
-    pub fn new(args: Vec<String>, env: Vec<(String, String)>, ziggy_config: ZiggyConfig) -> Self {
+    pub fn new(
+        args: Option<Vec<String>>,
+        env: Vec<(String, String)>,
+        ziggy_config: ZiggyConfig,
+    ) -> Self {
         // If it exists, we remove the `LAST_SEED_FILENAME`
         let _ = fs::remove_file(
             PhinkFiles::new(ziggy_config.config.fuzz_output.clone().unwrap())
@@ -71,7 +75,9 @@ impl CustomManager {
             .with_allowlist(command_builder)
             .context("Couldn't use the allowlist")?;
 
-        command_builder.args(self.args.iter());
+        if let Some(args) = self.args {
+            command_builder.args(args.iter());
+        }
         command_builder.envs(self.env);
 
         let child = command_builder

@@ -138,7 +138,7 @@ impl ZiggyConfig {
     fn build_command(
         &self,
         command: ZiggyCommand,
-        args: Vec<String>,
+        args: Option<Vec<String>>,
         env: Vec<(String, String)>,
     ) -> anyhow::Result<()> {
         AllowListBuilder::build(self.clone().fuzz_output())
@@ -155,7 +155,7 @@ impl ZiggyConfig {
 
     fn native_ui(
         &self,
-        args: Vec<String>,
+        maybe_args: Option<Vec<String>>,
         env: Vec<(String, String)>,
         ziggy_command: ZiggyCommand,
     ) -> anyhow::Result<()> {
@@ -181,7 +181,9 @@ impl ZiggyConfig {
         self.with_allowlist(command_builder)
             .context("Couldn't use the allowlist")?;
 
-        command_builder.args(args.iter());
+        if let Some(args) = maybe_args {
+            command_builder.args(args.iter());
+        }
         command_builder.envs(env);
 
         let mut ziggy_child = command_builder
@@ -227,9 +229,9 @@ impl ZiggyConfig {
         let dict = PhinkFiles::new(fuzzoutput.to_owned().unwrap_or_default()).path(DictPath);
 
         let build_args = if !self.config.use_honggfuzz {
-            vec!["--no-honggfuzz".parse()?]
+            Some(vec!["--no-honggfuzz".parse()?])
         } else {
-            vec!["".parse()?]
+            None
         };
 
         self.build_command(ZiggyCommand::Build, build_args, vec![])?;
@@ -254,13 +256,13 @@ impl ZiggyConfig {
 
         let fuzz_config = vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)];
 
-        self.build_command(ZiggyCommand::Fuzz, fuzzing_args, fuzz_config)
+        self.build_command(ZiggyCommand::Fuzz, Some(fuzzing_args), fuzz_config)
     }
 
     pub fn ziggy_cover(&self) -> anyhow::Result<()> {
         self.build_command(
             ZiggyCommand::Cover,
-            vec![],
+            None,
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
         Ok(())
@@ -276,7 +278,7 @@ impl ZiggyConfig {
 
         self.build_command(
             ZiggyCommand::Run,
-            vec![],
+            None,
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
         Ok(())
