@@ -1,18 +1,18 @@
-# Phink Configuration
+### Phink Configuration
 
-cores = 2 # set it to 1 for single-core
+cores = 6 # set it to 1 for single-core
 max_messages_per_exec = 4
 report_path = "output/phink/contract_coverage"
 fuzz_output = "output"
 fuzz_origin = false
 deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Alice (Origin(1))
 constructor_payload = "9BAE9D5E"
-storage_deposit_limit = "100000000000" # this is commented by default, to set is to `None`
+storage_deposit_limit = "100000000000"
 instantiate_initial_value = "0"
 verbose = true
-instrumented_contract_path.path = "toooooooooooz" #commented, we want it in /tmp/
+instrumented_contract_path.path = "toooooooooooz"
 show_ui = true
-
+use_honggfuzz = false
 
 [default_gas_limit]
 ref_time = 100000000000

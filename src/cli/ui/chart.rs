@@ -98,7 +98,7 @@ impl<'a> ChartManager<'a> {
             .block(
                 Block::bordered().title(
                     Title::default()
-                        .content("Corpus evolution over time".bold())
+                        .content("Corpus evolution".bold())
                         .alignment(Alignment::Center),
                 ),
             )
@@ -116,8 +116,7 @@ impl<'a> ChartManager<'a> {
             .y_axis(
                 Axis::default()
                     .title("Number of entries")
-                    .italic()
-                    .style(Style::default().fg(Color::Gray))
+                    .style(Style::default().fg(Color::Gray).italic())
                     .bounds([self.get_first_y(), self.get_max_y()])
                     .labels([
                         self.get_first_y().to_string().bold(),

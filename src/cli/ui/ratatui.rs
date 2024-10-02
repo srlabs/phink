@@ -101,7 +101,7 @@ impl CustomUI {
                     return "Couldn't load the JSON specs".parse().unwrap()
                 }
             }
-            " - ".into()
+            "-".into()
         });
 
         let output = ziggy_config.clone().fuzz_output();
@@ -159,13 +159,8 @@ impl CustomUI {
   "#;
 
         let octopus = Paragraph::new(ascii_art)
-            .style(
-                Style::default()
-                    .fg(Color::Magenta)
-                    .add_modifier(Modifier::BOLD),
-            )
+            .style(Style::default())
             .alignment(Alignment::Center);
-
         f.render_widget(octopus, area);
     }
     fn render_title(&self, f: &mut Frame, area: Rect) {

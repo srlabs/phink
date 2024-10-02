@@ -196,7 +196,7 @@ impl Fuzzer {
         let mut chain = BasicExternalities::new(self.setup.genesis.clone());
         chain.execute_with(|| timestamp(0));
 
-        let mut coverage: InputCoverage = Default::default();
+        let mut coverage = InputCoverage::new();
 
         let all_msg_responses = self.execute_messages(&decoded_msgs, &mut chain, &mut coverage);
 
@@ -214,16 +214,11 @@ impl Fuzzer {
                 .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            decoded_msgs.pretty_print(all_msg_responses);
-
             println!(
                 "[🚧DEBUG TRACE] Detected {} messages traces",
                 coverage.messages_coverage().clone().len(),
             );
-            println!(
-                "[🚧DEBUG TRACE] Caught coverage identifiers {:?}\n",
-                &flatten_coverage
-            );
+            println!("[🚧DEBUG TRACE] Caught coverage identifiers {flatten_coverage:?}\n",);
         }
 
         // We now fake the coverage

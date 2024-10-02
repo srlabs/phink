@@ -1,7 +1,4 @@
-use anyhow::{
-    anyhow,
-    bail,
-};
+use anyhow::bail;
 use std::{
     fmt::{
         Display,
@@ -37,9 +34,7 @@ impl FromStr for Selector {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = hex::decode(s.trim_start_matches("0x"))?;
         if trimmed.len() != 4 {
-            return Err(anyhow!(
-                "Decoded hex does not match the expected length of 4"
-            ));
+            bail!("Decoded hex does not match the expected length of 4");
         }
         match Selector::try_from(trimmed.to_vec()) {
             Ok(sel) => Ok(sel),

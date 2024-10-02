@@ -47,6 +47,12 @@ impl Debug for InputCoverage {
 }
 
 impl InputCoverage {
+    pub fn new() -> InputCoverage {
+        InputCoverage {
+            messages_coverage: Vec::new(),
+            raw_from_debug: Vec::new(),
+        }
+    }
     pub fn coverage_len(&self) -> usize {
         self.messages_coverage
             .iter()

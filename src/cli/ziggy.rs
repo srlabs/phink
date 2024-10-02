@@ -103,7 +103,10 @@ impl ZiggyConfig {
         }
 
         if config.use_honggfuzz {
-            bail!("Please, set use_honggfuzz to `false`, as we do not currently support Honggfuzz due to ALLOW_LIST limitation in Honggfuzz")
+            bail!(
+                "Please, set use_honggfuzz to `false`, as we do not currently support Honggfuzz
+        due to ALLOW_LIST limitations in Honggfuzz"
+            )
         }
 
         Ok(Self {
@@ -424,7 +427,7 @@ mod tests {
 
         let result = config.build_command(
             ZiggyCommand::Build,
-            vec!["--no-honggfuzz".to_string()],
+            Some(vec!["--no-honggfuzz".to_string()]),
             vec![],
         );
         assert!(
