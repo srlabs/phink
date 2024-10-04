@@ -216,10 +216,6 @@ impl Fuzzer {
                 .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            println!(
-                "[🚧DEBUG TRACE] Detected {} messages traces",
-                coverage.messages_coverage().clone().len(),
-            );
             println!("[🚧DEBUG TRACE] Caught coverage identifiers {flatten_coverage:?}\n",);
         }
 

@@ -115,7 +115,7 @@ impl Instrumenter {
         phink_log!(self, "✂️ Creating `{}` to bypass errors", clippy_d);
 
         // We must NOT compile in release mode (--release), otherwise we won't receive the
-        // debug_pritntln
+        // `debug_pritntln`
         let output = Command::new("cargo")
             .current_dir(path.as_path())
             .env("RUST_BACKTRACE", "1")
@@ -140,7 +140,7 @@ impl Instrumenter {
         }
 
         println!(
-            "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in '{p_display}'",
+            "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in `{p_display}`",
             self.z_config.contract_path().display(),
         );
 
