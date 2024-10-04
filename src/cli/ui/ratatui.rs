@@ -380,10 +380,14 @@ impl CustomUI {
         } else {
             seed_text.push_span(Span::styled(
                 format!(
-                    "Running the seeds, please wait until we actually start fuzzing...\
-                 If this screen get stuck for a while, execute `tail -f {}`",
+                    "Running the seeds, please wait until we actually start fuzzing...\n
+                 If this screen get stuck for a while, execute `tail -f {}`.",
                     &self.afl_dashboard.get_path().to_str().unwrap()
                 ),
+                Style::default().fg(Color::Yellow),
+            ));
+            seed_text.push_span(Span::styled(
+                "Either there is a terible bug, either we are still looking for a decodable seed.",
                 Style::default().fg(Color::Yellow),
             ));
         }

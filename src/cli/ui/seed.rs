@@ -30,20 +30,11 @@ pub const LAST_SEED_FILENAME: &str = "last_seed.phink";
 pub struct SeedWriter {
     input: OneInput,
     coverage: InputCoverage,
-    // responses: Vec<FullContractResponse>,
 }
 
 impl SeedWriter {
-    pub fn new(
-        input: OneInput,
-        coverage: InputCoverage,
-        // responses: Vec<FullContractResponse>,
-    ) -> Self {
-        SeedWriter {
-            input,
-            coverage,
-            // responses,
-        }
+    pub fn new(input: OneInput, coverage: InputCoverage) -> Self {
+        SeedWriter { input, coverage }
     }
 
     pub fn should_save() -> bool {

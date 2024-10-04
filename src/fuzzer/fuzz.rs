@@ -13,10 +13,7 @@ use crate::{
             ContractSetup,
             FullContractResponse,
         },
-        selectors::{
-            database::SelectorDatabase,
-            selector::Selector,
-        },
+        selectors::database::SelectorDatabase,
     },
     cover::coverage::InputCoverage,
     fuzzer::{
@@ -29,7 +26,6 @@ use crate::{
         manager::CampaignManager,
         parser::{
             parse_input,
-            Message,
             OneInput,
         },
     },
@@ -128,14 +124,14 @@ impl Fuzzer {
 
     fn execute_messages(
         &self,
-        decoded_msgs: &OneInput,
+        input: &OneInput,
         chain: &mut BasicExternalities,
         coverage: &mut InputCoverage,
     ) -> Vec<FullContractResponse> {
         let mut responses = Vec::new();
 
         chain.execute_with(|| {
-            for message in &decoded_msgs.messages {
+            for message in &input.messages {
                 let transfer_value = if message.is_payable {
                     message.value_token
                 } else {
@@ -156,12 +152,7 @@ impl Fuzzer {
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config().show_ui {
-            let seeder = SeedWriter::new(
-                decoded_msgs.to_owned(),
-                coverage.to_owned(),
-                // responses.clone(),
-            );
-
+            let seeder = SeedWriter::new(input.to_owned(), coverage.to_owned());
             if SeedWriter::should_save() {
                 seeder
                     .save(self.clone().ziggy_config.fuzz_output())
@@ -180,9 +171,9 @@ impl Fuzzer {
         }
 
         let mut chain = BasicExternalities::new(self.setup.genesis.clone());
-        chain.execute_with(|| timestamp(0));
-
         let mut coverage = InputCoverage::new();
+
+        chain.execute_with(|| timestamp(0));
 
         let all_msg_responses = self.execute_messages(&decoded_msgs, &mut chain, &mut coverage);
 
