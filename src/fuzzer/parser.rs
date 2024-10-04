@@ -143,7 +143,7 @@ impl From<Origin> for u8 {
     }
 }
 
-impl<'a> Data<'a> {
+impl Data<'_> {
     fn size_limit_reached(&self) -> bool {
         self.size >= self.max_messages_per_exec
     }

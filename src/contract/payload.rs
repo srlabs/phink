@@ -391,7 +391,7 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new_with_contract(configuration, Some(PathBuf::from("sample/dummy")))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
 
         let manager = Fuzzer::new(ziggy_config)?
             .init_fuzzer()
@@ -433,7 +433,7 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new(configuration, PathBuf::from("sample/dummy"))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
 
         let manager = Fuzzer::new(ziggy_config)?
             .init_fuzzer()
@@ -477,7 +477,7 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new(configuration, PathBuf::from("sample/dummy"))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
 
         let manager = Fuzzer::new(ziggy_config)?
             .init_fuzzer()
@@ -527,7 +527,7 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new(configuration, PathBuf::from("sample/dns"))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dns"))?;
 
         let manager = Fuzzer::new(ziggy_config)?
             .init_fuzzer()
@@ -576,7 +576,7 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new(configuration, PathBuf::from("sample/dns"))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dns"))?;
 
         let manager = Fuzzer::new(ziggy_config)?
             .init_fuzzer()

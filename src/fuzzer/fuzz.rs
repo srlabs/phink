@@ -109,9 +109,9 @@ impl Fuzzer {
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
             .context("🙅 No invariants found, check your contract")?;
 
-        let messages =
-            PayloadCrafter::extract_all(self.ziggy_config.to_owned().instrumented_path())
-                .context("Couldn't extract all the messages selectors")?;
+        let conf = self.ziggy_config.config();
+        let messages = PayloadCrafter::extract_all(conf.instrumented_contract().to_path_buf())
+            .context("Couldn't extract all the messages selectors")?;
 
         let payable_messages = PayloadCrafter::extract_payables(&contract_bridge.json_specs)
             .context("Couldn't fetch payable messages")?;
@@ -121,23 +121,22 @@ impl Fuzzer {
         database.add_messages(messages);
         database.add_payables(payable_messages);
 
-        let manager = CampaignManager::new(
-            database.clone(),
-            contract_bridge.clone(),
-            self.ziggy_config.config().to_owned(),
-        );
+        let manager =
+            CampaignManager::new(database.clone(), contract_bridge.clone(), conf.to_owned());
 
         let env_builder = EnvironmentBuilder::new(database);
 
         env_builder
-            .build_env(self.ziggy_config.fuzz_output())
+            .build_env(self.ziggy_config.to_owned().fuzz_output())
             .context("🙅 Couldn't create corpus entries and dict")?;
 
-        println!(
-            "\n🚀  Now fuzzing `{}` ({})!\n",
-            &contract_bridge.path_to_specs.as_os_str().to_str().unwrap(),
-            &contract_bridge.contract_address
-        );
+        if conf.verbose {
+            println!(
+                "\n🚀  Now fuzzing `{}` ({})!\n",
+                &contract_bridge.path_to_specs.as_os_str().to_str().unwrap(),
+                &contract_bridge.contract_address
+            );
+        }
 
         manager
     }
@@ -269,7 +268,7 @@ mod tests {
             show_ui: false,
             ..Default::default()
         };
-        ZiggyConfig::new(config, PathBuf::from("sample/dns")).unwrap()
+        ZiggyConfig::new_with_contract(config, PathBuf::from("sample/dns")).unwrap()
     }
 
     #[test]
@@ -291,7 +290,7 @@ mod tests {
         let manager = CampaignManager::new(
             database.clone(),
             contract_bridge.clone(),
-            config.config.to_owned(),
+            config.config().to_owned(),
         )?;
 
         let env_builder = EnvironmentBuilder::new(database);

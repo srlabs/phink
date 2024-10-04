@@ -174,6 +174,13 @@ impl Configuration {
         }
     }
 
+    pub fn instrumented_contract(&self) -> PathBuf {
+        self.instrumented_contract_path
+            .clone()
+            .unwrap_or_default()
+            .path
+    }
+
     pub fn save_as_toml(&self, to: &str) -> anyhow::Result<()> {
         let toml_str =
             toml::to_string(self).with_context(|| "Couldn't serialize to toml".to_string())?;

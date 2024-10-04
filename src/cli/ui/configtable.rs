@@ -87,11 +87,8 @@ impl Paint for Configuration {
         let x9 = CTOR_VALUE.get().unwrap().to_string();
 
         let x10 = &self.verbose.to_string();
-        let x11 = &self
-            .instrumented_contract_path
-            .clone()
-            .unwrap_or_default()
-            .to_string();
+        let ctr = &self.instrumented_contract();
+        let x11 = ctr.to_str().unwrap();
         let x12 = &format_option(&self.fuzz_output);
         let x13 = &self.show_ui.to_string();
         let items = vec![

@@ -144,10 +144,12 @@ impl ContractSetup {
             .clone()
             .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
 
-        println!(
-            "🛠️Initializing contract address from the origin: {:?}",
-            contract_addr
-        );
+        if config.config().verbose {
+            println!(
+                "🛠️Initializing contract address from the origin: {:?}",
+                contract_addr
+            );
+        }
 
         let json_specs = fs::read_to_string(&finder.specs_path)
             .context(format!("Couldn't read JSON from {:?}", finder.specs_path))?;

@@ -96,7 +96,7 @@ impl Display for ZiggyConfig {
 
 impl ZiggyConfig {
     pub fn new(config: Configuration) -> anyhow::Result<Self> {
-        Self::check(&config, None)?;
+        Self::is_valid(&config, None)?;
 
         Ok(Self {
             config,
@@ -108,16 +108,16 @@ impl ZiggyConfig {
         &self.config
     }
 
-    /// Returns the contract path of the ink! contract. If we don't find it, we return the path to
-    /// the instrumented version
+    /// Returns the contract path of the ink! contract
     pub fn contract_path(&self) -> PathBuf {
         self.contract_path.clone().unwrap()
     }
+
     pub fn new_with_contract(
         config: Configuration,
         contract_path: PathBuf,
     ) -> anyhow::Result<Self> {
-        Self::check(&config, Some(&contract_path))?;
+        Self::is_valid(&config, Some(&contract_path))?;
 
         Ok(Self {
             config,
@@ -125,7 +125,7 @@ impl ZiggyConfig {
         })
     }
 
-    fn check(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
+    fn is_valid(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
         if let Some(path) = contract_path {
             if !path.exists() {
                 bail!(format!(
@@ -143,19 +143,13 @@ impl ZiggyConfig {
 
         Ok(())
     }
-    pub fn instrumented_path(self) -> PathBuf {
-        self.config
-            .instrumented_contract_path
-            .unwrap_or_default()
-            .path
-    }
 
     pub fn fuzz_output(self) -> PathBuf {
         self.config.fuzz_output.unwrap_or_default()
     }
 
     pub fn afl_debug<'a>(&self) -> &'a str {
-        match self.config.verbose {
+        match self.config().verbose {
             true => "1",
             false => "0",
         }
@@ -163,7 +157,7 @@ impl ZiggyConfig {
 
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
-        if config.config.verbose {
+        if config.config().verbose {
             println!("🖨️ Using {} = {config_str}", FuzzingWithConfig);
         }
         config
@@ -179,12 +173,36 @@ impl ZiggyConfig {
         AllowListBuilder::build(self.clone().fuzz_output())
             .context("Building LLVM allowlist failed")?;
 
-        if self.config.show_ui && command == ZiggyCommand::Fuzz {
-            CustomManager::new(args, env, self.to_owned()).start()?;
-        } else {
-            self.native_ui(args, env, command)?;
+        match command {
+            ZiggyCommand::Cover | ZiggyCommand::Run => {
+                self.exist_or_bail()?;
+                self.native_ui(args, env, command)?;
+            }
+            ZiggyCommand::Fuzz => {
+                self.exist_or_bail()?;
+                if self.config.show_ui {
+                    CustomManager::new(args, env, self.to_owned()).start()?;
+                } else {
+                    self.native_ui(args, env, command)?;
+                }
+            }
+            ZiggyCommand::Build => {
+                self.native_ui(args, env, command)?;
+            }
         }
 
+        Ok(())
+    }
+
+    fn exist_or_bail(&self) -> anyhow::Result<()> {
+        let loc = &self.config().instrumented_contract();
+        if !loc.exists() {
+            bail!(format!(
+                "The instrumented contract path `{}` doesn't exist, \
+                ensure that you have properly instrumented your contract to the correct location",
+                loc.to_str().unwrap()
+            ))
+        }
         Ok(())
     }
 
@@ -255,10 +273,8 @@ impl ZiggyConfig {
                     .canonicalize()
                     .context("Couldn't canonicalize the allowlist path")?,
             );
-        } else {
-            if self.config.verbose {
-                println!("This is a macOS machine. We won't use the ALLOW_LIST. Performances will be drastically bad...");
-            }
+        } else if self.config.verbose {
+            println!("This is a macOS machine. We won't use the ALLOW_LIST. Performances will be drastically bad...");
         }
         Ok(())
     }
@@ -338,17 +354,17 @@ mod tests {
             show_ui: false,
             ..Default::default()
         };
-        ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap()
+        ZiggyConfig::new_with_contract(config, PathBuf::from("sample/dummy")).unwrap()
     }
 
     #[test]
     fn test_ziggy_config_new() {
         let config = create_test_config();
-        assert!(config.config.verbose);
-        assert_eq!(config.config.cores, Some(4));
-        assert!(!config.config.use_honggfuzz);
+        assert!(config.config().verbose);
+        assert_eq!(config.config().cores, Some(4));
+        assert!(!config.config().use_honggfuzz);
         assert_eq!(
-            config.config.fuzz_output,
+            config.config().fuzz_output,
             Some(PathBuf::from("/tmp/fuzz_output"))
         );
         assert_eq!(config.contract_path(), PathBuf::from("sample/dummy"));
@@ -401,7 +417,8 @@ mod tests {
             fuzz_output: Some(temp_dir.path().to_path_buf()),
             ..Default::default()
         };
-        let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy")).unwrap();
+        let ziggy_config =
+            ZiggyConfig::new_with_contract(config, PathBuf::from("sample/dummy")).unwrap();
 
         AllowListBuilder::build(ziggy_config.fuzz_output())?;
 
@@ -424,7 +441,8 @@ mod tests {
                 fuzz_output: Some(temp_dir.path().to_path_buf()),
                 ..Default::default()
             };
-            let ziggy_config = ZiggyConfig::new(config, PathBuf::from("sample/dummy"))?;
+            let ziggy_config =
+                ZiggyConfig::new_with_contract(config, PathBuf::from("sample/dummy"))?;
 
             AllowListBuilder::build(ziggy_config.clone().fuzz_output())?;
 
@@ -462,6 +480,8 @@ mod tests {
             Some(vec!["--no-honggfuzz".to_string()]),
             vec![],
         );
+
+        println!("{:?}", result);
         assert!(
             result.is_ok(),
             "One possibility could be `cargo afl config --build`"

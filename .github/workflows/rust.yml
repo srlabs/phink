@@ -11,30 +11,62 @@ env:
   RUST_TEST_THREADS: "1"
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/index
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-index-
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
 
       - name: Install LLVM and Clang
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
           sudo apt-get update
-          sudo apt-get install -y llvm-19  clang-19 libclang-19-dev
+          sudo apt-get install -y llvm-19 clang-19 libclang-19-dev
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: nightly
-          components: rustfmt, rust-src
           override: true
 
       - name: Install required tools
         run: |
           cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
+
+      - name: Clean up space
+        run: |
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo du -sh /* 2>/dev/null
 
       - name: Run afl-system-config
         run: |
@@ -46,7 +78,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Build in release mode
-        run: cargo build --release --verbose
+        run: cargo build --release --verbose --quiet
 
       - name: Run AFL++ configuration
         run: cargo afl config --build --plugins --verbose --force

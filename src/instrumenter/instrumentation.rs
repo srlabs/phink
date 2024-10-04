@@ -70,7 +70,7 @@ impl Instrumenter {
     }
 
     pub fn find(&self) -> anyhow::Result<InkFilesPath> {
-        let c_path = self.to_owned().z_config.instrumented_path();
+        let c_path = self.z_config.config().instrumented_contract();
         let c_path_str = c_path.to_str().unwrap();
 
         let wasm_path = match fs::read_dir(c_path.join("target/ink/")) {
@@ -103,7 +103,8 @@ impl Instrumenter {
     /// # Important
     /// This function needs to be called after once `instrument()` succeded !
     pub fn build(self) -> anyhow::Result<()> {
-        let path = self.to_owned().z_config.instrumented_path();
+        let instrumenter = self.to_owned();
+        let path = instrumenter.z_config.config().instrumented_contract();
         let p_display = path.display();
         if !path.exists() {
             bail!("There was probably a fork issue, as {p_display} doesn't exist.")
@@ -170,7 +171,7 @@ impl Instrumenter {
         Ok(temp_dir_str + "/clippy.toml")
     }
     fn fork(self) -> anyhow::Result<PathBuf> {
-        let new_dir = &self.to_owned().z_config.instrumented_path();
+        let new_dir = &self.z_config.config().instrumented_contract();
 
         phink_log!(self, "🏗️ Creating new directory: '{}'", new_dir.display());
 
@@ -183,12 +184,12 @@ impl Instrumenter {
             self.z_config.contract_path()
         );
 
-        for entry in WalkDir::new(&self.z_config.contract_path()) {
+        for entry in WalkDir::new(self.z_config.contract_path()) {
             let entry = entry?;
             let target_path = new_dir.join(
                 entry
                     .path()
-                    .strip_prefix(&self.z_config.contract_path())
+                    .strip_prefix(self.z_config.contract_path())
                     .with_context(|| "Couldn't `strip_prefix`")?,
             );
 
@@ -212,7 +213,7 @@ impl Instrumenter {
             "✅ Fork completed successfully! New directory: {:?}",
             new_dir
         );
-        Ok(new_dir.to_owned())
+        Ok(new_dir.to_path_buf())
     }
 
     pub(crate) fn instrument(self) -> anyhow::Result<()> {
@@ -361,20 +362,19 @@ mod tests {
 
     // Helper function to create a temporary `ZiggyConfig` for testing. If `keep` is set to `true`,
     // the folder (instrumented contract and fuzzing output) won't be deleted once the test passed
-    fn create_temp_ziggy_config(keep: bool) -> ZiggyConfig {
+    fn create_temp_ziggy_config(keep: bool, verbose: bool) -> ZiggyConfig {
         let fuzz_output = Some(Builder::new().keep(keep).tempdir().unwrap().into_path());
         let instrumented_contract_path = Some(InstrumentedPath::from(
             Builder::new().keep(keep).tempdir().unwrap().into_path(),
         ));
 
-        ZiggyConfig {
-            config: Configuration {
-                fuzz_output,
-                instrumented_contract_path,
-                ..Default::default()
-            },
-            contract_path: PathBuf::from("sample/dummy"),
-        }
+        let configuration = Configuration {
+            fuzz_output,
+            instrumented_contract_path,
+            verbose,
+            ..Default::default()
+        };
+        ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy")).unwrap()
     }
 
     #[test]
@@ -392,8 +392,8 @@ mod tests {
     }
     #[test]
     fn test_find_wasm_and_specs_paths_success() {
-        let config = create_temp_ziggy_config(false);
-        let buf = config.to_owned().instrumented_path();
+        let config = create_temp_ziggy_config(false, true);
+        let buf = config.config().instrumented_contract();
         let wasm_file = buf.join("target/ink/dummy.wasm");
         let specs_file = buf.join("target/ink/dummy.json");
 
@@ -412,19 +412,35 @@ mod tests {
 
     #[test]
     fn test_find_wasm_file_not_found() {
-        let config = ZiggyConfig {
-            config: Configuration {
+        let config = ZiggyConfig::new_with_contract(
+            Configuration {
                 fuzz_output: Some(tempdir().unwrap().into_path()),
                 instrumented_contract_path: Some(InstrumentedPath::from(
                     tempdir().unwrap().into_path(),
                 )),
                 ..Default::default()
             },
-            contract_path: PathBuf::from("rezrzerze/idontexistsad"),
-        };
+            PathBuf::from("../"),
+        )
+        .unwrap();
         let instrumenter = Instrumenter::new(config);
         let result = instrumenter.find();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_assert_folder_doesnt_exist() {
+        assert!(ZiggyConfig::new_with_contract(
+            Configuration {
+                fuzz_output: Some(tempdir().unwrap().into_path()),
+                instrumented_contract_path: Some(InstrumentedPath::from(
+                    tempdir().unwrap().into_path(),
+                )),
+                ..Default::default()
+            },
+            PathBuf::from("rezrzerze/idontexistsad"),
+        )
+        .is_err())
     }
 
     #[test]
@@ -453,8 +469,7 @@ mod tests {
 
     #[test]
     fn test_fork_creates_new_directory() {
-        let mut config = create_temp_ziggy_config(false);
-        config.config.verbose = false;
+        let config = create_temp_ziggy_config(false, false);
         let instrumenter = Instrumenter::new(config.clone());
 
         let result = instrumenter.fork().unwrap();
@@ -470,8 +485,7 @@ mod tests {
 
     #[test]
     fn test_build_successful() -> anyhow::Result<()> {
-        let mut config = create_temp_ziggy_config(false);
-        config.config.verbose = false;
+        let config = create_temp_ziggy_config(false, false);
 
         let instrumenter = Instrumenter::new(config);
         let a = instrumenter.clone().instrument();

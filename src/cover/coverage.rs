@@ -64,7 +64,7 @@ impl InputCoverage {
     pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
         let mut trace_strings: Vec<String> = self
             .messages_coverage()
-            .into_iter()
+            .iter()
             .map(|id| id.to_string())
             .collect();
 
