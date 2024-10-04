@@ -116,7 +116,7 @@ fn handle_cli() -> anyhow::Result<()> {
             conf.to_str().unwrap(),
         ))
     }
-    let config: Configuration = Configuration::try_from(conf).unwrap_or_default();
+    let config: Configuration = Configuration::try_from(conf)?;
 
     match cli.command {
         Commands::Instrument(contract_path) => {

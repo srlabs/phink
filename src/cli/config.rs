@@ -16,7 +16,10 @@ use crate::{
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
     instrumenter::path::InstrumentedPath,
 };
-use anyhow::Context;
+use anyhow::{
+    bail,
+    Context,
+};
 use frame_support::weights::Weight;
 use serde_derive::{
     Deserialize,
@@ -141,15 +144,15 @@ impl PhinkFiles {
 }
 
 impl TryFrom<String> for Configuration {
-    type Error = String;
-    fn try_from(config_str: String) -> Result<Self, Self::Error> {
+    type Error = anyhow::Error;
+    fn try_from(config_str: String) -> anyhow::Result<Self> {
         let config: Configuration = match toml::from_str(&config_str) {
             Ok(config) => config,
-            Err(e) => return Err(format!("❌ Can't parse config: {}", e)),
+            Err(e) => bail!("Can't parse config: {e}"),
         };
 
         if Configuration::parse_balance(&config.storage_deposit_limit.clone()).is_none() {
-            return Err("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file".into());
+            bail!("Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file");
         }
 
         Ok(config)
@@ -157,11 +160,11 @@ impl TryFrom<String> for Configuration {
 }
 
 impl TryFrom<&PathBuf> for Configuration {
-    type Error = String;
-    fn try_from(path: &PathBuf) -> Result<Self, Self::Error> {
+    type Error = anyhow::Error;
+    fn try_from(path: &PathBuf) -> anyhow::Result<Self> {
         match fs::read_to_string(path) {
             Ok(config) => config.try_into(),
-            Err(err) => Err(format!("🚫 Can't read config: {}", err)),
+            Err(err) => bail!("🚫 Can't read config: {err}"),
         }
     }
 }
