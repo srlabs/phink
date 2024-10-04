@@ -74,11 +74,8 @@ enum Commands {
     Coverage(Contract),
     /// Execute one seed
     Execute {
-        /// Seed to be run
+        /// Seed to be executed
         seed: PathBuf,
-        /// Path where the contract is located. It must be the root directory
-        /// of the contract
-        contract_path: PathBuf,
     },
 }
 
@@ -147,13 +144,9 @@ fn handle_cli() -> anyhow::Result<()> {
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_run()
         }
-        Commands::Execute {
-            seed,
-            contract_path,
-        } => {
+        Commands::Execute { seed } => {
             let fuzzer = Fuzzer::new(
-                ZiggyConfig::new_with_contract(config, contract_path)
-                    .context("Couldn't generate handle the ZiggyConfig")?,
+                ZiggyConfig::new(config).context("Couldn't generate handle the ZiggyConfig")?,
             )?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }

@@ -104,15 +104,6 @@ impl ZiggyConfig {
         })
     }
 
-    pub fn config(&self) -> &Configuration {
-        &self.config
-    }
-
-    /// Returns the contract path of the ink! contract
-    pub fn contract_path(&self) -> PathBuf {
-        self.contract_path.clone().unwrap()
-    }
-
     pub fn new_with_contract(
         config: Configuration,
         contract_path: PathBuf,
@@ -125,6 +116,14 @@ impl ZiggyConfig {
         })
     }
 
+    pub fn config(&self) -> &Configuration {
+        &self.config
+    }
+
+    /// Returns the contract path of the ink! contract
+    pub fn contract_path(&self) -> PathBuf {
+        self.contract_path.clone().unwrap()
+    }
     fn is_valid(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
         if let Some(path) = contract_path {
             if !path.exists() {
@@ -158,7 +157,7 @@ impl ZiggyConfig {
     pub fn parse(config_str: String) -> Self {
         let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
         if config.config().verbose {
-            println!("🖨️ Using {} = {config_str}", FuzzingWithConfig);
+            println!("🖨️ Using {} = {config_str}\n", FuzzingWithConfig);
         }
         config
     }
