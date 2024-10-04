@@ -66,7 +66,7 @@ impl Instrumenter {
     }
 
     pub fn verbose(self) -> bool {
-        self.z_config.config.verbose
+        self.z_config.config().verbose
     }
 
     pub fn find(&self) -> anyhow::Result<InkFilesPath> {
@@ -140,7 +140,7 @@ impl Instrumenter {
 
         println!(
             "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in '{p_display}'",
-            self.z_config.contract_path.display(),
+            self.z_config.contract_path().display(),
         );
 
         Ok(())
@@ -180,15 +180,15 @@ impl Instrumenter {
         phink_log!(
             self,
             "📁 Starting to copy files from {:?}",
-            self.z_config.contract_path
+            self.z_config.contract_path()
         );
 
-        for entry in WalkDir::new(&self.z_config.contract_path) {
+        for entry in WalkDir::new(&self.z_config.contract_path()) {
             let entry = entry?;
             let target_path = new_dir.join(
                 entry
                     .path()
-                    .strip_prefix(&self.z_config.contract_path)
+                    .strip_prefix(&self.z_config.contract_path())
                     .with_context(|| "Couldn't `strip_prefix`")?,
             );
 

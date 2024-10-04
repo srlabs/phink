@@ -84,8 +84,8 @@ impl Display for ZiggyCommand {
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ZiggyConfig {
-    pub config: Configuration,
-    pub contract_path: PathBuf,
+    config: Configuration,
+    contract_path: Option<PathBuf>,
 }
 
 impl Display for ZiggyConfig {
@@ -95,11 +95,43 @@ impl Display for ZiggyConfig {
 }
 
 impl ZiggyConfig {
-    pub fn new(config: Configuration, contract_path: PathBuf) -> anyhow::Result<Self> {
-        if !contract_path.exists() {
-            bail!(format!(
-                "{contract_path:?} doesn't exist; couldn't load this contract"
-            ))
+    pub fn new(config: Configuration) -> anyhow::Result<Self> {
+        Self::check(&config, None)?;
+
+        Ok(Self {
+            config,
+            contract_path: None,
+        })
+    }
+
+    pub fn config(&self) -> &Configuration {
+        &self.config
+    }
+
+    /// Returns the contract path of the ink! contract. If we don't find it, we return the path to
+    /// the instrumented version
+    pub fn contract_path(&self) -> PathBuf {
+        self.contract_path.clone().unwrap()
+    }
+    pub fn new_with_contract(
+        config: Configuration,
+        contract_path: PathBuf,
+    ) -> anyhow::Result<Self> {
+        Self::check(&config, Some(&contract_path))?;
+
+        Ok(Self {
+            config,
+            contract_path: Some(contract_path),
+        })
+    }
+
+    fn check(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
+        if let Some(path) = contract_path {
+            if !path.exists() {
+                bail!(format!(
+                    "{contract_path:?} doesn't exist; couldn't load this contract"
+                ))
+            }
         }
 
         if config.use_honggfuzz {
@@ -109,12 +141,8 @@ impl ZiggyConfig {
             )
         }
 
-        Ok(Self {
-            config,
-            contract_path,
-        })
+        Ok(())
     }
-
     pub fn instrumented_path(self) -> PathBuf {
         self.config
             .instrumented_contract_path
@@ -173,6 +201,7 @@ impl ZiggyConfig {
             .env(FromZiggy.to_string(), "1")
             .env(AflForkServerTimeout.to_string(), AFL_FORKSRV_INIT_TMOUT)
             .env(AflDebug.to_string(), self.afl_debug())
+            .envs(env)
             .stdout(Stdio::piped());
 
         if ziggy_command == ZiggyCommand::Run {
@@ -191,7 +220,6 @@ impl ZiggyConfig {
         if let Some(args) = maybe_args {
             command_builder.args(args.iter());
         }
-        command_builder.envs(env);
 
         let mut ziggy_child = command_builder
             .spawn()
@@ -212,7 +240,7 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    /// Add the ALLOWLIST file to a `Command`. This will be done only in not on macOS
+    /// Add the ALLOW_LIST file to a `Command`. This will be done only in not on macOS
     ///     - see https://github.com/rust-lang/rust/issues/127573
     ///     - see https://github.com/rust-lang/rust/issues/127577
     /// # Arguments
@@ -227,6 +255,10 @@ impl ZiggyConfig {
                     .canonicalize()
                     .context("Couldn't canonicalize the allowlist path")?,
             );
+        } else {
+            if self.config.verbose {
+                println!("This is a macOS machine. We won't use the ALLOW_LIST. Performances will be drastically bad...");
+            }
         }
         Ok(())
     }
@@ -319,7 +351,7 @@ mod tests {
             config.config.fuzz_output,
             Some(PathBuf::from("/tmp/fuzz_output"))
         );
-        assert_eq!(config.contract_path, PathBuf::from("sample/dummy"));
+        assert_eq!(config.contract_path(), PathBuf::from("sample/dummy"));
     }
 
     #[test]
@@ -357,7 +389,7 @@ mod tests {
         assert_eq!(config.config.cores, Some(2));
         assert_eq!(config.config.fuzz_output, Default::default());
         assert_eq!(
-            config.contract_path,
+            config.contract_path(),
             PathBuf::from("/tmp/ink_fuzzed_3h4Wm/")
         );
     }

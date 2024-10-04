@@ -181,7 +181,7 @@ impl CoverageTracker {
         println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
-        for entry in WalkDir::new(config.contract_path)
+        for entry in WalkDir::new(config.contract_path())
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
@@ -192,13 +192,11 @@ impl CoverageTracker {
                 .expect("🙅 Cannot process file");
         }
 
+        let c = config.clone().config().report_path.clone().unwrap();
         tracker
-            .generate_report(config.config.report_path.clone().unwrap().to_str().unwrap())
+            .generate_report(c.to_str().unwrap())
             .expect("🙅 Cannot generate coverage report");
-        println!(
-            "📊 Coverage report generated at: {}",
-            config.config.report_path.unwrap().display()
-        );
+        println!("📊 Coverage report generated at: {}", c.display());
         Ok(())
     }
 

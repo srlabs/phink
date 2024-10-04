@@ -62,11 +62,11 @@ struct Cli {
 #[allow(deprecated)]
 enum Commands {
     /// Starts the fuzzing process. Instrumentation required before!
-    Fuzz(Contract),
+    Fuzz,
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument(Contract),
     /// Run all the seeds
-    Run(Contract),
+    Run,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here
     /// (mainly for debugging purposes only)
     HarnessCover(Contract),
@@ -123,9 +123,11 @@ fn handle_cli() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Instrument(contract_path) => {
-            let z_config: ZiggyConfig =
-                ZiggyConfig::new(config.to_owned(), contract_path.contract_path.to_owned())
-                    .context("Couldn't generate handle the ZiggyConfig")?;
+            let z_config: ZiggyConfig = ZiggyConfig::new_with_contract(
+                config.to_owned(),
+                contract_path.contract_path.to_owned(),
+            )
+            .context("Couldn't generate handle the ZiggyConfig")?;
 
             let engine = Instrumenter::new(z_config);
             engine
@@ -135,13 +137,13 @@ fn handle_cli() -> anyhow::Result<()> {
             engine.build().context("Couldn't run the build")?;
             Ok(())
         }
-        Commands::Fuzz(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
+        Commands::Fuzz => {
+            ZiggyConfig::new(config)
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_fuzz()
         }
-        Commands::Run(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
+        Commands::Run => {
+            ZiggyConfig::new(config)
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_run()
         }
@@ -150,19 +152,19 @@ fn handle_cli() -> anyhow::Result<()> {
             contract_path,
         } => {
             let fuzzer = Fuzzer::new(
-                ZiggyConfig::new(config, contract_path)
+                ZiggyConfig::new_with_contract(config, contract_path)
                     .context("Couldn't generate handle the ZiggyConfig")?,
             )?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }
         Commands::HarnessCover(contract_path) => {
-            ZiggyConfig::new(config, contract_path.contract_path)
+            ZiggyConfig::new_with_contract(config, contract_path.contract_path)
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_cover()
         }
         Commands::Coverage(contract_path) => {
             CoverageTracker::generate(
-                ZiggyConfig::new(config, contract_path.contract_path)
+                ZiggyConfig::new_with_contract(config, contract_path.contract_path)
                     .context("Couldn't generate handle the ZiggyConfig")?,
             )
         }

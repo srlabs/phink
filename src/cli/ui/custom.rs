@@ -49,7 +49,7 @@ impl CustomManager {
     ) -> Self {
         // If it exists, we remove the `LAST_SEED_FILENAME`
         let _ = fs::remove_file(
-            PhinkFiles::new(ziggy_config.config.fuzz_output.clone().unwrap())
+            PhinkFiles::new(ziggy_config.config().fuzz_output.clone().unwrap())
                 .path(PFiles::LastSeed),
         );
 

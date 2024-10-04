@@ -85,7 +85,7 @@ impl CustomUI {
         CTOR_VALUE.get_or_init(|| {
             if let Ok(maybe_metadata) = Instrumenter::new(ziggy_config.clone()).find() {
                 if let Ok(transcoder) = ContractMessageTranscoder::load(maybe_metadata.specs_path) {
-                    if let Some(ctor) = ziggy_config.clone().config.constructor_payload {
+                    if let Some(ctor) = &ziggy_config.clone().config().constructor_payload {
                         return if let Ok(encoded_bytes) = hex::decode(ctor) {
                             if let Ok(str) =
                                 transcoder.decode_contract_constructor(&mut &encoded_bytes[..])
@@ -147,7 +147,7 @@ impl CustomUI {
             .split(area);
 
         self.render_chart(f, chunks[0]);
-        self.ziggy_config.config.render(f, chunks[1]);
+        self.ziggy_config.config().render(f, chunks[1]);
     }
 
     fn render_octopus(&self, f: &mut Frame, area: Rect) {

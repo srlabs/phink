@@ -109,8 +109,9 @@ impl Fuzzer {
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
             .context("🙅 No invariants found, check your contract")?;
 
-        let messages = PayloadCrafter::extract_all(self.ziggy_config.contract_path.to_owned())
-            .context("Couldn't extract all the messages selectors")?;
+        let messages =
+            PayloadCrafter::extract_all(self.ziggy_config.to_owned().instrumented_path())
+                .context("Couldn't extract all the messages selectors")?;
 
         let payable_messages = PayloadCrafter::extract_payables(&contract_bridge.json_specs)
             .context("Couldn't fetch payable messages")?;
@@ -123,7 +124,7 @@ impl Fuzzer {
         let manager = CampaignManager::new(
             database.clone(),
             contract_bridge.clone(),
-            self.ziggy_config.config.to_owned(),
+            self.ziggy_config.config().to_owned(),
         );
 
         let env_builder = EnvironmentBuilder::new(database);
@@ -161,7 +162,7 @@ impl Fuzzer {
                     &message.payload,
                     message.origin.into(),
                     transfer_value,
-                    self.ziggy_config.config.clone(),
+                    self.ziggy_config.config().clone(),
                 );
 
                 coverage.add_cov(&result.clone().debug_message());
@@ -170,7 +171,7 @@ impl Fuzzer {
         });
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
-        if self.ziggy_config.config.show_ui {
+        if self.ziggy_config.config().show_ui {
             let seeder = SeedWriter::new(
                 decoded_msgs.to_owned(),
                 coverage.to_owned(),
@@ -278,7 +279,7 @@ mod tests {
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs).unwrap();
 
-        let messages = PayloadCrafter::extract_all(config.contract_path.clone())?
+        let messages = PayloadCrafter::extract_all(config.contract_path().clone())?
             .into_iter()
             .filter(|s| !invariants.contains(s))
             .collect();

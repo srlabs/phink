@@ -148,7 +148,7 @@ impl TryFrom<String> for Configuration {
             Err(e) => return Err(format!("❌ Can't parse config: {}", e)),
         };
 
-        if Configuration::parse_balance(config.storage_deposit_limit.clone()).is_none() {
+        if Configuration::parse_balance(&config.storage_deposit_limit.clone()).is_none() {
             return Err("❌ Cannot parse string to `u128` for `storage_deposit_limit`, check your configuration file".into());
         }
 
@@ -182,11 +182,11 @@ impl Configuration {
         Ok(())
     }
 
-    pub fn parse_balance(value: Option<String>) -> Option<BalanceOf<Runtime>> {
+    pub fn parse_balance(value: &Option<String>) -> Option<BalanceOf<Runtime>> {
         // Currently, TOML & Serde don't handle parsing `u128` 🤡
         // So we need to parse it as a `string`... to then revert it to `u128`
         // (which is `BalanceOf<T>`)
-        value.and_then(|s| s.parse::<u128>().ok())
+        value.clone().and_then(|s| s.parse::<u128>().ok())
     }
 }
 
@@ -252,14 +252,14 @@ mod tests {
 
     #[test]
     fn test_parse_balance() {
-        assert_eq!(Configuration::parse_balance(Some("100".into())), Some(100));
-        assert_eq!(Configuration::parse_balance(Some("0".into())), Some(0));
+        assert_eq!(Configuration::parse_balance(&Some("100".into())), Some(100));
+        assert_eq!(Configuration::parse_balance(&Some("0".into())), Some(0));
         assert_eq!(
-            Configuration::parse_balance(Some("18446744073709551615".into())),
+            Configuration::parse_balance(&Some("18446744073709551615".into())),
             Some(18446744073709551615)
         );
-        assert_eq!(Configuration::parse_balance(None), None);
-        assert_eq!(Configuration::parse_balance(Some("invalid".into())), None);
+        assert_eq!(Configuration::parse_balance(&None), None);
+        assert_eq!(Configuration::parse_balance(&Some("invalid".into())), None);
     }
 
     #[test]

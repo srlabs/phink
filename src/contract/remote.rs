@@ -139,7 +139,7 @@ impl ContractSetup {
             .context(format!("Couldn't read WASM from{:?}", finder.wasm_path))?;
 
         let mut contract_addr: AccountIdOf<Runtime> = config
-            .config
+            .config()
             .deployer_address
             .clone()
             .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
@@ -161,7 +161,7 @@ impl ContractSetup {
 
                 let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
 
-                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config.config).expect(
+                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config.config()).expect(
                     "🙅 Can't fetch the contract address because of incorrect instantiation",
                 );
 
@@ -187,7 +187,7 @@ impl ContractSetup {
             contract_address: contract_addr,
             json_specs,
             path_to_specs: finder.specs_path.to_path_buf(),
-            contract_path: config.contract_path.clone(),
+            contract_path: config.contract_path().clone(),
         })
     }
 
@@ -204,7 +204,7 @@ impl ContractSetup {
             self.contract_address,
             transfer_value,
             config.default_gas_limit.unwrap_or(Self::DEFAULT_GAS_LIMIT),
-            Configuration::parse_balance(config.storage_deposit_limit),
+            Configuration::parse_balance(&config.storage_deposit_limit),
             payload.to_owned(),
             DebugInfo::UnsafeDebug,
             CollectEvents::UnsafeCollect,
@@ -236,9 +236,9 @@ impl ContractSetup {
         json_specs: &str,
         code_hash: H256,
         who: AccountId,
-        config: Configuration,
+        config: &Configuration,
     ) -> anyhow::Result<AccountIdOf<Runtime>> {
-        let data: Vec<u8> = if let Some(payload) = config.constructor_payload {
+        let data: Vec<u8> = if let Some(payload) = &config.constructor_payload {
             hex::decode(payload.replace(" ", ""))
                 .context("Impossible to hex-decode this. Check your config file")?
         } else {
@@ -247,7 +247,7 @@ impl ContractSetup {
                 .into()
         };
 
-        let initial_value = Configuration::parse_balance(config.instantiate_initial_value);
+        let initial_value = Configuration::parse_balance(&config.instantiate_initial_value);
 
         let instantiate = Contracts::bare_instantiate(
             who.clone(),
