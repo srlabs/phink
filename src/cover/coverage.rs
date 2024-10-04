@@ -43,7 +43,7 @@ impl Debug for InputCoverage {
 impl InputCoverage {
     pub fn new() -> InputCoverage {
         InputCoverage {
-            all_cov_id: Vec::new(),
+            all_cov_id: HashSet::new(),
             raw_from_debug: Vec::new(),
         }
     }
@@ -51,20 +51,18 @@ impl InputCoverage {
         self.all_cov_id.len()
     }
 
-    pub fn messages_coverage(&self) -> Vec<u64> {
-        // todo: also dedup this, we shouldn't have a messageinput that has two times the same
-        // coverage, as a coverage
-        self.all_cov_id.clone()
+    pub fn messages_coverage(&self) -> &HashSet<u64> {
+        &self.all_cov_id
     }
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = coverage.parse_coverage();
         self.raw_from_debug.push(coverage.clone());
-        self.all_cov_id.extend(parsed); // todo: do a dedup here
+        self.all_cov_id.extend(parsed);
     }
 
     pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
-        let mut trace_strings: Vec<String> = self
+        let mut trace_strings: &Vec<String> = self
             .all_cov_id
             .into_iter()
             .map(|id| id.to_string())
@@ -85,7 +83,7 @@ impl InputCoverage {
     #[allow(unused_doc_comments)]
     #[allow(clippy::unnecessary_cast)]
     #[allow(clippy::identity_op)]
-    pub fn redirect_coverage(&self, flat: Vec<u64>) {
+    pub fn redirect_coverage(&self, flat: &HashSet<u64>) {
         /// We assume that the instrumentation will never insert more than
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest

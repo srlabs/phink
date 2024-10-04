@@ -94,11 +94,15 @@ pub fn main() {
     if let Ok(config_str) = var(FuzzingWithConfig.to_string()) {
         if var(FromZiggy.to_string()).is_ok() {
             let config = ZiggyConfig::parse(config_str);
-
-            let fuzzer = Fuzzer::new(config).unwrap();
-            let exec = fuzzer.execute_harness(Fuzz);
-            if let Err(e) = exec {
-                eprintln!("{}", format_error(e));
+            match Fuzzer::new(config) {
+                Ok(fuzzer) => {
+                    if let Err(e) = fuzzer.execute_harness(Fuzz) {
+                        eprintln!("{}", format_error(e));
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{}", format_error(e));
+                }
             }
         }
     } else if let Err(e) = handle_cli() {
