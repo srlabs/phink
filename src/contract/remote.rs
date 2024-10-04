@@ -76,9 +76,14 @@ pub struct FullContractResponse(pub ContractResponse);
 
 impl Display for FullContractResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let binding = self.clone().debug_message().remove_cov_from_trace();
-        let message = String::from_utf8_lossy(&binding);
-        write!(f, "{}", message.replace("\n", " "))
+        write!(
+            f,
+            "{}",
+            self.clone()
+                .debug_message()
+                .remove_cov_from_trace()
+                .replace("\n", " ")
+        )
     }
 }
 impl FullContractResponse {

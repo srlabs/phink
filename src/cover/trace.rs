@@ -35,12 +35,53 @@ impl CoverageTrace {
         parsed
     }
 
-    pub fn remove_cov_from_trace(self) -> Vec<u8> {
-        let cleaned_str = String::from_utf8_lossy(self.as_ref())
+    pub fn remove_cov_from_trace(&self) -> String {
+        String::from_utf8_lossy(self.as_ref())
             .split_whitespace()
             .filter(|&s| !s.starts_with(COV_IDENTIFIER))
             .collect::<Vec<&str>>()
-            .join(" ");
-        cleaned_str.into_bytes()
+            .join(" ")
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_coverage_empty() {
+        let trace = CoverageTrace(vec![]);
+        assert_eq!(trace.parse_coverage(), Vec::<u64>::new());
+    }
+
+    #[test]
+    fn test_parse_coverage_with_valid_data() {
+        let data = "COV=10 COV=20 other_data COV=30".as_bytes().to_vec();
+        let trace = CoverageTrace(data);
+        assert_eq!(trace.parse_coverage(), vec![10, 20, 30]);
+    }
+
+    #[test]
+    fn test_parse_coverage_with_invalid_data() {
+        let data = "COV=10 COV=invalid COV=30".as_bytes().to_vec();
+        let trace = CoverageTrace(data);
+        assert_eq!(trace.parse_coverage(), vec![10, 30]);
+    }
+
+    #[test]
+    fn test_remove_cov_from_trace() {
+        let data = "COV=10 other_data COV=20 more_data".as_bytes().to_vec();
+        let trace = CoverageTrace(data);
+        let cleaned = trace.remove_cov_from_trace();
+        assert_eq!(cleaned, "other_data more_data");
+    }
+
+    #[test]
+    fn test_yet_another_invalid() {
+        let data = "COV=10 other_data COV=20rzerze more_data"
+            .as_bytes()
+            .to_vec();
+        let trace = CoverageTrace(data);
+        let cleaned = trace.remove_cov_from_trace();
+        assert_eq!(cleaned, "other_data more_data");
     }
 }

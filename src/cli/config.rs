@@ -118,6 +118,8 @@ pub struct PhinkFiles {
     output: PathBuf,
 }
 impl PhinkFiles {
+    const PHINK_PATH: &str = "phink";
+
     pub fn new(output: PathBuf) -> Self {
         Self { output }
     }
@@ -125,17 +127,27 @@ impl PhinkFiles {
     pub fn output(self) -> PathBuf {
         self.output
     }
+
+    pub fn make_all(self) -> Self {
+        fs::create_dir_all(self.clone().output().join(Self::PHINK_PATH)).unwrap();
+        self
+    }
+
     pub fn path(&self, file: PFiles) -> PathBuf {
-        const PHINK_PATH: &str = "phink";
         match file {
-            PFiles::CoverageTracePath => self.output.join(PHINK_PATH).join("traces.cov"),
-            PFiles::AllowlistPath => self.output.join(PHINK_PATH).join("allowlist.txt"),
-            PFiles::DictPath => self.output.join(PHINK_PATH).join("selectors.dict"),
-            PFiles::CorpusPath => self.output.join(PHINK_PATH).join("corpus"),
-            PFiles::AFLLog => self.output.join(PHINK_PATH).join("logs").join("afl.log"),
+            PFiles::CoverageTracePath => self.output.join(Self::PHINK_PATH).join("traces.cov"),
+            PFiles::AllowlistPath => self.output.join(Self::PHINK_PATH).join("allowlist.txt"),
+            PFiles::DictPath => self.output.join(Self::PHINK_PATH).join("selectors.dict"),
+            PFiles::CorpusPath => self.output.join(Self::PHINK_PATH).join("corpus"),
+            PFiles::AFLLog => {
+                self.output
+                    .join(Self::PHINK_PATH)
+                    .join("logs")
+                    .join("afl.log")
+            }
             PFiles::LastSeed => {
                 self.output
-                    .join(PHINK_PATH)
+                    .join(Self::PHINK_PATH)
                     .join("logs")
                     .join(LAST_SEED_FILENAME)
             }
@@ -301,7 +313,7 @@ mod tests {
             storage_deposit_limit = "not_a_number"
         "#;
 
-        let result: Result<Configuration, String> = invalid_config_str.to_string().try_into();
+        let result: anyhow::Result<Configuration> = invalid_config_str.to_string().try_into();
         assert!(result.is_err());
     }
 

@@ -26,16 +26,12 @@ use std::{
 pub struct InputCoverage {
     /// All the coverage ID grabbed and deduplicated
     all_cov_id: HashSet<u64>,
-    /// Simply the `Vec` of Strings, for example
-    /// COV=128
-    /// COV=129 ...
-    raw_from_debug: Vec<CoverageTrace>,
 }
 
 impl Debug for InputCoverage {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("Coverage")
-            .field("cov_ids", &self.all_cov_id)
+            .field("", &self.all_cov_id)
             .finish()
     }
 }
@@ -44,7 +40,6 @@ impl InputCoverage {
     pub fn new() -> InputCoverage {
         InputCoverage {
             all_cov_id: HashSet::new(),
-            raw_from_debug: Vec::new(),
         }
     }
     pub fn coverage_len(&self) -> usize {
@@ -57,7 +52,6 @@ impl InputCoverage {
 
     pub fn add_cov(&mut self, coverage: &CoverageTrace) {
         let parsed = coverage.parse_coverage();
-        self.raw_from_debug.push(coverage.clone());
         self.all_cov_id.extend(parsed);
     }
 
@@ -94,5 +88,88 @@ impl InputCoverage {
                 let _ = black_box(x + 1);
             }
         });
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+    use tempfile::{
+        NamedTempFile,
+        TempDir,
+    };
+
+    #[test]
+    fn test_coverage_len() {
+        let mut coverage = InputCoverage::new();
+        coverage.all_cov_id.insert(1);
+        coverage.all_cov_id.insert(2);
+        assert_eq!(coverage.coverage_len(), 2);
+    }
+
+    #[test]
+    fn test_messages_coverage() {
+        let mut coverage = InputCoverage::new();
+        coverage.all_cov_id.insert(1);
+        coverage.all_cov_id.insert(2);
+        let messages = coverage.messages_coverage();
+        assert_eq!(messages.len(), 2);
+        assert!(messages.contains(&1));
+        assert!(messages.contains(&2));
+    }
+
+    #[test]
+    fn test_add_cov() {
+        let mut coverage = InputCoverage::new();
+        let trace = CoverageTrace::from("COV=1 COV=2 COV=3".as_bytes().to_vec());
+        coverage.add_cov(&trace);
+        assert_eq!(coverage.coverage_len(), 3);
+        assert!(coverage.messages_coverage().contains(&1));
+        assert!(coverage.messages_coverage().contains(&2));
+        assert!(coverage.messages_coverage().contains(&3));
+    }
+
+    #[test]
+    fn test_add_cov_deduplication() {
+        let mut coverage = InputCoverage::new();
+        let trace1 = CoverageTrace::from("COV=1 COV=2 COV=3".as_bytes().to_vec());
+        let trace2 = CoverageTrace::from("COV=2 COV=3 COV=4".as_bytes().to_vec());
+        coverage.add_cov(&trace1);
+        coverage.add_cov(&trace2);
+        assert_eq!(coverage.coverage_len(), 4);
+    }
+
+    #[test]
+    fn test_debug_format() {
+        let mut coverage = InputCoverage::new();
+        coverage.all_cov_id.insert(1);
+        coverage.all_cov_id.insert(2);
+        let debug_output = format!("{:?}", coverage);
+        assert!(debug_output.contains("Coverage"));
+        assert!(debug_output.contains("1"));
+        assert!(debug_output.contains("2"));
+    }
+
+    #[test]
+    fn test_save() {
+        let mut coverage = InputCoverage::new();
+        coverage.all_cov_id.insert(1);
+        coverage.all_cov_id.insert(2);
+        coverage.all_cov_id.insert(3);
+
+        let output = TempDir::new().unwrap().into_path();
+        let cov_trace_path = PhinkFiles::new(output.clone())
+            .make_all()
+            .path(CoverageTracePath);
+
+        coverage.save(output).unwrap();
+
+        let content = std::fs::read_to_string(cov_trace_path).unwrap();
+        let lines: HashSet<String> = content.lines().map(String::from).collect();
+
+        assert_eq!(
+            lines,
+            HashSet::from_iter(vec!["1".to_string(), "2".to_string(), "3".to_string()])
+        );
     }
 }
