@@ -34,6 +34,10 @@ impl AFLProperties {
         self.saved_crashes > 0
     }
 
+    pub fn bad_stability(&self) -> bool {
+        self.stability < 0.8
+    }
+
     pub fn span_if_crash(&self) -> Span {
         let crashes = &self.saved_crashes;
         if crashes > &0 {
@@ -48,6 +52,26 @@ impl AFLProperties {
         } else {
             Span::styled(
                 crashes.to_string(),
+                Style::default().add_modifier(Modifier::BOLD),
+            )
+        }
+    }
+
+    pub fn span_if_bad_stability(&self) -> Span {
+        let stability = &self.stability;
+
+        if self.bad_stability() {
+            Span::styled(
+                format!("{stability} (the seeds are very unstable!!)",),
+                Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .add_modifier(Modifier::UNDERLINED)
+                    .underline_color(Color::White)
+                    .fg(Color::Red),
+            )
+        } else {
+            Span::styled(
+                stability.to_string(),
                 Style::default().add_modifier(Modifier::BOLD),
             )
         }

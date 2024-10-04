@@ -57,7 +57,7 @@ impl SeedWriter {
         let input = &self.input;
         writeln!(
             writer,
-            "Got {} coverage size with {} message(s) {:?}, payload is {}\n",
+            "Got {} coverage size with {} message(s) {:?}\nPayload: 0x{}\n",
             self.coverage.coverage_len(),
             input.messages.len(),
             self.coverage.messages_coverage(),

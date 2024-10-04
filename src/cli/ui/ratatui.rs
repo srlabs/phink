@@ -244,6 +244,7 @@ impl CustomUI {
                     Style::default().add_modifier(Modifier::BOLD),
                 ),
             ]),
+            Line::from(vec![Span::raw("Stability: "), data.span_if_bad_stability()]),
             Line::from(vec![Span::raw("Saved crashes: "), data.span_if_crash()]),
         ]))
         .block(
