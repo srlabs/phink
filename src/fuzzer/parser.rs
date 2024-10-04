@@ -101,6 +101,7 @@ impl Display for Message {
 pub struct OneInput {
     pub messages: Vec<Message>,
     pub fuzz_option: OriginFuzzingOption,
+    pub raw_binary: Vec<u8>,
 }
 
 impl OneInput {
@@ -187,6 +188,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let mut input = OneInput {
         messages: vec![],
         fuzz_option: config.should_fuzz_origin(),
+        raw_binary: Vec::new(),
     };
 
     for inkpayload in fuzzdata {
@@ -218,6 +220,8 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
+                    input.raw_binary = Vec::from(data);
+
                     input.messages.push(Message {
                         is_payable: manager.database().is_payable(&slctr),
                         payload: encoded_message.into(),

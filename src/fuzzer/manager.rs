@@ -86,13 +86,14 @@ impl CampaignManager {
         // We print the details only when we don't fuzz, so when we run a seed for instance,
         // otherwise this will pollute the AFL logs
         #[cfg(not(fuzzing))]
-        all_msg_responses
-            .iter()
-            .filter(|response| response.is_trapped())
-            .for_each(|response| {
-                self.display_trap(first.clone(), response.clone());
-            });
-
+        {
+            all_msg_responses
+                .iter()
+                .filter(|response| response.is_trapped())
+                .for_each(|response| {
+                    self.display_trap(first.clone(), response.clone());
+                });
+        }
         if let Ok(invariant_tested) = self.are_invariants_failing(first.origin) {
             self.display_invariant(
                 all_msg_responses.to_vec(),
@@ -110,6 +111,7 @@ impl CampaignManager {
         let input = OneInput {
             messages: vec![message.clone()],
             fuzz_option: self.configuration.should_fuzz_origin(),
+            raw_binary: vec![],
         };
         input.pretty_print(vec![response.clone()]);
 

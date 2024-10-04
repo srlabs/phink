@@ -150,23 +150,13 @@ impl Fuzzer {
             }
         });
 
-        // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
-        if self.ziggy_config.config().show_ui {
-            let seeder = SeedWriter::new(input.to_owned(), coverage.to_owned());
-            if SeedWriter::should_save() {
-                seeder
-                    .save(self.clone().ziggy_config.fuzz_output())
-                    .unwrap();
-            }
-        }
-
         responses
     }
 
     pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
-        let decoded_msgs: OneInput = parse_input(input, manager.to_owned());
+        let parsed_input: OneInput = parse_input(input, manager.to_owned());
 
-        if decoded_msgs.messages.is_empty() {
+        if parsed_input.messages.is_empty() {
             return;
         }
 
@@ -175,9 +165,9 @@ impl Fuzzer {
 
         chain.execute_with(|| timestamp(0));
 
-        let all_msg_responses = self.execute_messages(&decoded_msgs, &mut chain, &mut coverage);
+        let all_msg_responses = self.execute_messages(&parsed_input, &mut chain, &mut coverage);
 
-        chain.execute_with(|| manager.check_invariants(&all_msg_responses, &decoded_msgs));
+        chain.execute_with(|| manager.check_invariants(&all_msg_responses, &parsed_input));
 
         let flatten_coverage = coverage.messages_coverage();
 
@@ -186,7 +176,7 @@ impl Fuzzer {
         // of performance) Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
-            decoded_msgs.pretty_print(all_msg_responses);
+            parsed_input.pretty_print(all_msg_responses);
 
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage
@@ -194,6 +184,16 @@ impl Fuzzer {
                 .expect("🙅 Cannot save the coverage");
 
             println!("[🚧DEBUG TRACE] Caught coverage identifiers {flatten_coverage:?}\n",);
+        }
+
+        // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
+        if self.ziggy_config.config().show_ui {
+            let seeder = SeedWriter::new(parsed_input, coverage.to_owned());
+            if SeedWriter::should_save() {
+                seeder
+                    .save(self.clone().ziggy_config.fuzz_output())
+                    .unwrap();
+            }
         }
 
         // We now fake the coverage

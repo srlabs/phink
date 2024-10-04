@@ -54,15 +54,17 @@ impl SeedWriter {
             .open(PhinkFiles::new(output).path(PFiles::LastSeed))?;
         let mut writer = BufWriter::new(file);
 
+        let input = &self.input;
         writeln!(
             writer,
-            "Got {} coverage size with {} message(s) : {:?}\n",
+            "Got {} coverage size with {} message(s) {:?}, payload is {}\n",
             self.coverage.coverage_len(),
-            self.input.messages.len(),
-            self.coverage.messages_coverage()
+            input.messages.len(),
+            self.coverage.messages_coverage(),
+            hex::encode(&input.raw_binary)
         )?;
 
-        for message in self.input.messages.iter() {
+        for message in input.messages.iter() {
             writeln!(writer, "{}", message.print())?;
         }
 
