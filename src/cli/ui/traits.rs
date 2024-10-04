@@ -15,10 +15,10 @@ pub trait Paint {
 
 pub trait FromPath {
     type Output;
-    fn from_fullpath(log_fullpath: PathBuf) -> anyhow::Result<Self::Output> {
-        match log_fullpath.exists() {
-            true => Ok(Self::create_instance(log_fullpath)),
-            false => bail!("The fullpath isn't correct"),
+    fn from_fullpath(fullpath: PathBuf) -> anyhow::Result<Self::Output> {
+        match fullpath.exists() {
+            true => Ok(Self::create_instance(fullpath)),
+            false => bail!("The {fullpath:?} fullpath isn't correct"),
         }
     }
 
@@ -27,9 +27,7 @@ pub trait FromPath {
 
         match path.exists() {
             true => Self::from_fullpath(path),
-            false => {
-                bail!(format!("Couldn't spot {:?}", path))
-            }
+            false => bail!("Couldn't spot {path:?}"),
         }
     }
 

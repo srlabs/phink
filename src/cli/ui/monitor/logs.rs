@@ -139,6 +139,10 @@ impl AFLDashboard {
         bail!("Couldn't parse the set of dashboards of AFL")
     }
 
+    pub fn get_path(&self) -> PathBuf {
+        self.log_fullpath.to_path_buf()
+    }
+
     pub fn show_log(&self) -> std::io::Result<String> {
         fs::read_to_string(&self.log_fullpath)
     }

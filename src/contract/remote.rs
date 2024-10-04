@@ -122,7 +122,6 @@ pub struct ContractSetup {
     pub contract_address: AccountIdOf<Runtime>,
     pub json_specs: String,
     pub path_to_specs: PathBuf,
-    pub contract_path: PathBuf,
 }
 
 impl ContractSetup {
@@ -138,37 +137,38 @@ impl ContractSetup {
         let wasm_bytes = fs::read(&finder.wasm_path)
             .context(format!("Couldn't read WASM from{:?}", finder.wasm_path))?;
 
-        let mut contract_addr: AccountIdOf<Runtime> = config
-            .config()
+        let conf = config.config();
+        let mut contract_address: AccountIdOf<Runtime> = conf
             .deployer_address
             .clone()
             .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
 
-        if config.config().verbose {
+        if conf.verbose {
             println!(
                 "🛠️Initializing contract address from the origin: {:?}",
-                contract_addr
+                contract_address
             );
         }
 
-        let json_specs = fs::read_to_string(&finder.specs_path)
-            .context(format!("Couldn't read JSON from {:?}", finder.specs_path))?;
+        let path_to_specs = finder.specs_path;
+        let json_specs =
+            fs::read_to_string(&path_to_specs).context("Couldn't read JSON from {specs:?}")?;
 
-        let genesis_storage: Storage = {
+        let genesis: Storage = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
 
             let mut chain = BasicExternalities::new(storage.clone());
             chain.execute_with(|| {
                 let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can `Err()` easily, so we use `let _`
 
-                let code_hash = Self::upload(&wasm_bytes, contract_addr.clone());
+                let code_hash = Self::upload(&wasm_bytes, contract_address.clone());
 
-                contract_addr = Self::instantiate(&json_specs, code_hash, contract_addr.clone(), config.config()).expect(
+                contract_address = Self::instantiate(&json_specs, code_hash, contract_address.clone(), conf).expect(
                     "🙅 Can't fetch the contract address because of incorrect instantiation",
                 );
 
                 // We verify if the contract is correctly instantiated
-                if !ContractInfoOf::<Runtime>::contains_key(&contract_addr) {
+                if !ContractInfoOf::<Runtime>::contains_key(&contract_address) {
                     panic!(
                         "🚨 Contract Instantiation Failed!
                             This error is likely due to a misconfigured constructor payload in the configuration file.
@@ -185,11 +185,10 @@ impl ContractSetup {
         };
 
         Ok(Self {
-            genesis: genesis_storage,
-            contract_address: contract_addr,
+            genesis,
+            contract_address,
             json_specs,
-            path_to_specs: finder.specs_path.to_path_buf(),
-            contract_path: config.contract_path().clone(),
+            path_to_specs,
         })
     }
 

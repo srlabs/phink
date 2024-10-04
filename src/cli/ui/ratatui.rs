@@ -379,7 +379,11 @@ impl CustomUI {
             }
         } else {
             seed_text.push_span(Span::styled(
-                "Running the seeds, please wait until we actually start fuzzing...",
+                format!(
+                    "Running the seeds, please wait until we actually start fuzzing...\
+                 If this screen get stuck for a while, execute `tail -f {}`",
+                    &self.afl_dashboard.get_path().to_str().unwrap()
+                ),
                 Style::default().fg(Color::Yellow),
             ));
         }

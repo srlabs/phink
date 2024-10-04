@@ -132,7 +132,7 @@ impl Fuzzer {
 
         if conf.verbose {
             println!(
-                "\n🚀  Now fuzzing `{}` ({})!\n",
+                "\n🚀 Now fuzzing `{}` ({})!\n",
                 &contract_bridge.path_to_specs.as_os_str().to_str().unwrap(),
                 &contract_bridge.contract_address
             );
