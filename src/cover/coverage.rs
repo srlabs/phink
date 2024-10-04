@@ -62,11 +62,12 @@ impl InputCoverage {
     }
 
     pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
-        let mut trace_strings: &Vec<String> = self
-            .all_cov_id
+        let mut trace_strings: Vec<String> = self
+            .messages_coverage()
             .into_iter()
             .map(|id| id.to_string())
             .collect();
+
         trace_strings.sort_unstable();
 
         let mut file = OpenOptions::new()
