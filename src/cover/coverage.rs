@@ -84,7 +84,7 @@ impl InputCoverage {
         /// to handle most of smart-contract, even the biggest
         seq_macro::seq!(x in 0..= 2_000 {
             if flat.contains(&(x)) {
-                // println!("{:?}", x);
+                println!("{:?}", x);
                 let _ = black_box(x + 1);
             }
         });
@@ -94,10 +94,7 @@ impl InputCoverage {
 mod tests {
     use super::*;
     use std::collections::HashSet;
-    use tempfile::{
-        NamedTempFile,
-        TempDir,
-    };
+    use tempfile::TempDir;
 
     #[test]
     fn test_coverage_len() {

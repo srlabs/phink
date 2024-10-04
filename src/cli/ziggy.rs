@@ -128,7 +128,7 @@ impl ZiggyConfig {
         if let Some(path) = contract_path {
             if !path.exists() {
                 bail!(format!(
-                    "{contract_path:?} doesn't exist; couldn't load this contract"
+                    "{path:?} doesn't exist; couldn't load this contract"
                 ))
             }
         }
@@ -426,7 +426,6 @@ mod tests {
 
         let contents = fs::read_to_string(allowlist_path)?;
         assert!(contents.contains("fun: redirect_coverage*"));
-        assert!(contents.contains("fun: should_stop_now*"));
         assert!(contents.contains("fun: parse_input*"));
 
         Ok(())

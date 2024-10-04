@@ -195,6 +195,12 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             .try_into()
             .expect("Slice conversion failed");
         let slctr = Selector::from(selector);
+
+        // If we see a message being an invariant, we stop
+        if manager.database().invariants().unwrap().contains(&slctr) {
+            break;
+        }
+
         let value: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
         let origin = match input.fuzz_option {
             EnableOriginFuzzing => Origin(inkpayload[4]),

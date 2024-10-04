@@ -88,21 +88,6 @@ impl Fuzzer {
         Ok(())
     }
 
-    fn should_stop_now(manager: &CampaignManager, messages: Vec<Message>) -> bool {
-        // todo: need to refactor this
-
-        messages.is_empty()
-            || messages.iter().any(|payload| {
-                payload
-                    .payload
-                    .get(..4)
-                    .and_then(|slice| Selector::try_from(slice).ok())
-                    .map_or(false, |slice: Selector| {
-                        manager.database().invariants().unwrap().contains(&slice)
-                    })
-            })
-    }
-
     pub fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
         let contract_bridge = self.setup.clone();
 
@@ -189,7 +174,8 @@ impl Fuzzer {
 
     pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
         let decoded_msgs: OneInput = parse_input(input, manager.to_owned());
-        if Self::should_stop_now(&manager, decoded_msgs.messages.to_owned()) {
+
+        if decoded_msgs.messages.is_empty() {
             return;
         }
 
