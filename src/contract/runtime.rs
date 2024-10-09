@@ -190,10 +190,10 @@ impl pallet_contracts::Config for Runtime {
     type DepositPerItem = DepositPerItem;
     type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
     type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
-    type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
+    type MaxCodeLen = ConstU32<{ u32::MAX }>;
     type MaxStorageKeyLen = ConstU32<128>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
-    type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
+    type MaxDebugBufferLen = ConstU32<{ u32::MAX }>;
     type UploadOrigin = EnsureSigned<Self::AccountId>;
     type InstantiateOrigin = EnsureSigned<Self::AccountId>;
     type RuntimeHoldReason = RuntimeHoldReason;
