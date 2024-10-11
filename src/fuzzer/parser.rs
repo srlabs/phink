@@ -177,7 +177,8 @@ impl<'a> Iterator for Data<'a> {
 
 pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let config = manager.clone().config();
-
+    let arc = manager.transcoder();
+    let guard = arc.try_lock().unwrap();
     let fuzzdata = Data {
         data,
         pointer: 0,
@@ -203,23 +204,17 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             break;
         }
 
-        let value: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
-        let origin = match input.fuzz_option {
-            EnableOriginFuzzing => Origin(inkpayload[4]),
-            DisableOriginFuzzing => Origin::default(),
-        };
-
-        let decoded_msg = manager
-            .transcoder()
-            .try_lock()
-            .unwrap()
-            .decode_contract_message(&mut &*encoded_message);
-
-        match &decoded_msg {
+        match guard.decode_contract_message(&mut &*encoded_message) {
             Ok(metadata) => {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
                 {
+                    let value: u32 = u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()); // todo: it's actually 16 not 4
+                    let origin = match input.fuzz_option {
+                        EnableOriginFuzzing => Origin(inkpayload[4]),
+                        DisableOriginFuzzing => Origin::default(),
+                    };
+
                     input.raw_binary = Vec::from(data);
 
                     input.messages.push(Message {
