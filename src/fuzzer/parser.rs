@@ -211,7 +211,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
         let decoded_msg = manager
             .transcoder()
-            .lock()
+            .try_lock()
             .unwrap()
             .decode_contract_message(&mut &*encoded_message);
 

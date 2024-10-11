@@ -108,7 +108,7 @@ impl Fuzzer {
         let env_builder = EnvironmentBuilder::new(database);
 
         env_builder
-            .build_env(self.ziggy_config.to_owned().fuzz_output())
+            .build_env(self.ziggy_config.to_owned())
             .context("🙅 Couldn't create corpus entries and dict")?;
 
         if conf.verbose {
@@ -266,7 +266,7 @@ mod tests {
 
         let env_builder = EnvironmentBuilder::new(database);
 
-        env_builder.build_env(config.clone().fuzz_output())?;
+        env_builder.build_env(config.clone())?;
 
         let get_unique_messages = manager.database().get_unique_messages()?.len();
 

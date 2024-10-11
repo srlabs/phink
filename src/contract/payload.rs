@@ -157,13 +157,7 @@ mod test {
             config::Configuration,
             ziggy::ZiggyConfig,
         },
-        contract::{
-            payload::PayloadCrafter,
-            runtime::{
-                Runtime,
-                RuntimeCall,
-            },
-        },
+        contract::payload::PayloadCrafter,
         fuzzer::{
             fuzz::Fuzzer,
             parser::{
@@ -174,8 +168,7 @@ mod test {
         instrumenter::path::InstrumentedPath,
     };
     use contract_transcode::ContractMessageTranscoder;
-    use parity_scale_codec::DecodeLimit;
-    use scale_info::prelude::iter;
+
     use sp_core::hexdisplay::AsBytesRef;
     use std::{
         fs,

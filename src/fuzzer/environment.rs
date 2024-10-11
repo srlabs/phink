@@ -9,6 +9,7 @@ use crate::{
             PhinkFiles,
         },
         env::PhinkEnv::AllowList,
+        ziggy::ZiggyConfig,
     },
     contract::selectors::{
         database::SelectorDatabase,
@@ -74,7 +75,7 @@ impl Dict {
         Ok(())
     }
 
-    pub fn new(phink_file: PhinkFiles) -> io::Result<Dict> {
+    pub fn new(phink_file: PhinkFiles, max_message: usize) -> io::Result<Dict> {
         let path_buf = phink_file.path(DictPath);
         if let Some(parent) = path_buf.parent() {
             fs::create_dir_all(parent)?;
@@ -90,7 +91,11 @@ impl Dict {
             dict_file,
             "# Lines starting with '#' and empty lines are ignored."
         )?;
-        writeln!(dict_file, "delimiter=\"********\"")?;
+
+        // We only add delimiters if we want to fuzz more than one message
+        if max_message > 1 {
+            writeln!(dict_file, "delimiter=\"********\"")?;
+        }
 
         Ok(Self {
             file_path: path_buf,
@@ -130,10 +135,13 @@ impl EnvironmentBuilder {
     }
 
     /// This function builds both the correct seeds and the dict file for AFL++
-    pub fn build_env(self, fuzz_output: PathBuf) -> anyhow::Result<()> {
-        let phink_file = PhinkFiles::new(fuzz_output);
+    pub fn build_env(self, conf: ZiggyConfig) -> anyhow::Result<()> {
+        let phink_file = PhinkFiles::new(conf.clone().fuzz_output());
 
-        let _dict = Dict::new(phink_file.clone())?;
+        let _dict = Dict::new(
+            phink_file.clone(),
+            conf.config().max_messages_per_exec.unwrap_or_default(),
+        )?;
         let corpus_manager = CorpusManager::new(phink_file)
             .with_context(|| "Couldn't create a new corpus manager")?;
 
@@ -180,7 +188,7 @@ mod tests {
         let path = create_temp_phink_file("test_dict");
         let phink_file = PhinkFiles::new(path.clone());
 
-        let dict = Dict::new(phink_file)?;
+        let dict = Dict::new(phink_file, 4)?;
         assert!(dict.file_path.exists());
 
         let contents = fs::read_to_string(dict.file_path)?;
@@ -193,7 +201,7 @@ mod tests {
     fn test_write_dict_entry() -> anyhow::Result<()> {
         let path = create_temp_phink_file("test_dict");
         let phink_file = PhinkFiles::new(path.clone());
-        let dict = Dict::new(phink_file)?;
+        let dict = Dict::new(phink_file, 3)?;
         let selector = create_test_selector(); //        Selector([0x01, 0x02, 0x03, 0x04])
         dict.write_dict_entry(&selector)?;
         let contents = fs::read_to_string(dict.file_path)?;
