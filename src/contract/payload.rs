@@ -157,7 +157,13 @@ mod test {
             config::Configuration,
             ziggy::ZiggyConfig,
         },
-        contract::payload::PayloadCrafter,
+        contract::{
+            payload::PayloadCrafter,
+            runtime::{
+                Runtime,
+                RuntimeCall,
+            },
+        },
         fuzzer::{
             fuzz::Fuzzer,
             parser::{
@@ -168,6 +174,8 @@ mod test {
         instrumenter::path::InstrumentedPath,
     };
     use contract_transcode::ContractMessageTranscoder;
+    use parity_scale_codec::DecodeLimit;
+    use scale_info::prelude::iter;
     use sp_core::hexdisplay::AsBytesRef;
     use std::{
         fs,
@@ -466,7 +474,12 @@ mod test {
 
     #[test]
     fn test_good_money_transfered() -> anyhow::Result<()> {
-        let encoded_bytes = hex::decode("fffffffffffa80c2f600")?;
+        let binding = hex::decode(
+            "ffffffff\
+        ff\
+        fa80c2f600",
+        )?;
+        let encoded_bytes: &[u8] = binding.as_slice();
 
         let configuration = Configuration {
             max_messages_per_exec: Some(4), // because we have two messages below
@@ -483,7 +496,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+        let input = parse_input(encoded_bytes, manager.to_owned());
 
         let msg = input.messages;
         // println!("{:?}", msg);

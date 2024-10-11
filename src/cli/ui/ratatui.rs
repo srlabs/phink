@@ -388,7 +388,7 @@ impl CustomUI {
                 Style::default().fg(Color::Yellow),
             ));
             seed_text.push_span(Span::styled(
-                "Either there is a terible bug, either we are still looking for a decodable seed.",
+                "Either there is a terrible bug (you'll see this in the AFL log), either we are still looking for a decodable seed.",
                 Style::default().fg(Color::Yellow),
             ));
         }

@@ -58,7 +58,7 @@ impl AFLProperties {
     }
 
     pub fn span_if_bad_stability(&self) -> Span {
-        let stability = &self.stability;
+        let stability = format!("{}%", &self.stability * 100_f64);
 
         if self.bad_stability() {
             Span::styled(

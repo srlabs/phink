@@ -161,10 +161,9 @@ impl Fuzzer {
         }
 
         let mut chain = BasicExternalities::new(self.setup.genesis.clone());
-        let mut coverage = InputCoverage::new();
-
         chain.execute_with(|| timestamp(0));
 
+        let mut coverage = InputCoverage::new();
         let all_msg_responses = self.execute_messages(&parsed_input, &mut chain, &mut coverage);
 
         chain.execute_with(|| manager.check_invariants(&all_msg_responses, &parsed_input));
@@ -185,6 +184,8 @@ impl Fuzzer {
 
             println!("[🚧DEBUG TRACE] Caught coverage identifiers {flatten_coverage:?}\n",);
         }
+        // We now fake the coverage
+        coverage.redirect_coverage(flatten_coverage);
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config().show_ui {
@@ -195,9 +196,6 @@ impl Fuzzer {
                     .unwrap();
             }
         }
-
-        // We now fake the coverage
-        coverage.redirect_coverage(flatten_coverage);
     }
 }
 
