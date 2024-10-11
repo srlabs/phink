@@ -479,12 +479,11 @@ mod tests {
             vec![],
         );
 
-        println!("{:?}", result);
-        assert!(
-            result.is_ok(),
-            "One possibility could be `cargo afl config --build`"
-        );
-
+        let x = result.is_ok();
+        if x {
+            println!("{:?}", result);
+        }
+        assert!(x, "One possibility could be `cargo afl config --build`");
         Ok(())
     }
 }

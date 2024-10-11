@@ -190,7 +190,7 @@ impl pallet_contracts::Config for Runtime {
     type DepositPerItem = DepositPerItem;
     type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
     type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
-    type MaxCodeLen = ConstU32<133642>; // ConstU32<{ u32::MAX }>;
+    type MaxCodeLen = ConstU32<133641>; // ConstU32<{ u32::MAX }>;
     type MaxStorageKeyLen = ConstU32<128>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
     type MaxDebugBufferLen = ConstU32<{ u32::MAX }>;

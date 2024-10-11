@@ -157,8 +157,9 @@ impl EnvironmentBuilder {
                 .with_context(|| "Couldn't write corpus file")?;
 
             // todo: not sure if we keep the selectors inside the dict
-            // dict.write_dict_entry(selector)
-            //     .with_context(|| "Couldn't write the dictionnary entries")?;
+            _dict
+                .write_dict_entry(selector)
+                .with_context(|| "Couldn't write the dictionnary entries")?;
         }
 
         Ok(())
