@@ -123,19 +123,19 @@ impl Instrumenter {
             .args(["contract", "build", "--features=phink"])
             .output()?;
 
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
 
+        if output.status.success() {
             phink_log!(
                 self,
                 "✂️ Compiling `{p_display}` finished successfully!\n{stdout}\n{stderr}",
             );
         } else {
             bail!(
-                "It seems that your instrumented smart contract did not compile properly. \
+                "{stderr} - {stdout} It seems that your instrumented smart contract did not compile properly. \
         Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance.\
-        Also, make sur that your Cargo.toml contains the `phink` feature.",
+        Also, make sur that your Cargo.toml contains the `phink` feature.\nMore informations in the stacktrace above.",
             )
         }
 

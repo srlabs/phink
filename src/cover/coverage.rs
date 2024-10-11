@@ -85,9 +85,9 @@ impl InputCoverage {
         /// `2_000` artificial branches This value should be big enough
         /// to handle most of smart-contract, even the biggest
 
-        println!("Coverage size: {}", flat.len());
-        seq_macro::seq!(cov_id in 0..= 2_000 {
-            if flat.contains(&(cov_id)) {
+        // println!("Coverage sizerun: {}", flat.len());
+        seq_macro::seq!(cov_id in 0_u64..=2_000_u64 {
+            if black_box(flat.contains(&cov_id)) {
                 // println!("{:?}", cov_id);
                 let _ = black_box(cov_id + 1);
             }

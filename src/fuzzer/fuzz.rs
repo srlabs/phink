@@ -237,6 +237,7 @@ mod tests {
             fuzz_output: Some(tempdir().unwrap().into_path()),
             instrumented_contract_path: Some(InstrumentedPath::from("sample/dns")),
             show_ui: false,
+            max_messages_per_exec: Some(4),
             ..Default::default()
         };
         ZiggyConfig::new_with_contract(config, PathBuf::from("sample/dns")).unwrap()

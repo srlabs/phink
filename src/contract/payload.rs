@@ -478,6 +478,7 @@ mod test {
             max_messages_per_exec: Some(4), // because we have two messages below
             fuzz_origin: true,
             instrumented_contract_path: Some(InstrumentedPath::from("sample/dummy")),
+            verbose: false,
             // below is a hack, `sample/dns` isn't the instrumented, but for the test we don't care
             ..Default::default()
         };
