@@ -89,7 +89,7 @@ impl InputCoverage {
             if black_box(flat.contains(&cov_id)) {
                 // println!("{:?}", cov_id);
                 let cov = cov_id.saturating_add(1);
-                let blackbox = black_box(cov);
+                let _blackbox = black_box(cov);
             }
         });
     }

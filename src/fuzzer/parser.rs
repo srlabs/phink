@@ -177,8 +177,7 @@ impl<'a> Iterator for Data<'a> {
 
 pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let config = manager.clone().config();
-    let arc = manager.transcoder();
-    let guard = arc.try_lock().unwrap();
+
     let fuzzdata = Data {
         data,
         pointer: 0,
@@ -192,6 +191,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
         raw_binary: Vec::new(),
     };
 
+    let arc = manager.transcoder();
+    let guard = arc.try_lock().unwrap();
+
     for inkpayload in fuzzdata {
         let encoded_message: &[u8] = &inkpayload[5..];
         let selector: [u8; 4] = encoded_message[0..4]
@@ -204,7 +206,8 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             break;
         }
 
-        match guard.decode_contract_message(&mut &*encoded_message) {
+        let mut encoded_cloned = encoded_message;
+        match guard.decode_contract_message(&mut encoded_cloned) {
             Ok(metadata) => {
                 if fuzzdata.max_messages_per_exec != 0
                     && input.messages.len() <= fuzzdata.max_messages_per_exec
@@ -221,7 +224,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                         is_payable: manager.database().is_payable(&slctr),
                         payload: encoded_message.into(),
                         value_token: value as u128,
-                        message_metadata: metadata.clone(),
+                        message_metadata: metadata,
                         origin,
                     });
                 }
