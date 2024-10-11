@@ -47,7 +47,7 @@ impl AFLProperties {
                     .add_modifier(Modifier::BOLD)
                     .add_modifier(Modifier::UNDERLINED)
                     .underline_color(Color::White)
-                    .fg(Color::Red),
+                    .fg(Color::Green),
             )
         } else {
             Span::styled(

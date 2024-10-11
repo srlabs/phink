@@ -245,7 +245,7 @@ impl CustomUI {
                 ),
             ]),
             Line::from(vec![Span::raw("Stability: "), data.span_if_bad_stability()]),
-            Line::from(vec![Span::raw("Saved crashes: "), data.span_if_crash()]),
+            Line::from(vec![Span::raw("Bug found: "), data.span_if_crash()]),
         ]))
         .block(
             Block::default()

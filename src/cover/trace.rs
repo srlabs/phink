@@ -68,6 +68,13 @@ mod tests {
     }
 
     #[test]
+    fn test_new_line() {
+        let data = "COV=10\nCOV=invalid\nCOV=30".as_bytes().to_vec();
+        let trace = CoverageTrace(data);
+        assert_eq!(trace.parse_coverage(), vec![10, 30]);
+    }
+
+    #[test]
     fn test_remove_cov_from_trace() {
         let data = "COV=10 other_data COV=20 more_data".as_bytes().to_vec();
         let trace = CoverageTrace(data);

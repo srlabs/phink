@@ -168,7 +168,7 @@ impl Fuzzer {
 
         chain.execute_with(|| manager.check_invariants(&all_msg_responses, &parsed_input));
 
-        let flatten_coverage = coverage.messages_coverage();
+        let cov = coverage.messages_coverage();
 
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
@@ -182,10 +182,10 @@ impl Fuzzer {
                 .save(manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            println!("[🚧DEBUG TRACE] Caught coverage identifiers {flatten_coverage:?}\n",);
+            println!("[🚧DEBUG TRACE] Caught coverage identifiers {cov:?}\n",);
         }
         // We now fake the coverage
-        coverage.redirect_coverage(flatten_coverage);
+        coverage.redirect_coverage(cov);
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config().show_ui {

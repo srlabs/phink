@@ -9,10 +9,7 @@ use crate::{
 };
 use anyhow::bail;
 use std::{
-    collections::{
-        HashMap,
-        HashSet,
-    },
+    collections::HashMap,
     fs::{
         self,
         File,
@@ -25,7 +22,7 @@ pub struct CoverageTracker {
     /// One String (entry) is one .rs file
     coverage: HashMap<String, Vec<bool>>,
     /// One entry is one COV identifier (i.e COV=18)
-    hit_lines: HashSet<usize>,
+    hit_lines: Vec<usize>,
 }
 
 impl CoverageTracker {
