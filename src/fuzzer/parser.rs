@@ -198,7 +198,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let guard = arc.try_lock().unwrap();
 
     for inkpayload in fuzzdata {
-        let encoded_message: &[u8] = &inkpayload[5..];
+        let mut encoded_message = vec![0u8; inkpayload.len() - 5];
+        encoded_message.copy_from_slice(&inkpayload[5..]);
+
         let selector: [u8; 4] = encoded_message[0..4].try_into().expect("[0..4] to u8 fail");
         let slctr = Selector::from(selector);
         let db = manager.database();
@@ -208,7 +210,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
             break;
         }
 
-        let mut encoded_cloned = encoded_message;
+        let mut encoded_cloned = encoded_message.clone();
 
         match decode_contract_message(&guard, &mut encoded_cloned) {
             Ok(message_metadata) => {
@@ -247,13 +249,14 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
 pub fn decode_contract_message(
     guard: &ContractMessageTranscoder,
-    data: &mut &[u8],
+    data: &mut Vec<u8>,
 ) -> anyhow::Result<Value> {
     use contract_transcode::Map;
     use std::io::Read;
 
+    let mut data_as_slice = data.as_slice().clone();
     let mut msg_selector: [u8; 4] = [0u8; 4];
-    data.read_exact(&mut msg_selector)?;
+    data_as_slice.read_exact(&mut msg_selector)?;
     let msg_spec = guard
         .metadata()
         .spec()
@@ -270,14 +273,14 @@ pub fn decode_contract_message(
     let mut args = Vec::new();
     for arg in msg_spec.args() {
         let name = arg.label().to_string();
-        let value = guard.decode(arg.ty().ty().id, data)?;
+        let value = guard.decode(arg.ty().ty().id, &mut data_as_slice)?;
         args.push((Value::String(name), value));
     }
 
-    if !data.is_empty() {
+    if !data_as_slice.is_empty() {
         return Err(anyhow::anyhow!(
             "input length was longer than expected by {} byte(s).\n `{}` bytes were left unread",
-            data.len(),
+            data_as_slice.len(),
             hex::encode_upper(data)
         ));
     }
