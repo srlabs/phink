@@ -157,35 +157,54 @@ impl<'a> Iterator for Data<'a> {
     type Item = &'a [u8];
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.size_limit_reached() {
+            return None;
+        }
+        // If `max_messages_per_exec` is 1, return the entire remaining data
+        if self.max_messages_per_exec == 1 {
+            let res = &self.data[self.pointer..];
+            self.pointer = self.data.len();
+            self.size += 1;
+            return if res.len() >= MIN_SEED_LEN {
+                Some(res)
+            } else {
+                None
+            };
+        }
+
         loop {
-            if self.data.len() <= self.pointer || self.size_limit_reached() {
+            if self.data.len() <= self.pointer {
                 return None;
             }
             let next_delimiter = self.data[self.pointer..]
                 .windows(DELIMITER.len())
                 .position(|window| window == DELIMITER);
+
             let next_pointer = match next_delimiter {
                 Some(delimiter) => self.pointer + delimiter,
                 None => self.data.len(),
             };
+
             let res = &self.data[self.pointer..next_pointer];
             self.pointer = next_pointer + DELIMITER.len();
+
             if res.len() >= MIN_SEED_LEN {
                 self.size += 1;
-                return Option::from(res);
+                return Some(res);
             }
         }
     }
 }
 
-pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
+pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
     let config = manager.clone().config();
 
-    let fuzzdata = Data {
-        data,
+    let max_msg = config.max_messages_per_exec.unwrap_or_default();
+    let mut data = Data {
+        data: bytes,
         pointer: 0,
         size: 0,
-        max_messages_per_exec: config.max_messages_per_exec.unwrap_or_default(),
+        max_messages_per_exec: max_msg,
     };
 
     let mut input = OneInput {
@@ -197,9 +216,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let arc = manager.transcoder();
     let guard = arc.try_lock().unwrap();
 
-    for inkpayload in fuzzdata {
-        let mut encoded_message = vec![0u8; inkpayload.len() - 5];
-        encoded_message.copy_from_slice(&inkpayload[5..]);
+    for payload in data {
+        let mut encoded_message = vec![0u8; payload.len() - 5];
+        encoded_message.copy_from_slice(&payload[5..]);
 
         let selector: [u8; 4] = encoded_message[0..4].try_into().expect("[0..4] to u8 fail");
         let slctr = Selector::from(selector);
@@ -214,21 +233,22 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
         match decode_contract_message(&guard, &mut encoded_cloned) {
             Ok(message_metadata) => {
-                if fuzzdata.max_messages_per_exec != 0
-                    && input.messages.len() <= fuzzdata.max_messages_per_exec
+                if data.max_messages_per_exec != 0
+                    && input.messages.len() <= data.max_messages_per_exec
                 {
                     let origin = match input.fuzz_option {
-                        EnableOriginFuzzing => Origin(inkpayload[4]),
+                        EnableOriginFuzzing => Origin(payload[4]),
                         DisableOriginFuzzing => Origin::default(),
                     };
                     let is_payable: bool = db.is_payable(&slctr);
                     let value_token: u128 = if is_payable {
-                        u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()) as u128 // todo:16 not 4
+                        u32::from_ne_bytes(payload[0..4].try_into().unwrap()) as u128 // todo:16 not
+                                                                                      // 4
                     } else {
                         0
                     };
 
-                    input.raw_binary = Vec::from(data);
+                    input.raw_binary = Vec::from(bytes);
 
                     input.messages.push(Message {
                         is_payable,
