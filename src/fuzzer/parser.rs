@@ -198,9 +198,8 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let guard = arc.try_lock().unwrap();
 
     for inkpayload in fuzzdata {
-        let encoded_message: &[u8] = &inkpayload[0..];
-        let selector: [u8; 4] = encoded_message[0..4].try_into().expect("[0..4] to u8 fail");
-        let slctr = Selector::from(selector);
+        let encoded_message: &[u8] = &inkpayload[5..];
+        let slctr = Selector::from(encoded_message[0..4].try_into().expect("[0..4] to u8 fail"));
         let db = manager.database();
 
         // If we see a message being an invariant or our selector isn't a proper message we stop

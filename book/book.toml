@@ -1,0 +1,22 @@
+[book]
+title = "Phink Book"
+authors = ["Kevin Valerio"]
+description = "Documentation for Phink fuzzer"
+language = "en"
+
+[rust]
+edition = "2021"
+
+[build]
+build-dir = "phink-book"
+create-missing = false
+
+[preprocessor.index]
+
+[preprocessor.links]
+
+[output.html]
+additional-css = ["custom.css"]
+
+[output.html.search]
+limit-results = 15
