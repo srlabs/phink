@@ -31,11 +31,7 @@ use std::{
 pub struct AllowListBuilder;
 
 impl AllowListBuilder {
-    pub const FUNCTIONS: [&str; 3] = [
-        "redirect_coverage*",
-        "parse_input*",
-        "decode_contract_message*",
-    ];
+    pub const FUNCTIONS: [&str; 2] = ["redirect_coverage*", "parse_input*"];
 
     /// Builds the LLVM allowlist if it doesn't already exist.
     pub fn build(fuzz_output: PathBuf) -> io::Result<()> {

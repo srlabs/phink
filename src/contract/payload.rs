@@ -376,13 +376,13 @@ mod test {
         let constructor = "crash_with_invariant";
         let data = transcoder.encode(constructor, ["\"\""]).unwrap();
         let hex = hex::encode(data);
-        assert_eq!(hex, "fa80c2f600")
-        // println!("{:?}", hex);
+        assert_eq!(hex, "fa80c2f600");
+        println!("{:?}", hex);
     }
 
     #[test]
     fn parse_one_message_dummy() -> anyhow::Result<()> {
-        let encoded_bytes = hex::decode("0000000001fa80c2f600")?;
+        let encoded_bytes = hex::decode("fa80c2f600")?;
 
         let configuration = Configuration {
             max_messages_per_exec: Some(4), // because we have two messages below
@@ -401,7 +401,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        // println!("{:?}", msg);
+        println!("{:?}", msg);
 
         assert_eq!(msg.len(), 1, "No messages decoded");
         assert_eq!(
