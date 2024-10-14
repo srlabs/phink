@@ -113,8 +113,8 @@ impl CorpusManager {
 
     pub fn write_corpus_file(&self, index: usize, selector: &Selector) -> io::Result<()> {
         // 00010000 01 fa80c2f6 00
-        // let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
-        let mut data = vec![];
+        let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
+        // let mut data = vec![];
         let file_path = self.corpus_dir.join(format!("selector_{index}.bin"));
         data.extend_from_slice(selector.0.as_ref());
         data.extend(vec![0x0, 0x0]);
