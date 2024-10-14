@@ -200,7 +200,7 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
     let config = manager.clone().config();
 
     let max_msg = config.max_messages_per_exec.unwrap_or_default();
-    let mut data = Data {
+    let data = Data {
         data: bytes,
         pointer: 0,
         size: 0,
@@ -237,11 +237,15 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
                     && input.messages.len() <= data.max_messages_per_exec
                 {
                     let origin = match input.fuzz_option {
-                        EnableOriginFuzzing => Origin(payload[4]),
+                        EnableOriginFuzzing => {
+                            panic!("wtf");
+                            Origin(payload[4])
+                        }
                         DisableOriginFuzzing => Origin::default(),
                     };
                     let is_payable: bool = db.is_payable(&slctr);
                     let value_token: u128 = if is_payable {
+                        panic!("wtf");
                         u32::from_ne_bytes(payload[0..4].try_into().unwrap()) as u128 // todo:16 not
                                                                                       // 4
                     } else {
