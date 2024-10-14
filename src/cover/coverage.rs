@@ -90,17 +90,17 @@ impl InputCoverage {
                       // println!("{:?}", cov_id);
                     let cov = cov_id.saturating_add(1);
                     let _blackbox = black_box(cov);
-                           // Introduce additional conditional branches
+                    // Introduce additional conditional branches
                     if cov_id % 2 == 0 {
-                        let _even = black_box(cov_id + 2);
+                        let _even = black_box(cov_id + cov_id);
                     } else {
-                        let _odd = black_box(cov_id * 2);
+                        let _odd = black_box(cov_id - cov_id);
                     }
 
                     if cov_id % 3 == 0 {
-                        let _div_by_three = black_box(cov_id + 3);
+                        let _div_by_three = black_box(cov_id - cov_id);
                     } else {
-                        let _not_div_by_three = black_box(cov_id - 3);
+                        let _not_div_by_three = black_box(cov_id - cov_id);
                     }
 
             }
