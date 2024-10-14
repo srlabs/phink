@@ -3,6 +3,8 @@ title = "Phink Book"
 authors = ["Kevin Valerio"]
 description = "Documentation for Phink fuzzer"
 language = "en"
+src = "src"
+multilingual = false
 
 [rust]
 edition = "2021"
