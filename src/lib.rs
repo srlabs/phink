@@ -69,7 +69,7 @@ enum Commands {
     Run,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here
     /// (mainly for debugging purposes only)
-    HarnessCover(Contract),
+    HarnessCover,
     /// Generate a coverage report for your smart-contract
     Coverage(Contract),
     /// Execute one seed
@@ -150,8 +150,8 @@ fn handle_cli() -> anyhow::Result<()> {
             )?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }
-        Commands::HarnessCover(contract_path) => {
-            ZiggyConfig::new_with_contract(config, contract_path.contract_path)
+        Commands::HarnessCover => {
+            ZiggyConfig::new(config)
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_cover()
         }
