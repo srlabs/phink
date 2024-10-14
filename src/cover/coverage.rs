@@ -87,9 +87,12 @@ impl InputCoverage {
 
         seq_macro::seq!(cov_id in 0_u64 .. 2_000_u64 {
             if black_box(flat.contains(&cov_id)) {
-                // println!("{:?}", cov_id);
-                let cov = cov_id.saturating_add(1);
-                let _blackbox = black_box(cov);
+                for _ in 0..500 {
+                     // println!("{:?}", cov_id);
+                    let cov = cov_id.saturating_add(1);
+                    let _blackbox = black_box(cov);
+                }
+
             }
         });
     }

@@ -23,6 +23,14 @@ impl SelectorDatabase {
         }
     }
 
+    pub fn contains_invariant(&self, selector: &Selector) -> bool {
+        self.invariants.contains(selector)
+    }
+
+    pub fn contains_message(&self, selector: &Selector) -> bool {
+        self.messages.contains(selector)
+    }
+
     pub fn is_payable(&self, selector: &Selector) -> bool {
         self.payable_messages.contains(selector)
     }

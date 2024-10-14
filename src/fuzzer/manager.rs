@@ -58,7 +58,7 @@ impl CampaignManager {
 
         Ok(Self {
             setup,
-            database: database.clone(),
+            database,
             configuration,
             transcoder,
         })
@@ -68,8 +68,8 @@ impl CampaignManager {
         self.configuration.clone()
     }
 
-    pub fn database(&self) -> SelectorDatabase {
-        self.database.clone()
+    pub fn database(&self) -> &SelectorDatabase {
+        &self.database
     }
 
     pub fn transcoder(&self) -> Arc<Mutex<ContractMessageTranscoder>> {
@@ -153,7 +153,7 @@ impl CampaignManager {
                 self.configuration.clone(),
             );
             if invariant_call.failed() {
-                return Ok(invariant.clone());
+                return Ok(*invariant);
             }
         }
         bail!("All invariants passed")

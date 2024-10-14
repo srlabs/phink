@@ -11,7 +11,10 @@ use crate::{
     },
     fuzzer::manager::CampaignManager,
 };
-use contract_transcode::Value;
+use contract_transcode::{
+    ContractMessageTranscoder,
+    Value,
+};
 use prettytable::{
     Cell,
     Row,
@@ -196,17 +199,25 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
 
     for inkpayload in fuzzdata {
         let encoded_message: &[u8] = &inkpayload[5..];
-        let selector: [u8; 4] = encoded_message[0..4]
-            .try_into()
-            .expect("Slice conversion failed");
+        let selector: [u8; 4] = encoded_message[0..4].try_into().expect("[0..4] to u8 fail");
+        let params: &[u8] = &encoded_message[5..];
         let slctr = Selector::from(selector);
+        let db = manager.database();
 
-        // If we see a message being an invariant, we stop
-        if manager.database().invariants().unwrap().contains(&slctr) {
+        // If we see a message being an invariant or our selector isn't a proper message we stop
+        if db.contains_invariant(&slctr) || !db.contains_message(&slctr) {
             break;
         }
 
         let mut encoded_cloned = encoded_message;
+        let mut encoded_two = encoded_message;
+
+        let transcoder_guard = arc.try_lock().unwrap();
+        if let Err(e) = decode_contract_message(&*transcoder_guard, &mut encoded_two) {
+            println!("{e:?}");
+            break;
+        }
+
         match guard.decode_contract_message(&mut encoded_cloned) {
             Ok(metadata) => {
                 if fuzzdata.max_messages_per_exec != 0
@@ -216,10 +227,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
                         EnableOriginFuzzing => Origin(inkpayload[4]),
                         DisableOriginFuzzing => Origin::default(),
                     };
-                    let payable: bool = manager.database().is_payable(&slctr);
+                    let payable: bool = db.is_payable(&slctr);
                     let value: u128 = if payable {
-                        u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()) as u128 // todo: it's actually
-                                                                                         // 16 not 4
+                        u32::from_ne_bytes(inkpayload[0..4].try_into().unwrap()) as u128 // todo:16 not 4
                     } else {
                         0
                     };
@@ -243,6 +253,50 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     input
 }
 
+pub fn decode_contract_message(
+    guard: &ContractMessageTranscoder,
+    data: &mut &[u8],
+) -> anyhow::Result<String> {
+    use std::io::Read;
+    let mut msg_selector = [0u8; 4];
+    data.read(&mut msg_selector)?;
+    let msg_spec = guard
+        .metadata()
+        .spec()
+        .messages()
+        .iter()
+        .find(|x| msg_selector == x.selector().to_bytes())
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "Message with selector {} not found in contract metadata",
+                hex::encode_upper(msg_selector)
+            )
+        })?;
+
+    let mut args = Vec::new();
+    for arg in msg_spec.args() {
+        let name = arg.label().to_string();
+        let value = guard.decode(arg.ty().ty().id, data)?;
+        args.push((Value::String(name), value));
+    }
+
+    if !data.is_empty() {
+        let arg_list_string: String = args
+            .iter()
+            .fold(format!("`{}`", msg_spec.label()), |init, arg| {
+                format!("{}, `{}`", init, arg.0)
+            });
+        let encoded_bytes = hex::encode_upper(&mut *data);
+        return Err(anyhow::anyhow!(
+                "input length was longer than expected by {} byte(s).\nManaged to decode {} but `{}` bytes were left unread",
+                data.len(),
+                arg_list_string,
+                encoded_bytes
+            ));
+    }
+
+    Ok(msg_spec.label().to_string())
+}
 #[cfg(test)]
 mod tests {
     use super::*;

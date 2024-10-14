@@ -88,7 +88,7 @@ impl Fuzzer {
         let contract_bridge = self.setup.clone();
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)
-            .context("🙅 No invariants found, check your contract")?;
+            .context("No invariants found, check your contract")?;
 
         let conf = self.ziggy_config.config();
         let messages = PayloadCrafter::extract_all(conf.instrumented_contract().to_path_buf())
@@ -102,10 +102,7 @@ impl Fuzzer {
         database.add_messages(messages);
         database.add_payables(payable_messages);
 
-        let manager =
-            CampaignManager::new(database.clone(), contract_bridge.clone(), conf.to_owned());
-
-        let env_builder = EnvironmentBuilder::new(database);
+        let env_builder = EnvironmentBuilder::new(database.clone());
 
         env_builder
             .build_env(self.ziggy_config.to_owned())
@@ -119,7 +116,7 @@ impl Fuzzer {
             );
         }
 
-        manager
+        CampaignManager::new(database, contract_bridge.clone(), conf.to_owned())
     }
 
     fn execute_messages(
@@ -260,7 +257,7 @@ mod tests {
         database.add_messages(messages);
 
         let manager = CampaignManager::new(
-            database.clone(),
+            database,
             contract_bridge.clone(),
             config.config().to_owned(),
         )?;
@@ -286,7 +283,6 @@ mod tests {
 
         let dict_path = config.fuzz_output().join("phink").join("selectors.dict");
         let dict: String = fs::read_to_string(dict_path.clone())?;
-        // assert_eq!(dict_path.iter().count(), 9);
         assert!(dict.contains("********"));
         assert!(dict.contains("# Dictionary file for selector"));
         // todo: not sure if we keep the dict

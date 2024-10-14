@@ -504,8 +504,8 @@ mod test {
 
         assert_eq!(
             msg.first().unwrap().value_token,
-            4294967295_u128, // origin was ff
-            "Origin is supposed to be the default one"
+            4294967295_u128,
+            "Value transfered is supposed to be the max"
         );
 
         for i in 0..msg.len() {

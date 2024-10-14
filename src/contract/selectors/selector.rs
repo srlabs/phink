@@ -17,7 +17,7 @@ pub enum SelectorError {
     InvalidLength,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 pub struct Selector(pub [u8; 4]);
 
 impl Display for Selector {
