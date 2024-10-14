@@ -198,9 +198,9 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
     let guard = arc.try_lock().unwrap();
 
     for inkpayload in fuzzdata {
-        let encoded_message: &[u8] = &inkpayload[5..];
+        let encoded_message: &[u8] = &inkpayload[0..];
         let selector: [u8; 4] = encoded_message[0..4].try_into().expect("[0..4] to u8 fail");
-        let params: &[u8] = &encoded_message[5..];
+        // let params: &[u8] = &encoded_message[5..];
         let slctr = Selector::from(selector);
         let db = manager.database();
 
@@ -212,9 +212,7 @@ pub fn parse_input(data: &[u8], manager: CampaignManager) -> OneInput {
         let mut encoded_cloned = encoded_message;
         let mut encoded_two = encoded_message;
 
-        let transcoder_guard = arc.try_lock().unwrap();
-        if let Err(e) = decode_contract_message(&*transcoder_guard, &mut encoded_two) {
-            println!("{e:?}");
+        if decode_contract_message(&guard, &mut encoded_two).is_err() {
             break;
         }
 
@@ -268,7 +266,7 @@ pub fn decode_contract_message(
         .find(|x| msg_selector == x.selector().to_bytes())
         .ok_or_else(|| {
             anyhow::anyhow!(
-                "Message with selector {} not found in contract metadata",
+                "XMessage with selector {} not found in contract metadata",
                 hex::encode_upper(msg_selector)
             )
         })?;
@@ -286,9 +284,9 @@ pub fn decode_contract_message(
             .fold(format!("`{}`", msg_spec.label()), |init, arg| {
                 format!("{}, `{}`", init, arg.0)
             });
-        let encoded_bytes = hex::encode_upper(&mut *data);
+        let encoded_bytes = hex::encode_upper(*data);
         return Err(anyhow::anyhow!(
-                "input length was longer than expected by {} byte(s).\nManaged to decode {} but `{}` bytes were left unread",
+                "Xinput length was longer than expected by {} byte(s).\nManaged to decode {} but `{}` bytes were left unread",
                 data.len(),
                 arg_list_string,
                 encoded_bytes

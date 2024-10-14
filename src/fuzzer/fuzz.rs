@@ -27,6 +27,7 @@ use crate::{
         parser::{
             parse_input,
             OneInput,
+            MIN_SEED_LEN,
         },
     },
 };
@@ -151,6 +152,10 @@ impl Fuzzer {
     }
 
     pub fn harness(&self, manager: CampaignManager, input: &[u8]) {
+        if input.len() < MIN_SEED_LEN {
+            return;
+        }
+
         let parsed_input: OneInput = parse_input(input, manager.to_owned());
 
         if parsed_input.messages.is_empty() {
@@ -257,7 +262,7 @@ mod tests {
         database.add_messages(messages);
 
         let manager = CampaignManager::new(
-            database,
+            database.clone(),
             contract_bridge.clone(),
             config.config().to_owned(),
         )?;
@@ -266,7 +271,8 @@ mod tests {
 
         env_builder.build_env(config.clone())?;
 
-        let get_unique_messages = manager.database().get_unique_messages()?.len();
+        let x = manager.database();
+        let get_unique_messages = x.clone().get_unique_messages()?.len();
 
         assert_eq!(
             fs::read_dir(config.clone().fuzz_output().join("phink").join("corpus"))
@@ -276,10 +282,10 @@ mod tests {
         );
         assert_eq!(get_unique_messages, 5 + 1); // msg + constructor
 
-        let inv_counter = manager.database().invariants()?.len();
+        let inv_counter = x.clone().invariants()?.len();
         assert_eq!(inv_counter, 1);
 
-        assert_eq!(manager.database().messages()?.len(), get_unique_messages);
+        assert_eq!(x.clone().messages()?.len(), get_unique_messages);
 
         let dict_path = config.fuzz_output().join("phink").join("selectors.dict");
         let dict: String = fs::read_to_string(dict_path.clone())?;
