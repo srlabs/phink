@@ -252,8 +252,8 @@ pub fn decode_contract_message(
     use contract_transcode::Map;
     use std::io::Read;
 
-    let mut msg_selector = [0u8; 4];
-    data.read(&mut msg_selector)?;
+    let mut msg_selector: [u8; 4] = [0u8; 4];
+    data.read_exact(&mut msg_selector)?;
     let msg_spec = guard
         .metadata()
         .spec()
