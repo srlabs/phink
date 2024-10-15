@@ -9,6 +9,8 @@
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
 [![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
 ![Discord](https://img.shields.io/discord/1276519988349374587?label=Discord)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://srlabs.github.io/phink)
+
 </div>
 </br>
 
@@ -24,6 +26,13 @@ our [Discord community](https://discord.gg/gAahQMGE)
 ## Install
 
 ### Building from source
+
+From Cargo via Git
+
+```bash
+cargo install --git https://github.com/srlabs/phink
+phink --help
+```
 
 If you prefer to install Phink manually, follow these steps:
 
@@ -81,6 +90,7 @@ Below are some invariants created for the [dns](https://github.com/kevin-valerio
 contract.
 
 1. Add the `phink` feature to your `Cargo.toml`
+
 ```toml
 [features]
 ...
@@ -88,6 +98,7 @@ phink = []
 ```
 
 2. Create your invariants as below:
+
 ```rust
 #[cfg(feature = "phink")]
 #[ink(impl)]
@@ -108,8 +119,8 @@ impl DomainNameService {
     #[ink(message)]
     #[cfg(feature = "phink")]
     pub fn phink_assert_dangerous_number(&self) {
-        let FORBIDDEN_NUMBER = 42;
-        assert_ne!(self.dangerous_number, FORBIDDEN_NUMBER);
+        let forbidden_number = 42;
+        assert_ne!(self.dangerous_number, forbidden_number);
     }
 }
 ```
@@ -165,7 +176,7 @@ file.
 - [x] Visualization of ink! contract coverage
 - [x] Proper binary usage
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
-- [ ] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
+- [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
 - [ ] Creation of default invariants common to every contract  (_research needed_)
 - [ ] Provision of a specified on-chain state  (_research needed_)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
