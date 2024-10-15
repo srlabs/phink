@@ -16,7 +16,6 @@ use-default-preprocessors = true
 
 
 [output.html]
-additional-css = ["custom.css"]
 default-theme = "light"
 preferred-dark-theme = "navy"
 smart-punctuation = true
@@ -28,7 +27,6 @@ git-repository-icon = "fa-github"
 edit-url-template = "https://github.com/srlabs/phink/blob/main/src/{path}"
 site-url = "/example-book/"
 cname = "myproject.rs"
-input-404 = "not-found.md"
 
 [output.html.search]
 limit-results = 15
