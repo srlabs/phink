@@ -10,15 +10,29 @@ multilingual = false
 edition = "2021"
 
 [build]
-build-dir = "phink-book"
-create-missing = false
+build-dir = "documentation"
+create-missing = true
+use-default-preprocessors = true
 
-[preprocessor.index]
 
-[preprocessor.links]
 
 [output.html]
 additional-css = ["custom.css"]
+default-theme = "light"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+mathjax-support = false
+copy-fonts = true
+no-section-label = false
+git-repository-url = "https://github.com/srlabs/phink/"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/srlabs/phink/blob/main/src/{path}"
+site-url = "/example-book/"
+cname = "myproject.rs"
+input-404 = "not-found.md"
 
 [output.html.search]
 limit-results = 15
+
+[output.html.playground]
+editable = false

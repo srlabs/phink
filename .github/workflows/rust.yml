@@ -62,9 +62,9 @@ jobs:
         run: |
           cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
 
+      #          sudo apt-get clean
       - name: Clean up space
         run: |
-          sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
           sudo du -sh /* 2>/dev/null
 
@@ -76,6 +76,9 @@ jobs:
 
       - name: Run rustfmt checks
         run: cargo fmt -- --check
+
+      - name: Check Book
+        run: cd book && mdbook test
 
       - name: Build in release mode
         run: cargo build --release --verbose --quiet

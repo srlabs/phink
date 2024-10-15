@@ -1,3 +1,17 @@
 # Summary
 
-- [Chapter 1](./chapter_1.md)
+[Introduction](./INTRO.md)
+
+# User guide
+
+- [Installation](./START.md)
+- [Configuration](./CONFIG.md)
+- [Starting a campaign](./CAMPAIGN.md)
+- [Improving the campaign](./ADVANCED.md)
+- [Plug-in your runtime](./RUNTIME.md)
+
+# Concepts and understanding
+
+- [Concept and terminology](./CONCEPT.md)
+- [Understanding the seed format](./SEEDS.md)
+- [Troubleshoting](./TROUBLESHOTING.md)

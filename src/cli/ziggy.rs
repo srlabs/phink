@@ -121,8 +121,11 @@ impl ZiggyConfig {
     }
 
     /// Returns the contract path of the ink! contract
-    pub fn contract_path(&self) -> PathBuf {
-        self.contract_path.clone().unwrap()
+    pub fn contract_path(&self) -> anyhow::Result<PathBuf> {
+        self.contract_path.to_owned().context(
+            "Contract path wasn't passed in the config, it is currently `None`.\
+            Ensure that your `phink.toml` is properly configured",
+        )
     }
     fn is_valid(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
         if let Some(path) = contract_path {
@@ -366,7 +369,10 @@ mod tests {
             config.config().fuzz_output,
             Some(PathBuf::from("/tmp/fuzz_output"))
         );
-        assert_eq!(config.contract_path(), PathBuf::from("sample/dummy"));
+        assert_eq!(
+            config.contract_path().unwrap(),
+            PathBuf::from("sample/dummy")
+        );
     }
 
     #[test]
@@ -404,7 +410,7 @@ mod tests {
         assert_eq!(config.config.cores, Some(2));
         assert_eq!(config.config.fuzz_output, Default::default());
         assert_eq!(
-            config.contract_path(),
+            config.contract_path().unwrap(),
             PathBuf::from("/tmp/ink_fuzzed_3h4Wm/")
         );
     }

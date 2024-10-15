@@ -178,7 +178,7 @@ impl CoverageTracker {
         println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
-        for entry in WalkDir::new(config.contract_path())
+        for entry in WalkDir::new(config.contract_path()?)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))

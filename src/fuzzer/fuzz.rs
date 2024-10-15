@@ -252,7 +252,7 @@ mod tests {
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs).unwrap();
 
-        let messages = PayloadCrafter::extract_all(config.contract_path().clone())?
+        let messages = PayloadCrafter::extract_all(config.contract_path()?.clone())?
             .into_iter()
             .filter(|s| !invariants.contains(s))
             .collect();
