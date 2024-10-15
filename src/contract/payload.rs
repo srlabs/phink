@@ -382,7 +382,7 @@ mod test {
 
     #[test]
     fn parse_one_message_dummy() -> anyhow::Result<()> {
-        let encoded_bytes = hex::decode("fa80c2f600")?;
+        let encoded_bytes = hex::decode("0000000001fa80c2f600")?;
 
         let configuration = Configuration {
             max_messages_per_exec: Some(4), // because we have two messages below
@@ -504,8 +504,62 @@ mod test {
 
         assert_eq!(
             msg.first().unwrap().value_token,
-            4294967295_u128,
-            "Value transfered is supposed to be the max"
+            0,
+            "Value transfered is supposed to be zero because even if we have FFFF, the message isn't transferable"
+        );
+
+        for i in 0..msg.len() {
+            let hex = manager
+                .transcoder()
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &*msg.get(i).unwrap().payload);
+            assert!(hex.is_ok(), "Decoding wasn't Ok")
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_good_money_to_transferable_msg_transfered() -> anyhow::Result<()> {
+        let binding = hex::decode(
+            "ffffffff\
+        ff\
+        47187f3e",
+        )?;
+        let encoded_bytes: &[u8] = binding.as_slice();
+
+        let configuration = Configuration {
+            max_messages_per_exec: Some(4), // because we have two messages below
+            fuzz_origin: true,
+            instrumented_contract_path: Some(InstrumentedPath::from("sample/transfer")),
+            verbose: false,
+            // below is a hack, `sample/dns` isn't the instrumented, but for the test we don't care
+            ..Default::default()
+        };
+
+        let ziggy_config: ZiggyConfig =
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/transfer"))?;
+
+        let manager = Fuzzer::new(ziggy_config)?
+            .init_fuzzer()
+            .context("Couldn't grap the transcoder and the invariant manager")?;
+
+        let input = parse_input(encoded_bytes, manager.to_owned());
+
+        let msg = input.messages;
+        // println!("{:?}", msg);
+
+        assert_eq!(msg.len(), 1, "No messages decoded");
+        assert_eq!(
+            msg.first().unwrap().origin,
+            Origin::from(0xff), // origin was ff
+            "Origin is supposed to be the default one"
+        );
+
+        assert_eq!(
+            msg.first().unwrap().value_token,
+            4294967295,
+            "Value transfered is supposed to be 4294967295"
         );
 
         for i in 0..msg.len() {

@@ -1,4 +1,4 @@
-name: Rust (build, integration tests, formating)
+name: Build, integration tests, formating
 
 on:
   push:

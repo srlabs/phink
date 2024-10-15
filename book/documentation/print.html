@@ -1,0 +1,540 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Phink Book</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for Phink fuzzer">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="ADVANCED.html"><strong aria-hidden="true">4.</strong> Improving the campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">7.</strong> Understanding the seed format</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshoting</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Phink Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <center>
+<img src="../../assets/phink.png" alt="phink" width="250"/>
+<h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+</center>
+<h2 id="overview-of-phink"><a class="header" href="#overview-of-phink">Overview of Phink</a></h2>
+<p>Phink is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
+embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
+vulnerabilities and ensure contract reliability before deployment.</p>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<h3 id="property-based-testing"><a class="header" href="#property-based-testing">Property-based Testing</a></h3>
+<p>Phink empowers developers to define properties directly within ink! smart contracts. By prefixing functions with
+<code>phink</code>, such as <code>fn phink_assert_abc_always_true()</code>, developers create inviolable properties that
+act as assertions. During testing, these properties are checked against every input. If a property’s assertion fails, it
+triggers a panic, signaling that an invariant has been broken. This method ensures thorough validation of contract logic
+and behavior.</p>
+<h3 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided Fuzzing</a></h3>
+<p>Leveraging coverage-guided fuzzing, Phink enhances its effectiveness by instrumenting smart contracts. Although
+currently adding feedback on each line executed, Phink is designed to evolve, eventually monitoring coverage across new
+edges and code branches. Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>, enabling dynamic
+adaptation to uncovered paths and optimizing the fuzzing process. This results in broader exploration and identification
+of potential vulnerabilities.</p>
+<h3 id="seamless-integration-with-ink-smart-contracts"><a class="header" href="#seamless-integration-with-ink-smart-contracts">Seamless Integration with ink! Smart Contracts</a></h3>
+<p>Phink offers a streamlined integration process for ink! smart contracts. Configuration is simple and intuitive,
+requiring minimal setup in the <code>phink.toml</code> file. The workflow involves two straightforward steps: instrumenting the
+contract and then initiating the fuzzing process. This ease of deployment allows developers to quickly incorporate Phink
+into their smart contract testing pipeline, enhancing efficiency and reliability.</p>
+<h2 id="why-use-phink"><a class="header" href="#why-use-phink">Why Use Phink</a></h2>
+<h3 id="detect-security-vulnerabilities"><a class="header" href="#detect-security-vulnerabilities">Detect Security Vulnerabilities</a></h3>
+<p>Phink addresses critical security concerns by automatically generating and testing a diverse range of inputs. This
+process uncovers edge cases, logical flaws, and bugs that could lead to contract reversion. Through fuzz testing, Phink
+explores different execution paths by generating extensive input variations. This
+rigorous testing identifies bugs and potential vulnerabilities early in the development cycle, enabling developers to
+address issues before deployment.</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="getting-started-with-phink"><a class="header" href="#getting-started-with-phink">Getting Started with Phink</a></h2>
+<h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
+<h4 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h4>
+<p>To successfully install and run Phink, ensure your system meets the following requirements:</p>
+<ul>
+<li><strong>Operating System</strong>: Linux. As macOS doesn’t support some AFL++ plugins, it is highly unrecommended. Phink has never
+been tested on Windows.</li>
+<li><strong>Rust</strong>: Rust <strong>nightly</strong></li>
+</ul>
+<h4 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h4>
+<p>You can install Phink by building it from the source or by using Docker. Choose the method that best suits your setup.</p>
+<h5 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h5>
+<ol>
+<li>
+<p><strong>Clone the Repository</strong></p>
+<pre><code class="language-bash">git clone https://github.com/srlabs/phink
+cd phink/
+</code></pre>
+<p>You can also use:</p>
+<pre><code class="language-bash">cargo +nightly install --git https://github.com/srlabs/phink
+</code></pre>
+</li>
+<li>
+<p><strong>Install Dependencies</strong></p>
+<pre><code class="language-bash">cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked
+</code></pre>
+</li>
+<li>
+<p><strong>Configure AFL++</strong></p>
+<pre><code class="language-bash">cargo afl config --build --plugins --verbose --force
+sudo cargo-afl afl system-config
+</code></pre>
+</li>
+<li>
+<p><strong>Build Phink</strong></p>
+<pre><code class="language-bash">cargo build --release
+</code></pre>
+</li>
+<li>
+<p><strong>Run Phink</strong></p>
+<pre><code class="language-bash">./target/release/phink --help
+</code></pre>
+<p>Or if installed via <code>cargo install</code>:</p>
+<pre><code class="language-bash">phink --help
+</code></pre>
+</li>
+</ol>
+<h5 id="using-docker"><a class="header" href="#using-docker">Using Docker</a></h5>
+<ol>
+<li><strong>Build the Docker Image</strong>
+<pre><code class="language-bash">docker build -t phink .
+</code></pre>
+</li>
+</ol>
+<p>For detailed Docker instructions, refer
+to <a href="https://github.com/srlabs/phink/blob/main/README.Docker.md">README.Docker.md</a>.</p>
+<h4 id="basic-workflow"><a class="header" href="#basic-workflow">Basic Workflow</a></h4>
+<ol>
+<li>
+<p><strong>Instrument the Contract</strong></p>
+<ul>
+<li>Use Phink to instrument your ink! smart contract for fuzzing.</li>
+</ul>
+</li>
+<li>
+<p><strong>Configure Fuzzing Parameters</strong></p>
+<ul>
+<li>Edit the <code>phink.toml</code> file to set paths, deployment settings, and fuzzing options according to your project needs.</li>
+</ul>
+</li>
+<li>
+<p><strong>Run Fuzzing</strong></p>
+<ul>
+<li>Execute fuzzing with your configured settings to identify vulnerabilities early in the development cycle.</li>
+</ul>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="phink-configuration-guide"><a class="header" href="#phink-configuration-guide">Phink Configuration Guide</a></h1>
+<p>This guide provides an overview of the Phink configuration settings.</p>
+<h2 id="configuration-file-overview"><a class="header" href="#configuration-file-overview">Configuration File Overview</a></h2>
+<pre><code class="language-toml">### Phink Configuration
+
+# General Settings
+cores = 4                # Set to 1 for single-core execution
+max_messages_per_exec = 1 # Maximum number of message calls per input
+
+# Paths
+instrumented_contract_path.path = "toooooooooooz"  # Path to the instrumented contract, after `phink instrument my_contract` is invoked
+report_path = "output/phink/contract_coverage" # Directory for coverage HTML files
+fuzz_output = "output"                         # Directory for fuzzing output
+
+# Deployment
+deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Contract deployer address (Alice by default)
+constructor_payload = "9BAE9D5E"                                     # Hexadecimal scale-encoded data for contract instantiation
+storage_deposit_limit = "100000000000"                              # Storage deposit limit
+instantiate_initial_value = "0"                                     # Value transferred during instantiation, if needed
+
+# Fuzzing Options
+fuzz_origin = false  # Attempt to call each message as a different user (affects performance)
+verbose = true       # Print detailed debug messages
+show_ui = true       # Display advanced UI
+use_honggfuzz = false # Use Honggfuzz (set as false)
+
+# Gas Limits
+[default_gas_limit]
+ref_time = 100_000_000_000      # Reference time for gas
+proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
+</code></pre>
+<h2 id="general-settings"><a class="header" href="#general-settings">General Settings</a></h2>
+<ul>
+<li><strong>cores</strong>: Allocate the number of CPU cores for fuzzing. Setting this to <code>1</code> enables single-core execution.</li>
+<li><strong>max_messages_per_exec</strong>: Define the maximum number of message calls allowed per fuzzing input. If you want to fuzz
+one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it for example
+to 4 will generate 4 different messages in one input, run all the invariants, and go to the next input.</li>
+</ul>
+<h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
+<ul>
+<li><strong>instrumented_contract_path.path</strong>: Specify the path to the instrumented contract, which should be set
+post-invocation of <code>phink instrument my_contract</code>. This path will contains the source code of the initial contract,
+with the additional instrumentation instructions. It also will contians the instrumented compiled contract.</li>
+<li><strong>report_path</strong>: Designate the directory where HTML coverage reports will be generated, if the user wishes to generate
+a coverage report.</li>
+<li><strong>fuzz_output</strong>: Indicate the directory for storing all fuzzing output. This output is important as it will contains
+the log file, the corpus entries, the crashes, and way more.</li>
+</ul>
+<h2 id="deployment"><a class="header" href="#deployment">Deployment</a></h2>
+<ul>
+<li><strong>deployer_address</strong>: Set the address of the smart contract deployer. The default is Alice’s address.</li>
+<li><strong>constructor_payload</strong>: Hexadecimal scale-encoded data necessary for contract instantiation. This is used when
+calling <code>bare_instantiate</code> extrinsic to instantiate the contract. You can use https://ui.use.ink/ to generate this
+payload. By default, Phink will deploy the contract using the constructor that have no arguments <code>new()</code>.</li>
+<li><strong>storage_deposit_limit</strong>: Limit for storage deposits during contract deployment. It represents
+an optional cap on the amount of blockchain storage (measured in balance units) that can be used or reserved by the
+contract call.</li>
+<li><strong>instantiate_initial_value</strong>: Initial value to be transferred upon contract instantiation, if required. So if the
+contract requires during instantiation a minimum amount of 3000 units, set 3000 here.</li>
+</ul>
+<h2 id="fuzzing-options"><a class="header" href="#fuzzing-options">Fuzzing Options</a></h2>
+<ul>
+<li><strong>fuzz_origin</strong>: A Boolean option to try calling each message as a different user, which may impact performance. If
+set to <code>false</code>, the fuzzer will fuzz any message with the one input (Alice).</li>
+<li><strong>verbose</strong>: Enables detailed debugging messages when set to <code>true</code>. This will just output more logs.</li>
+<li><strong>show_ui</strong>: Toggle for displaying the advanced user interface.</li>
+<li><strong>use_honggfuzz</strong>: Determines whether to use Honggfuzz; remains <code>false</code> by
+default. (<strong>let it false! not handled currently</strong> )</li>
+</ul>
+<h2 id="gas-limits"><a class="header" href="#gas-limits">Gas Limits</a></h2>
+<h3 id="default-gas-limit-configuration"><a class="header" href="#default-gas-limit-configuration">Default Gas Limit Configuration</a></h3>
+<p>The gas limit refers to the maximum amount of computational effort (or weight) that an execution is allowed to use when
+performing a call to a contract. It controls how much balance a contract is allowed to use for expanding its state
+storage during execution, ensures that users won’t unintentionally spend more than they wanted on storage allocation,
+and offers protection against excessive storage costs by defining an upper limit on how much can be spent on storage
+within that call.</p>
+<ul>
+<li><strong>ref_time</strong>: Specifies the reference time for gas allocation.</li>
+<li><strong>proof_size</strong>: Defines the proof size (e.g., <code>3145728</code> corresponds to 3 MB).</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="writing-properties-for-ink-contracts"><a class="header" href="#writing-properties-for-ink-contracts">Writing Properties for ink! Contracts</a></h2>
+<h3 id="adding-properties"><a class="header" href="#adding-properties">Adding Properties</a></h3>
+<h4 id="inside-your-cargotoml"><a class="header" href="#inside-your-cargotoml">Inside your <code>Cargo.toml</code></a></h4>
+<p>You need to add the <code>phink</code> feature to your Cargo.toml, such as:</p>
+<pre><code class="language-toml">[features]
+phink = []
+</code></pre>
+<h4 id="inside-your-filers"><a class="header" href="#inside-your-filers">Inside your <code>file.rs</code></a></h4>
+<p>You can use the following example to create invariants. You need to create another <code>impl</code> if your contract, and to put
+it under the feature of <code>phink</code>. Use <code>assert!</code> or <code>panic!</code> for your properties.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(feature = "phink")]
+#[ink(impl)]
+impl DomainNameService {
+    // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter 
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_assert_hash42_cant_be_registered(&amp;self) {
+        for i in 0..self.domains.len() {
+            if let Some(domain) = self.domains.get(i) {
+                // Invariant triggered! We caught an invalid domain in the storage...
+                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            }
+        }
+    }
+
+    // This invariant ensures that nobody registed the forbidden number
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_assert_dangerous_number(&amp;self) {
+        let forbidden_number = 42;
+        assert_ne!(self.dangerous_number, forbidden_number);
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="running-phink"><a class="header" href="#running-phink">Running Phink</a></h2>
+<h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the Contract</a></h3>
+<p>Run the following command to instrument your ink! smart contract, enabling it for fuzzing:</p>
+<pre><code class="language-sh">phink instrument my_contract/
+</code></pre>
+<p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process.</p>
+<h3 id="2-run-the-fuzzer"><a class="header" href="#2-run-the-fuzzer">2. Run the fuzzer</a></h3>
+<p>After instrumenting your contract and writing properties, execute the fuzzing process:</p>
+<pre><code class="language-sh">phink fuzz
+</code></pre>
+<p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file.</p>
+<h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
+<h3 id="coverage-reports"><a class="header" href="#coverage-reports">Coverage Reports</a></h3>
+<p>Generate coverage reports to analyze which parts of the contract were tested:</p>
+<pre><code class="language-sh">phink coverage
+</code></pre>
+<h3 id="log-analysis"><a class="header" href="#log-analysis">Log Analysis</a></h3>
+<p>Check detailed logs if <code>verbose</code> is enabled in your configuration. Logs provide insights into fuzzing processes and
+detected issues.</p>
+<h2 id="interpreting-coverage-reports"><a class="header" href="#interpreting-coverage-reports">Interpreting Coverage Reports</a></h2>
+<p>The coverage report provides a visual representation of tested code areas. Ensure that all critical paths of your
+contract are covered.</p>
+<h2 id="debugging-fuzzing-results"><a class="header" href="#debugging-fuzzing-results">Debugging Fuzzing Results</a></h2>
+<h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness Coverage</a></h3>
+<p>Use the harness coverage feature for debugging:</p>
+<pre><code class="language-sh">phink harness-cover
+</code></pre>
+<p>This isolates test harness issues from contract logic problems.</p>
+<h2 id="writing-effective-properties"><a class="header" href="#writing-effective-properties">Writing Effective Properties</a></h2>
+<h3 id="key-tips"><a class="header" href="#key-tips">Key Tips:</a></h3>
+<ul>
+<li>Ensure properties are clear and address potential vulnerabilities.</li>
+<li>Regularly update properties based on contract changes.</li>
+</ul>
+<p>By following these guidelines, you can effectively leverage Phink to ensure the reliability and security of your ink!
+smart contracts.</p>
+<div style="break-before: page; page-break-before: always;"></div><p>Maximizing Coverage
+Ensuring Robustness and Security
+Simple ink! Contract Example
+Complex Property-based Testing Scenario
+Real-world Case Studies</p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="runtime"><a class="header" href="#runtime">Runtime</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
+<h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
+<h3 id="fuzzing-in-general"><a class="header" href="#fuzzing-in-general">Fuzzing in general</a></h3>
+<p>Fuzzing is an automated software testing technique that involves providing invalid, unexpected, or random data inputs to
+a program. The primary goal is to uncover anomalies, such as crashes, assertion failures, that signify
+potential vulnerabilities.</p>
+<h3 id="property-based-fuzzing"><a class="header" href="#property-based-fuzzing">Property-based Fuzzing</a></h3>
+<p>Property-based testing involves specifying properties or invariants that your ink! contract should always satisfy. In
+Phink, these properties act as assertions. Phink uses this approach by allowing developers to
+define properties directly within ink! smart contracts. Such properties are then rigorously tested against varied
+inputs, ensuring the contract maintains its invariants across all possible data conditions.</p>
+<h3 id="coverage-guided-fuzzing-1"><a class="header" href="#coverage-guided-fuzzing-1">Coverage-guided Fuzzing</a></h3>
+<p>Coverage-guided fuzzing is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
+feedback from code execution paths to guide input generation, focusing on unexplored parts of the code.
+Phink instruments smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
+paths. This results in more thorough testing and potentially uncovers hard-to-find vulnerabilities.</p>
+<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
+<h3 id="corpus"><a class="header" href="#corpus">Corpus</a></h3>
+<p>A <strong>corpus</strong> refers to the collection of all input samples used during the testing process. It is
+continuously updated with new inputs that lead to unique execution paths.</p>
+<hr />
+<h3 id="seed"><a class="header" href="#seed">Seed</a></h3>
+<p>A <strong>seed</strong> is an initial input provided to the fuzzer to start the testing process. Seeds serve as the starting point
+for generating new test cases and are crucial for initializing a diverse and effective fuzzing campaign. A strong set of
+seed inputs can significantly enhance the fuzzing campaign.</p>
+<hr />
+<h3 id="invariants"><a class="header" href="#invariants">Invariants</a></h3>
+<p><strong>Invariants</strong> are conditions or properties that must remain true at all times during the execution of a program or
+contract. In property-based testing, invariants are used as assertions to verify the consistent behavior of smart
+contracts under various input conditions. Breaking an invariant indicates a potential bug or vulnerability.</p>
+<hr />
+<h3 id="instrumentation"><a class="header" href="#instrumentation">Instrumentation</a></h3>
+<p><strong>Instrumentation</strong> involves modifying a program to collect runtime information such as code coverage data. In fuzzing,
+instrumentation is used to trace execution paths, enabling coverage-guided techniques to generate more informed and
+effective test cases.</p>
+<hr />
+<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
+<p><strong>Coverage</strong> is a measure of how much of a program’s code is tested during fuzzing. High coverage corresponds to a
+good assessment of the contracts logic.</p>
+<hr />
+<h3 id="contract-selectors"><a class="header" href="#contract-selectors">Contract Selectors</a></h3>
+<p><strong>ink! contract selectors</strong> are unique identifiers for functions within ink! smart contracts. Selectors are derived from
+function signatures and are used to call specific functions within a contract deployed on the blockchain.</p>
+<hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="chapter-1"><a class="header" href="#chapter-1">Chapter 1</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><p>Common Issues and Solutions
+Performance Tuning
+Community Support Channels</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

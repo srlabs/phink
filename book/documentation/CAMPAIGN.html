@@ -1,0 +1,305 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Starting a campaign - Phink Book</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for Phink fuzzer">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html" class="active"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="ADVANCED.html"><strong aria-hidden="true">4.</strong> Improving the campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">7.</strong> Understanding the seed format</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshoting</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Phink Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/blob/main/src/src/CAMPAIGN.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="writing-properties-for-ink-contracts"><a class="header" href="#writing-properties-for-ink-contracts">Writing Properties for ink! Contracts</a></h2>
+<h3 id="adding-properties"><a class="header" href="#adding-properties">Adding Properties</a></h3>
+<h4 id="inside-your-cargotoml"><a class="header" href="#inside-your-cargotoml">Inside your <code>Cargo.toml</code></a></h4>
+<p>You need to add the <code>phink</code> feature to your Cargo.toml, such as:</p>
+<pre><code class="language-toml">[features]
+phink = []
+</code></pre>
+<h4 id="inside-your-filers"><a class="header" href="#inside-your-filers">Inside your <code>file.rs</code></a></h4>
+<p>You can use the following example to create invariants. You need to create another <code>impl</code> if your contract, and to put
+it under the feature of <code>phink</code>. Use <code>assert!</code> or <code>panic!</code> for your properties.</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(feature = "phink")]
+#[ink(impl)]
+impl DomainNameService {
+    // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter 
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_assert_hash42_cant_be_registered(&amp;self) {
+        for i in 0..self.domains.len() {
+            if let Some(domain) = self.domains.get(i) {
+                // Invariant triggered! We caught an invalid domain in the storage...
+                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            }
+        }
+    }
+
+    // This invariant ensures that nobody registed the forbidden number
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_assert_dangerous_number(&amp;self) {
+        let forbidden_number = 42;
+        assert_ne!(self.dangerous_number, forbidden_number);
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="running-phink"><a class="header" href="#running-phink">Running Phink</a></h2>
+<h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the Contract</a></h3>
+<p>Run the following command to instrument your ink! smart contract, enabling it for fuzzing:</p>
+<pre><code class="language-sh">phink instrument my_contract/
+</code></pre>
+<p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process.</p>
+<h3 id="2-run-the-fuzzer"><a class="header" href="#2-run-the-fuzzer">2. Run the fuzzer</a></h3>
+<p>After instrumenting your contract and writing properties, execute the fuzzing process:</p>
+<pre><code class="language-sh">phink fuzz
+</code></pre>
+<p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file.</p>
+<h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
+<h3 id="coverage-reports"><a class="header" href="#coverage-reports">Coverage Reports</a></h3>
+<p>Generate coverage reports to analyze which parts of the contract were tested:</p>
+<pre><code class="language-sh">phink coverage
+</code></pre>
+<h3 id="log-analysis"><a class="header" href="#log-analysis">Log Analysis</a></h3>
+<p>Check detailed logs if <code>verbose</code> is enabled in your configuration. Logs provide insights into fuzzing processes and
+detected issues.</p>
+<h2 id="interpreting-coverage-reports"><a class="header" href="#interpreting-coverage-reports">Interpreting Coverage Reports</a></h2>
+<p>The coverage report provides a visual representation of tested code areas. Ensure that all critical paths of your
+contract are covered.</p>
+<h2 id="debugging-fuzzing-results"><a class="header" href="#debugging-fuzzing-results">Debugging Fuzzing Results</a></h2>
+<h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness Coverage</a></h3>
+<p>Use the harness coverage feature for debugging:</p>
+<pre><code class="language-sh">phink harness-cover
+</code></pre>
+<p>This isolates test harness issues from contract logic problems.</p>
+<h2 id="writing-effective-properties"><a class="header" href="#writing-effective-properties">Writing Effective Properties</a></h2>
+<h3 id="key-tips"><a class="header" href="#key-tips">Key Tips:</a></h3>
+<ul>
+<li>Ensure properties are clear and address potential vulnerabilities.</li>
+<li>Regularly update properties based on contract changes.</li>
+</ul>
+<p>By following these guidelines, you can effectively leverage Phink to ensure the reliability and security of your ink!
+smart contracts.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="CONFIG.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="ADVANCED.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="CONFIG.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="ADVANCED.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

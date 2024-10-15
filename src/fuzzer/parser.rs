@@ -338,9 +338,7 @@ mod tests {
 
     #[test]
     fn test_data_size_limit() {
-        let input = [
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 42, 42, 42, 42, 42, 42, 42, 42, 5, 6, 7, 8, 8,
-        ];
+        let input = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         let mut data = Data {
             data: &input,
             pointer: 0,

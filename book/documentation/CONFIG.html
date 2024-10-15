@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Configuration - Phink Book</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for Phink fuzzer">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html" class="active"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="ADVANCED.html"><strong aria-hidden="true">4.</strong> Improving the campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">7.</strong> Understanding the seed format</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshoting</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Phink Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/blob/main/src/src/CONFIG.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="phink-configuration-guide"><a class="header" href="#phink-configuration-guide">Phink Configuration Guide</a></h1>
+<p>This guide provides an overview of the Phink configuration settings.</p>
+<h2 id="configuration-file-overview"><a class="header" href="#configuration-file-overview">Configuration File Overview</a></h2>
+<pre><code class="language-toml">### Phink Configuration
+
+# General Settings
+cores = 4                # Set to 1 for single-core execution
+max_messages_per_exec = 1 # Maximum number of message calls per input
+
+# Paths
+instrumented_contract_path.path = "toooooooooooz"  # Path to the instrumented contract, after `phink instrument my_contract` is invoked
+report_path = "output/phink/contract_coverage" # Directory for coverage HTML files
+fuzz_output = "output"                         # Directory for fuzzing output
+
+# Deployment
+deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Contract deployer address (Alice by default)
+constructor_payload = "9BAE9D5E"                                     # Hexadecimal scale-encoded data for contract instantiation
+storage_deposit_limit = "100000000000"                              # Storage deposit limit
+instantiate_initial_value = "0"                                     # Value transferred during instantiation, if needed
+
+# Fuzzing Options
+fuzz_origin = false  # Attempt to call each message as a different user (affects performance)
+verbose = true       # Print detailed debug messages
+show_ui = true       # Display advanced UI
+use_honggfuzz = false # Use Honggfuzz (set as false)
+
+# Gas Limits
+[default_gas_limit]
+ref_time = 100_000_000_000      # Reference time for gas
+proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
+</code></pre>
+<h2 id="general-settings"><a class="header" href="#general-settings">General Settings</a></h2>
+<ul>
+<li><strong>cores</strong>: Allocate the number of CPU cores for fuzzing. Setting this to <code>1</code> enables single-core execution.</li>
+<li><strong>max_messages_per_exec</strong>: Define the maximum number of message calls allowed per fuzzing input. If you want to fuzz
+one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it for example
+to 4 will generate 4 different messages in one input, run all the invariants, and go to the next input.</li>
+</ul>
+<h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
+<ul>
+<li><strong>instrumented_contract_path.path</strong>: Specify the path to the instrumented contract, which should be set
+post-invocation of <code>phink instrument my_contract</code>. This path will contains the source code of the initial contract,
+with the additional instrumentation instructions. It also will contians the instrumented compiled contract.</li>
+<li><strong>report_path</strong>: Designate the directory where HTML coverage reports will be generated, if the user wishes to generate
+a coverage report.</li>
+<li><strong>fuzz_output</strong>: Indicate the directory for storing all fuzzing output. This output is important as it will contains
+the log file, the corpus entries, the crashes, and way more.</li>
+</ul>
+<h2 id="deployment"><a class="header" href="#deployment">Deployment</a></h2>
+<ul>
+<li><strong>deployer_address</strong>: Set the address of the smart contract deployer. The default is Alice’s address.</li>
+<li><strong>constructor_payload</strong>: Hexadecimal scale-encoded data necessary for contract instantiation. This is used when
+calling <code>bare_instantiate</code> extrinsic to instantiate the contract. You can use https://ui.use.ink/ to generate this
+payload. By default, Phink will deploy the contract using the constructor that have no arguments <code>new()</code>.</li>
+<li><strong>storage_deposit_limit</strong>: Limit for storage deposits during contract deployment. It represents
+an optional cap on the amount of blockchain storage (measured in balance units) that can be used or reserved by the
+contract call.</li>
+<li><strong>instantiate_initial_value</strong>: Initial value to be transferred upon contract instantiation, if required. So if the
+contract requires during instantiation a minimum amount of 3000 units, set 3000 here.</li>
+</ul>
+<h2 id="fuzzing-options"><a class="header" href="#fuzzing-options">Fuzzing Options</a></h2>
+<ul>
+<li><strong>fuzz_origin</strong>: A Boolean option to try calling each message as a different user, which may impact performance. If
+set to <code>false</code>, the fuzzer will fuzz any message with the one input (Alice).</li>
+<li><strong>verbose</strong>: Enables detailed debugging messages when set to <code>true</code>. This will just output more logs.</li>
+<li><strong>show_ui</strong>: Toggle for displaying the advanced user interface.</li>
+<li><strong>use_honggfuzz</strong>: Determines whether to use Honggfuzz; remains <code>false</code> by
+default. (<strong>let it false! not handled currently</strong> )</li>
+</ul>
+<h2 id="gas-limits"><a class="header" href="#gas-limits">Gas Limits</a></h2>
+<h3 id="default-gas-limit-configuration"><a class="header" href="#default-gas-limit-configuration">Default Gas Limit Configuration</a></h3>
+<p>The gas limit refers to the maximum amount of computational effort (or weight) that an execution is allowed to use when
+performing a call to a contract. It controls how much balance a contract is allowed to use for expanding its state
+storage during execution, ensures that users won’t unintentionally spend more than they wanted on storage allocation,
+and offers protection against excessive storage costs by defining an upper limit on how much can be spent on storage
+within that call.</p>
+<ul>
+<li><strong>ref_time</strong>: Specifies the reference time for gas allocation.</li>
+<li><strong>proof_size</strong>: Defines the proof size (e.g., <code>3145728</code> corresponds to 3 MB).</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="START.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="CAMPAIGN.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="START.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="CAMPAIGN.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
