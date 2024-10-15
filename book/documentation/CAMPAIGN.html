@@ -182,12 +182,13 @@
                         <h2 id="writing-properties-for-ink-contracts"><a class="header" href="#writing-properties-for-ink-contracts">Writing Properties for ink! Contracts</a></h2>
 <h3 id="adding-properties"><a class="header" href="#adding-properties">Adding Properties</a></h3>
 <h4 id="inside-your-cargotoml"><a class="header" href="#inside-your-cargotoml">Inside your <code>Cargo.toml</code></a></h4>
-<p>You need to add the <code>phink</code> feature to your Cargo.toml, such as:</p>
+<p>First, you need to add the <code>phink</code> feature to your Cargo.toml, such as:</p>
 <pre><code class="language-toml">[features]
 phink = []
 </code></pre>
 <h4 id="inside-your-filers"><a class="header" href="#inside-your-filers">Inside your <code>file.rs</code></a></h4>
-<p>You can use the following example to create invariants. You need to create another <code>impl</code> if your contract, and to put
+<p>Then, you can use the following example to create invariants. You need to create another <code>impl</code> if your contract, and to
+put
 it under the feature of <code>phink</code>. Use <code>assert!</code> or <code>panic!</code> for your properties.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -220,12 +221,14 @@ impl DomainNameService {
 <p>Run the following command to instrument your ink! smart contract, enabling it for fuzzing:</p>
 <pre><code class="language-sh">phink instrument my_contract/
 </code></pre>
-<p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process.</p>
+<p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process. It creates a fork of the
+contract, so you don’t have to make a copy before.</p>
 <h3 id="2-run-the-fuzzer"><a class="header" href="#2-run-the-fuzzer">2. Run the fuzzer</a></h3>
 <p>After instrumenting your contract and writing properties, execute the fuzzing process:</p>
 <pre><code class="language-sh">phink fuzz
 </code></pre>
-<p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file.</p>
+<p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file. A user interface should
+appear.</p>
 <h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
 <h3 id="coverage-reports"><a class="header" href="#coverage-reports">Coverage Reports</a></h3>
 <p>Generate coverage reports to analyze which parts of the contract were tested:</p>

@@ -4,7 +4,7 @@
 
 #### Inside your `Cargo.toml`
 
-You need to add the `phink` feature to your Cargo.toml, such as:
+First, you need to add the `phink` feature to your Cargo.toml, such as:
 
 ```toml
 [features]
@@ -13,7 +13,8 @@ phink = []
 
 #### Inside your `file.rs`
 
-You can use the following example to create invariants. You need to create another `impl` if your contract, and to put
+Then, you can use the following example to create invariants. You need to create another `impl` if your contract, and to
+put
 it under the feature of `phink`. Use `assert!` or `panic!` for your properties.
 
 ```rust
@@ -52,7 +53,8 @@ Run the following command to instrument your ink! smart contract, enabling it fo
 phink instrument my_contract/
 ```
 
-This step modifies the contract to include necessary hooks for Phink's fuzzing process.
+This step modifies the contract to include necessary hooks for Phink's fuzzing process. It creates a fork of the
+contract, so you don't have to make a copy before.
 
 ### 2. Run the fuzzer
 
@@ -62,7 +64,8 @@ After instrumenting your contract and writing properties, execute the fuzzing pr
 phink fuzz
 ```
 
-This command runs your fuzzing tests based on the configuration set in your `phink.toml` file.
+This command runs your fuzzing tests based on the configuration set in your `phink.toml` file. A user interface should
+appear.
 
 ## Analyzing Results
 
