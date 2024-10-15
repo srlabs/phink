@@ -182,19 +182,20 @@
                         <h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
 <h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
 <h3 id="fuzzing-in-general"><a class="header" href="#fuzzing-in-general">Fuzzing in general</a></h3>
-<p>Fuzzing is an automated software testing technique that involves providing invalid, unexpected, or random data inputs to
+<p><strong>Fuzzing</strong> is an automated software testing technique that involves providing random data inputs to
 a program. The primary goal is to uncover anomalies, such as crashes, assertion failures, that signify
 potential vulnerabilities.</p>
 <h3 id="property-based-fuzzing"><a class="header" href="#property-based-fuzzing">Property-based Fuzzing</a></h3>
-<p>Property-based testing involves specifying properties or invariants that your ink! contract should always satisfy. In
+<p><strong>Property-based testing</strong> involves specifying properties or invariants that your ink! contract should always satisfy.
+In
 Phink, these properties act as assertions. Phink uses this approach by allowing developers to
-define properties directly within ink! smart contracts. Such properties are then rigorously tested against varied
+define properties directly within ink! smart contracts. Such properties are then tested against varied
 inputs, ensuring the contract maintains its invariants across all possible data conditions.</p>
 <h3 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided Fuzzing</a></h3>
-<p>Coverage-guided fuzzing is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
+<p><strong>Coverage-guided fuzzing</strong> is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
 feedback from code execution paths to guide input generation, focusing on unexplored parts of the code.
-Phink instruments smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
-paths. This results in more thorough testing and potentially uncovers hard-to-find vulnerabilities.</p>
+Phink instruments ink! smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
+paths.</p>
 <h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
 <h3 id="corpus"><a class="header" href="#corpus">Corpus</a></h3>
 <p>A <strong>corpus</strong> refers to the collection of all input samples used during the testing process. It is

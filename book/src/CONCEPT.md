@@ -4,23 +4,24 @@
 
 ### Fuzzing in general
 
-Fuzzing is an automated software testing technique that involves providing invalid, unexpected, or random data inputs to
+**Fuzzing** is an automated software testing technique that involves providing random data inputs to
 a program. The primary goal is to uncover anomalies, such as crashes, assertion failures, that signify
 potential vulnerabilities.
 
 ### Property-based Fuzzing
 
-Property-based testing involves specifying properties or invariants that your ink! contract should always satisfy. In
+**Property-based testing** involves specifying properties or invariants that your ink! contract should always satisfy.
+In
 Phink, these properties act as assertions. Phink uses this approach by allowing developers to
-define properties directly within ink! smart contracts. Such properties are then rigorously tested against varied
+define properties directly within ink! smart contracts. Such properties are then tested against varied
 inputs, ensuring the contract maintains its invariants across all possible data conditions.
 
 ### Coverage-guided Fuzzing
 
-Coverage-guided fuzzing is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
+**Coverage-guided fuzzing** is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
 feedback from code execution paths to guide input generation, focusing on unexplored parts of the code.
-Phink instruments smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
-paths. This results in more thorough testing and potentially uncovers hard-to-find vulnerabilities.
+Phink instruments ink! smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
+paths.
 
 ## Terminology
 

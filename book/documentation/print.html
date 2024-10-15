@@ -187,37 +187,33 @@ embed inviolable properties into their smart contract testing workflows, equippi
 vulnerabilities and ensure contract reliability before deployment.</p>
 <h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
 <h3 id="property-based-testing"><a class="header" href="#property-based-testing">Property-based Testing</a></h3>
-<p>Phink empowers developers to define properties directly within ink! smart contracts. By prefixing functions with
-<code>phink</code>, such as <code>fn phink_assert_abc_always_true()</code>, developers create inviolable properties that
-act as assertions. During testing, these properties are checked against every input. If a property’s assertion fails, it
+<p>Phink requires developers to define properties directly within ink! smart contracts. By prefixing functions with
+<code>phink</code>, such as <code>fn phink_assert_abc_always_true()</code>, developers create properties that
+act as assertions. During testing, these properties are checked against every input (a set of ink! messages). If a
+property’s assertion fails, it
 triggers a panic, signaling that an invariant has been broken. This method ensures thorough validation of contract logic
 and behavior.</p>
 <h3 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided Fuzzing</a></h3>
-<p>Leveraging coverage-guided fuzzing, Phink enhances its effectiveness by instrumenting smart contracts. Although
+<p>In order to become coverage-guided, Phink needs to instrument the ink! smart contract. Although
 currently adding feedback on each line executed, Phink is designed to evolve, eventually monitoring coverage across new
-edges and code branches. Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>, enabling dynamic
-adaptation to uncovered paths and optimizing the fuzzing process. This results in broader exploration and identification
-of potential vulnerabilities.</p>
-<h3 id="seamless-integration-with-ink-smart-contracts"><a class="header" href="#seamless-integration-with-ink-smart-contracts">Seamless Integration with ink! Smart Contracts</a></h3>
-<p>Phink offers a streamlined integration process for ink! smart contracts. Configuration is simple and intuitive,
-requiring minimal setup in the <code>phink.toml</code> file. The workflow involves two straightforward steps: instrumenting the
-contract and then initiating the fuzzing process. This ease of deployment allows developers to quickly incorporate Phink
-into their smart contract testing pipeline, enhancing efficiency and reliability.</p>
+edges and code branches. Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>.</p>
 <h2 id="why-use-phink"><a class="header" href="#why-use-phink">Why Use Phink</a></h2>
 <h3 id="detect-security-vulnerabilities"><a class="header" href="#detect-security-vulnerabilities">Detect Security Vulnerabilities</a></h3>
-<p>Phink addresses critical security concerns by automatically generating and testing a diverse range of inputs. This
-process uncovers edge cases, logical flaws, and bugs that could lead to contract reversion. Through fuzz testing, Phink
-explores different execution paths by generating extensive input variations. This
-rigorous testing identifies bugs and potential vulnerabilities early in the development cycle, enabling developers to
+<p>Phink addresses security concerns by automatically generating and testing a diverse range of inputs. This
+process uncovers edge cases, logical flaws, and bugs that could lead to contract state reversion. Through fuzz testing,
+Phink
+explores different execution paths by generating input mutation. This
+testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
 address issues before deployment.</p>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="getting-started-with-phink"><a class="header" href="#getting-started-with-phink">Getting Started with Phink</a></h2>
 <h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
 <h4 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h4>
 <p>To successfully install and run Phink, ensure your system meets the following requirements:</p>
 <ul>
-<li><strong>Operating System</strong>: Linux. As macOS doesn’t support some AFL++ plugins, it is highly unrecommended. Phink has never
+<li><strong>Operating System</strong>: Linux. As macOS doesn’t support some AFL++ plugins, it is <strong>highly</strong> unrecommended. Phink has
+never
 been tested on Windows.</li>
-<li><strong>Rust</strong>: Rust <strong>nightly</strong></li>
+<li><strong>Rust</strong>: Rust <strong>nightly</strong> (currently working using cargo 1.83.0-nightly (ad074abe3 2024-10-04))</li>
 </ul>
 <h4 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h4>
 <p>You can install Phink by building it from the source or by using Docker. Choose the method that best suits your setup.</p>
@@ -448,19 +444,20 @@ Real-world Case Studies</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
 <h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
 <h3 id="fuzzing-in-general"><a class="header" href="#fuzzing-in-general">Fuzzing in general</a></h3>
-<p>Fuzzing is an automated software testing technique that involves providing invalid, unexpected, or random data inputs to
+<p><strong>Fuzzing</strong> is an automated software testing technique that involves providing random data inputs to
 a program. The primary goal is to uncover anomalies, such as crashes, assertion failures, that signify
 potential vulnerabilities.</p>
 <h3 id="property-based-fuzzing"><a class="header" href="#property-based-fuzzing">Property-based Fuzzing</a></h3>
-<p>Property-based testing involves specifying properties or invariants that your ink! contract should always satisfy. In
+<p><strong>Property-based testing</strong> involves specifying properties or invariants that your ink! contract should always satisfy.
+In
 Phink, these properties act as assertions. Phink uses this approach by allowing developers to
-define properties directly within ink! smart contracts. Such properties are then rigorously tested against varied
+define properties directly within ink! smart contracts. Such properties are then tested against varied
 inputs, ensuring the contract maintains its invariants across all possible data conditions.</p>
 <h3 id="coverage-guided-fuzzing-1"><a class="header" href="#coverage-guided-fuzzing-1">Coverage-guided Fuzzing</a></h3>
-<p>Coverage-guided fuzzing is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
+<p><strong>Coverage-guided fuzzing</strong> is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
 feedback from code execution paths to guide input generation, focusing on unexplored parts of the code.
-Phink instruments smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
-paths. This results in more thorough testing and potentially uncovers hard-to-find vulnerabilities.</p>
+Phink instruments ink! smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
+paths.</p>
 <h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
 <h3 id="corpus"><a class="header" href="#corpus">Corpus</a></h3>
 <p>A <strong>corpus</strong> refers to the collection of all input samples used during the testing process. It is
