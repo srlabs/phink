@@ -90,6 +90,9 @@ mod tests {
             ..Default::default()
         };
 
+        let buf = fuzz_output.to_str().unwrap();
+        println!("{:?}", buf);
+
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
 

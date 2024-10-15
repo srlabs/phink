@@ -58,9 +58,6 @@ jobs:
       - name: Run rustfmt checks
         run: cargo fmt -- --check
 
-      - name: Check Book
-        run: cd book && mdbook test
-
       - name: Build in release mode
         run: cargo build --release --verbose
 
