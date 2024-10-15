@@ -15,7 +15,6 @@ create-missing = true
 use-default-preprocessors = true
 
 
-
 [output.html]
 additional-css = ["custom.css"]
 default-theme = "light"

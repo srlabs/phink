@@ -10,3 +10,10 @@ repos:
         types: [ file, rust ]
         language: system
         pass_filenames: false
+
+      - id: mbBook
+        name: Book test
+        description: Check if book tests are passing
+        entry: mdbook test book/
+        language: system
+        pass_filenames: false
