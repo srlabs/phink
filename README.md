@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/phink.png" alt="phink" width="250"/>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/phink.png" alt="phink" width="250"/>
 </br>
 </br>
 
