@@ -1,4 +1,4 @@
-name: Build, integration tests, formating
+name: Build, integration tests, formatting
 
 on:
   push:
@@ -11,45 +11,31 @@ env:
   RUST_TEST_THREADS: "1"
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache cargo registry
+      - name: Cache Cargo components
         uses: actions/cache@v3
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/index
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+            ${{ runner.os }}-cargo-
 
-      - name: Cache cargo index
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/index
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-index-
-
-      - name: Cache cargo build
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-
-
-      - name: Install LLVM and Clang
+      - name: Set up LLVM & Clang
         run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
-          sudo apt-get update
-          sudo apt-get install -y llvm-19 clang-19 libclang-19-dev
+          if ! command -v clang-19; then
+            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee -a /etc/apt/sources.list.d/llvm.list
+            sudo apt-get update
+            sudo apt-get install -y llvm-19 clang-19 libclang-19-dev
+          fi
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -60,19 +46,14 @@ jobs:
 
       - name: Install required tools
         run: |
-          cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract
-
-      #          sudo apt-get clean
-      - name: Clean up space
-        run: |
-          sudo rm -rf /var/lib/apt/lists/*
-          sudo du -sh /* 2>/dev/null
+          cargo install ziggy cargo-afl honggfuzz grcov cargo-contract
+          # Consider caching the Cargo bin dir if these installations take too long.
 
       - name: Run afl-system-config
         run: |
-          curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
+          curl -s https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
           chmod +x afl-system-config.sh
-          bash afl-system-config.sh
+          ./afl-system-config.sh
 
       - name: Run rustfmt checks
         run: cargo fmt -- --check
@@ -81,7 +62,7 @@ jobs:
         run: cd book && mdbook test
 
       - name: Build in release mode
-        run: cargo build --release --verbose --quiet
+        run: cargo build --release --verbose
 
       - name: Run AFL++ configuration
         run: cargo afl config --build --plugins --verbose --force
@@ -90,14 +71,11 @@ jobs:
         working-directory: ./sample
         run: bash build.sh
 
-      - name: Run unit tests of all crates
+      - name: Run all unit tests
         run: cargo test -- --show-output --test-threads=1
 
-      - name: Run integration tests for *instrumentation*
-        run: cargo test --test cli_instrument_integration_test -- --show-output
-
-      - name: Run integration tests for *sample*
-        run: cargo test --test sample_integration_test -- --show-output
-
-      - name: Run integration tests for *fuzz*
-        run: cargo test --test cli_fuzz_integration_test -- --show-output
+      - name: Run integration tests
+        run: |
+          cargo test --test cli_instrument_integration_test -- --show-output
+          cargo test --test sample_integration_test -- --show-output
+          cargo test --test cli_fuzz_integration_test -- --show-output
