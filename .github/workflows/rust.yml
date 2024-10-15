@@ -44,6 +44,9 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: rustup component add
+        run: rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
+
       - name: Install required tools
         run: |
           cargo install ziggy cargo-afl honggfuzz grcov cargo-contract
