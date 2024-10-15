@@ -11,9 +11,16 @@ repos:
         language: system
         pass_filenames: false
 
-      - id: mbBook
+      - id: test_book
         name: Book test
         description: Check if book tests are passing
         entry: mdbook test book/
+        language: system
+        pass_filenames: false
+
+      - id: build_book
+        name: Book build
+        description: Build doc
+        entry: mdbook build book/
         language: system
         pass_filenames: false
