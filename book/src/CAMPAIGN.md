@@ -89,7 +89,7 @@ To analyze the crash, you can run `phink execute <your_crash>`, for instance
 | execs:3066742  | Cumulative number of executions performed until the crash.   |
 | op:havoc,rep:2 | Type of fuzzing operation (havoc) and its repetition number. |
 
-By running this, you should have something similar to
+By running this, you should have an output similar to the screenshot below:
 
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
 

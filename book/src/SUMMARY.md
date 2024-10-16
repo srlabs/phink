@@ -13,5 +13,5 @@
 # Concepts and understanding
 
 - [Concept and terminology](./CONCEPT.md)
-- [Understanding the seed format](./SEEDS.md)
+- [Seeds](./SEEDS.md)
 - [Troubleshoting](./TROUBLESHOTING.md)
