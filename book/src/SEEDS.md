@@ -12,30 +12,31 @@ messages within a single input. This allows for comprehensive testing across mul
 
 ## Example
 
-Here's an example explanation for the seed `0000000001fa80c2f6002a2a2a2a2a2a2a2a0000000003fa80c2f600` :
+Here's an example explanation for the seed
+`0000000001fa80c2f6002a2a2a2a2a2a2a2a0000000103ba70c3aa18040008000f00100017002a00` :
 
-| Segment            | Bytes              | Description                                                    |
-|--------------------|--------------------|----------------------------------------------------------------|
-| Balance Transfer   | `00000000`         | 4 bytes for balance (no transfer in this case).                |
-| Origin             | `01`               | 1 byte indicating the origin (Alice) (enabled in config).      |
-| Message Selector 1 | `fa80c2f6`         | 4 bytes for the first message selector.                        |
-| Parameters 1       | `00`               | SCALE-encoded parameters for the first message.                |
-| Message Delimiter  | `2a2a2a2a2a2a2a2a` | Delimits the first and second messages (`********`).           |
-| Balance Transfer   | `00000001`         | 4 bytes for balance (1 unit transfered).                       |
-| Origin             | `03`               | 1 byte indicating the origin (Charlie) for the second message. |
-| Message Selector 2 | `fa80c2f6`         | 4 bytes for the second message selector.                       |
-| Parameters 2       | `00`               | SCALE-encoded parameters for the second message.               |
+| Segment            | Bytes                        | Description                                                    |
+|--------------------|------------------------------|----------------------------------------------------------------|
+| Balance Transfer   | `00000000`                   | 4 bytes for balance (no transfer in this case).                |
+| Origin             | `01`                         | 1 byte indicating the origin (Alice) (enabled in config).      |
+| Message Selector 1 | `fa80c2f6`                   | 4 bytes for the first message selector.                        |
+| Parameters 1       | `00`                         | SCALE-encoded parameters for the first message.                |
+| Message Delimiter  | `2a2a2a2a2a2a2a2a`           | Delimits the first and second messages (`********`).           |
+| Balance Transfer   | `00000001`                   | 4 bytes for balance (1 unit transfered).                       |
+| Origin             | `03`                         | 1 byte indicating the origin (Charlie) for the second message. |
+| Message Selector 2 | `ba70c3aa`                   | 4 bytes for the second message selector.                       |
+| Parameters 2       | `18040008000f00100017002a00` | SCALE-encoded vector: [4, 8, 15, 16, 23, 42]                   |
 
 ### Explanation
 
-- **Balance Transfer**: The 4 bytes representing the balance transfer amount is set to `00000000`, indicating no value
-  is being transferred for either message.
+- **Balance Transfer**: The 4 bytes representing the balance transfer amount (set to `00000000` for the first message),
+  indicating no value is being transferred for either message.
 - **Origin**: A single byte is used (`01` for the first message and `03` for the second) to specify the origin of the
   call, useful for testing scenarios with different origins.
-- **Message Selector**: Each message begins with a 4-byte identifier (`fa80c2f6`), indicating which function or method
-  within the contract is being invoked.
-- **Parameters**: Following the message selector, SCALE-encoded parameters are specified using `00`, representing the
-  input data for each message.
+- **Message Selector**: The first message for example begins with a 4-byte identifier (`fa80c2f6`), indicating which
+  message within the contract is being invoked.
+- **Parameters**: Following the message selector, SCALE-encoded parameters are specified (example: `00`), representing
+  the input data for each message.
 - **Message Delimiter**: This seed uses the delimiter `********` (represented as `2a2a2a2a2a2a2a2a`) to separate
   multiple messages within a single input, allowing more complex interactions to be tested.
 

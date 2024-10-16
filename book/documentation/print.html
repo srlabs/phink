@@ -524,7 +524,8 @@ Substrate runtime, so Phink can be adapted to work with your specific runtime.
 <p>If your configuration allows more than one message per input, Phink uses the delimiter <code>"********"</code> to separate multiple
 messages within a single input. This allows for comprehensive testing across multiple scenarios from a single seed.</p>
 <h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
-<p>Here’s an example explanation for the seed <code>0000000001fa80c2f6002a2a2a2a2a2a2a2a0000000003fa80c2f600</code> :</p>
+<p>Here’s an example explanation for the seed
+<code>0000000001fa80c2f6002a2a2a2a2a2a2a2a0000000103ba70c3aa18040008000f00100017002a00</code> :</p>
 <div class="table-wrapper"><table><thead><tr><th>Segment</th><th>Bytes</th><th>Description</th></tr></thead><tbody>
 <tr><td>Balance Transfer</td><td><code>00000000</code></td><td>4 bytes for balance (no transfer in this case).</td></tr>
 <tr><td>Origin</td><td><code>01</code></td><td>1 byte indicating the origin (Alice) (enabled in config).</td></tr>
@@ -533,20 +534,20 @@ messages within a single input. This allows for comprehensive testing across mul
 <tr><td>Message Delimiter</td><td><code>2a2a2a2a2a2a2a2a</code></td><td>Delimits the first and second messages (<code>********</code>).</td></tr>
 <tr><td>Balance Transfer</td><td><code>00000001</code></td><td>4 bytes for balance (1 unit transfered).</td></tr>
 <tr><td>Origin</td><td><code>03</code></td><td>1 byte indicating the origin (Charlie) for the second message.</td></tr>
-<tr><td>Message Selector 2</td><td><code>fa80c2f6</code></td><td>4 bytes for the second message selector.</td></tr>
-<tr><td>Parameters 2</td><td><code>00</code></td><td>SCALE-encoded parameters for the second message.</td></tr>
+<tr><td>Message Selector 2</td><td><code>ba70c3aa</code></td><td>4 bytes for the second message selector.</td></tr>
+<tr><td>Parameters 2</td><td><code>18040008000f00100017002a00</code></td><td>SCALE-encoded vector: [4, 8, 15, 16, 23, 42]</td></tr>
 </tbody></table>
 </div>
 <h3 id="explanation"><a class="header" href="#explanation">Explanation</a></h3>
 <ul>
-<li><strong>Balance Transfer</strong>: The 4 bytes representing the balance transfer amount is set to <code>00000000</code>, indicating no value
-is being transferred for either message.</li>
+<li><strong>Balance Transfer</strong>: The 4 bytes representing the balance transfer amount (set to <code>00000000</code> for the first message),
+indicating no value is being transferred for either message.</li>
 <li><strong>Origin</strong>: A single byte is used (<code>01</code> for the first message and <code>03</code> for the second) to specify the origin of the
 call, useful for testing scenarios with different origins.</li>
-<li><strong>Message Selector</strong>: Each message begins with a 4-byte identifier (<code>fa80c2f6</code>), indicating which function or method
-within the contract is being invoked.</li>
-<li><strong>Parameters</strong>: Following the message selector, SCALE-encoded parameters are specified using <code>00</code>, representing the
-input data for each message.</li>
+<li><strong>Message Selector</strong>: The first message for example begins with a 4-byte identifier (<code>fa80c2f6</code>), indicating which
+message within the contract is being invoked.</li>
+<li><strong>Parameters</strong>: Following the message selector, SCALE-encoded parameters are specified (example: <code>00</code>), representing
+the input data for each message.</li>
 <li><strong>Message Delimiter</strong>: This seed uses the delimiter <code>********</code> (represented as <code>2a2a2a2a2a2a2a2a</code>) to separate
 multiple messages within a single input, allowing more complex interactions to be tested.</li>
 </ul>
