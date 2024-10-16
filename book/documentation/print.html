@@ -450,7 +450,70 @@ appear.</p>
 <p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>. The coverage report
 provides a visual representation of tested code areas. Basically, the more green lines, the better.</p>
 <div style="break-before: page; page-break-before: always;"></div><p>Maximizing Coverage</p>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="runtime"><a class="header" href="#runtime">Runtime</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="runtime-integration"><a class="header" href="#runtime-integration">Runtime Integration</a></h1>
+<p>Phink provides developers with the flexibility to customize their fuzzing environment through a simple interface. By
+editing <code>contract/custom/custom.rs</code> and <code>contract/custom/preferences.rs</code>, developers can tailor the runtime storage and
+contract initialization
+processes to suit their testing needs. Having a clone of Phink is required, in order to modify the source code.</p>
+<h2 id="custom-runtime-storage"><a class="header" href="#custom-runtime-storage">Custom Runtime Storage</a></h2>
+<p>Phink allows developers to tailor the runtime environment by customizing the storage configuration. This enables the
+creation of versatile and realistic testing scenarios.</p>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<pre><code class="language-rust ignore">impl DevelopperPreferences for Preferences {
+    fn runtime_storage() -&gt; Storage {
+        let storage = RuntimeGenesisConfig {
+            balances: BalancesConfig {
+                balances: (0..u8::MAX) // Allocates substantial balance to accounts
+                    .map(|i| [i; 32].into())
+                    .collect::&lt;Vec&lt;_&gt;&gt;()
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, 10000000000000000000 * 2))
+                    .collect(),
+            },
+            ..Default::default()
+        }
+            .build_storage()
+            .unwrap();
+        storage
+    }
+}</code></pre>
+<h3 id="customization-points"><a class="header" href="#customization-points">Customization Points</a></h3>
+<ul>
+<li><strong><code>runtime_storage</code>:</strong> This function is your gateway to defining any mocks or <code>RuntimeGenesisConfig</code> settings needed
+for your testing environment. Whether it’s allocating funds, initializing storage items, or setting up custom
+storage, you can adjust these configurations to mirror your deployment scenarios closely. This flexibility allows
+you to test how your ink! smart contract behave in various simulated network states.</li>
+</ul>
+<h2 id="contract-initialization"><a class="header" href="#contract-initialization">Contract Initialization</a></h2>
+<p>The <code>on_contract_initialize</code> function can be adapted to execute additional initialization logic, such as uploading
+supplementary contracts or handling dependencies.</p>
+<h3 id="usage-example"><a class="header" href="#usage-example">Usage Example</a></h3>
+<pre><code class="language-rust ignore">fn on_contract_initialize() -&gt; anyhow::Result&lt;()&gt; {
+    Contracts::bare_upload_code(
+        AccountId32::new([1; 32]),
+        fs::read("adder.wasm")?,
+        None,
+        Determinism::Enforced,
+    );
+    Ok(())
+}</code></pre>
+<h3 id="customization-points-1"><a class="header" href="#customization-points-1">Customization Points</a></h3>
+<ul>
+<li><strong><code>on_contract_initialize</code>:</strong> Use this function to automate contract uploads, configure dependencies, or perform any
+setup necessary before testing.</li>
+</ul>
+<h2 id="custom-runtime-parameters"><a class="header" href="#custom-runtime-parameters">Custom Runtime Parameters</a></h2>
+<p>Phink provides default runtime configurations, but developers can provide their own runtime parameters in
+<code>contract/runtime.rs</code>. This can be particularly useful if you wish to connect your fuzzing environment to your own
+Substrate runtime, so Phink can be adapted to work with your specific runtime.
+<strong>You can edit the runtime configure <a href="https://github.com/srlabs/phink/blob/main/src/contract/runtime.rs">here</a>.</strong></p>
+<h3 id="example-custom-runtime-configuration"><a class="header" href="#example-custom-runtime-configuration">Example: Custom Runtime Configuration</a></h3>
+<p>For instance, users could customize the <code>pallet_timestamp</code> runtime parameters:</p>
+<pre><code class="language-rust ignore">impl pallet_timestamp::Config for Runtime {
+    type MinimumPeriod = CustomMinimumPeriod;
+    ...
+}</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
 <h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
 <h3 id="fuzzing-in-general"><a class="header" href="#fuzzing-in-general">Fuzzing in general</a></h3>
