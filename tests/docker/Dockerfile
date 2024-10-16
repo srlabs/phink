@@ -27,19 +27,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN rustup default nightly \
     && rustup component add rust-src \
     && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract \
-    && rustup component add clippy
+    && rustup component add clippy && rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
 
 # Clone and build the project
 WORKDIR /phink
 
-RUN git clone https://github.com/srlabs/phink . \
-    && cargo update \
-    && cargo build --release
+RUN git clone https://github.com/srlabs/phink .
 
-RUN cargo afl config --build --plugins --verbose --force
-
-RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
+RUN curl -s https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
 RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
+RUN cargo afl config --build --plugins --verbose --force
+RUN cargo update && cargo build --release
 
 RUN cp target/release/phink /usr/local/bin/phink
 

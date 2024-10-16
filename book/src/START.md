@@ -6,10 +6,14 @@
 
 To successfully install and run Phink, ensure your system meets the following requirements:
 
-- **Operating System**: Linux. As macOS doesn't support some AFL++ plugins, it is **highly** unrecommended. Phink has
-  never
-  been tested on Windows.
-- **Rust**: Rust **nightly** (currently working using cargo 1.83.0-nightly (ad074abe3 2024-10-04))
+- **Operating System:**
+    - **Linux:** **Recommended** for compatibility.
+    - **macOS:** *Not recommended* as it doesn’t support some AFL++ plugins.
+    - **Windows:** *Untested.*
+
+- **Rust:**
+    - **Version:** Rust *nightly*
+    - **Current Compatibility:** `cargo 1.83.0-nightly (ad074abe3 2024-10-04)`
 
 #### Installation Guide
 
@@ -21,7 +25,7 @@ You can install Phink by building it from the source or by using Docker. Choose 
    ```bash
    git clone https://github.com/srlabs/phink && cd phink/
    ```
-   
+
    You can also use:
    ```bash 
    cargo +nightly install --git https://github.com/srlabs/phink

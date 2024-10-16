@@ -7,7 +7,7 @@
 
 ## Overview of Phink
 
-Phink is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
+**Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 
@@ -32,9 +32,11 @@ edges and code branches. Feedback is transmitted to the `pallet_contract` via th
 
 ### Detect Security Vulnerabilities
 
-Phink addresses security concerns by automatically generating and testing a diverse range of inputs. This
-process uncovers edge cases, logical flaws, and bugs that could lead to contract state reversion. Through fuzz testing,
-Phink
-explores different execution paths by generating input mutation. This
-testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
+Phink addresses security concerns by:
+
+- **Automatically generating and testing** a diverse range of inputs
+- **Uncovering** edge cases, logical flaws, and bugs leading to contract state reversion
+- **Exploring** different execution paths by generating input mutation
+
+This extensive testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
 address issues before deployment.

@@ -23,10 +23,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up Rust
-RUN rustup default nightly \
+RUN rustup toolchain install nightly \
+    && rustup default nightly \
+    && rustup component add rust-src \
+    && rustup component add clippy \
     && rustup component add rust-src \
     && cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract \
-    && rustup component add clippy
 
 # Clone and build the project
 WORKDIR /phink

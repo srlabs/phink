@@ -182,7 +182,7 @@
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 </center>
 <h2 id="overview-of-phink"><a class="header" href="#overview-of-phink">Overview of Phink</a></h2>
-<p>Phink is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
+<p><strong>Phink</strong> is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.</p>
 <h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
@@ -199,21 +199,34 @@ currently adding feedback on each line executed, Phink is designed to evolve, ev
 edges and code branches. Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>.</p>
 <h2 id="why-use-phink"><a class="header" href="#why-use-phink">Why Use Phink</a></h2>
 <h3 id="detect-security-vulnerabilities"><a class="header" href="#detect-security-vulnerabilities">Detect Security Vulnerabilities</a></h3>
-<p>Phink addresses security concerns by automatically generating and testing a diverse range of inputs. This
-process uncovers edge cases, logical flaws, and bugs that could lead to contract state reversion. Through fuzz testing,
-Phink
-explores different execution paths by generating input mutation. This
-testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
+<p>Phink addresses security concerns by:</p>
+<ul>
+<li><strong>Automatically generating and testing</strong> a diverse range of inputs</li>
+<li><strong>Uncovering</strong> edge cases, logical flaws, and bugs leading to contract state reversion</li>
+<li><strong>Exploring</strong> different execution paths by generating input mutation</li>
+</ul>
+<p>This extensive testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
 address issues before deployment.</p>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="getting-started-with-phink"><a class="header" href="#getting-started-with-phink">Getting Started with Phink</a></h2>
 <h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
 <h4 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h4>
 <p>To successfully install and run Phink, ensure your system meets the following requirements:</p>
 <ul>
-<li><strong>Operating System</strong>: Linux. As macOS doesn’t support some AFL++ plugins, it is <strong>highly</strong> unrecommended. Phink has
-never
-been tested on Windows.</li>
-<li><strong>Rust</strong>: Rust <strong>nightly</strong> (currently working using cargo 1.83.0-nightly (ad074abe3 2024-10-04))</li>
+<li>
+<p><strong>Operating System:</strong></p>
+<ul>
+<li><strong>Linux:</strong> <strong>Recommended</strong> for compatibility.</li>
+<li><strong>macOS:</strong> <em>Not recommended</em> as it doesn’t support some AFL++ plugins.</li>
+<li><strong>Windows:</strong> <em>Untested.</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Rust:</strong></p>
+<ul>
+<li><strong>Version:</strong> Rust <em>nightly</em></li>
+<li><strong>Current Compatibility:</strong> <code>cargo 1.83.0-nightly (ad074abe3 2024-10-04)</code></li>
+</ul>
+</li>
 </ul>
 <h4 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h4>
 <p>You can install Phink by building it from the source or by using Docker. Choose the method that best suits your setup.</p>
@@ -418,7 +431,7 @@ appear.</p>
 <p>To analyze the crash, you can run <code>phink execute &lt;your_crash&gt;</code>, for instance
 <code>phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2</code></p>
 <div class="table-wrapper"><table><thead><tr><th>Component</th><th>Description</th></tr></thead><tbody>
-<tr><td>1729082451630 (dir name)</td><td>Timestamp representing when the crash was recorded.</td></tr>
+<tr><td>1729082451630</td><td>Timestamp representing when the crash was recorded.</td></tr>
 <tr><td>id:000000</td><td>Unique identifier for the crash.</td></tr>
 <tr><td>sig:06</td><td>Signal number that triggered the crash.</td></tr>
 <tr><td>src:000008</td><td>Source test case number.</td></tr>
@@ -428,20 +441,15 @@ appear.</p>
 </tbody></table>
 </div>
 <p>By running this, you should have something similar to</p>
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtace.png" alt="crash"/>
-<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
-<p><strong>IMPORTANT: this feature is in alpha.</strong></p>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
+<h3 id="coverage-this-feature-is-in-alpha-and-unstable"><a class="header" href="#coverage-this-feature-is-in-alpha-and-unstable">Coverage (<strong>this feature is in alpha and unstable</strong>)</a></h3>
 <h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
 <p>Generate coverage reports to analyze which parts of the contract were tested:</p>
 <pre><code class="language-sh">phink coverage my_contract/
 </code></pre>
 <p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>. The coverage report
 provides a visual representation of tested code areas. Basically, the more green lines, the better.</p>
-<div style="break-before: page; page-break-before: always;"></div><p>Maximizing Coverage
-Ensuring Robustness and Security
-Simple ink! Contract Example
-Complex Property-based Testing Scenario
-Real-world Case Studies</p>
+<div style="break-before: page; page-break-before: always;"></div><p>Maximizing Coverage</p>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="runtime"><a class="header" href="#runtime">Runtime</a></h2>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
 <h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
@@ -480,7 +488,7 @@ contracts under various input conditions. Breaking an invariant indicates a pote
 instrumentation is used to trace execution paths, enabling coverage-guided techniques to generate more informed and
 effective test cases.</p>
 <hr />
-<h3 id="coverage-1"><a class="header" href="#coverage-1">Coverage</a></h3>
+<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
 <p><strong>Coverage</strong> is a measure of how much of a program’s code is tested during fuzzing. High coverage corresponds to a
 good assessment of the contracts logic.</p>
 <hr />

@@ -237,7 +237,7 @@ appear.</p>
 <p>To analyze the crash, you can run <code>phink execute &lt;your_crash&gt;</code>, for instance
 <code>phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2</code></p>
 <div class="table-wrapper"><table><thead><tr><th>Component</th><th>Description</th></tr></thead><tbody>
-<tr><td>1729082451630 (dir name)</td><td>Timestamp representing when the crash was recorded.</td></tr>
+<tr><td>1729082451630</td><td>Timestamp representing when the crash was recorded.</td></tr>
 <tr><td>id:000000</td><td>Unique identifier for the crash.</td></tr>
 <tr><td>sig:06</td><td>Signal number that triggered the crash.</td></tr>
 <tr><td>src:000008</td><td>Source test case number.</td></tr>
@@ -247,9 +247,8 @@ appear.</p>
 </tbody></table>
 </div>
 <p>By running this, you should have something similar to</p>
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtace.png" alt="crash"/>
-<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
-<p><strong>IMPORTANT: this feature is in alpha.</strong></p>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
+<h3 id="coverage-this-feature-is-in-alpha-and-unstable"><a class="header" href="#coverage-this-feature-is-in-alpha-and-unstable">Coverage (<strong>this feature is in alpha and unstable</strong>)</a></h3>
 <h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
 <p>Generate coverage reports to analyze which parts of the contract were tested:</p>
 <pre><code class="language-sh">phink coverage my_contract/
