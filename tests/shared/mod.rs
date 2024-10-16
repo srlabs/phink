@@ -115,13 +115,7 @@ where
     F: FnMut() -> Result<()>,
 {
     // We start the fuzzer
-    let mut child = fuzz(
-        config
-            .clone()
-            .instrumented_contract_path
-            .unwrap_or_default(),
-        false,
-    );
+    let mut child = fuzz_test(config.verbose, DEFAULT_TEST_PHINK_TOML)?;
 
     let start_time = Instant::now();
 
@@ -205,11 +199,10 @@ pub fn instrument(contract_path: Sample) -> Assert {
         .success()
 }
 
-/// Simple `phink` bin pop from cargo to fuzz `path_instrumented_contract`
-/// ** Important **
+/// Simple `phink` bin pop from cargo to fuzz using `DEFAULT_TEST_PHINK_TOML`
+/// ## Important
 /// This should only be used in test !
-#[must_use]
-pub fn fuzz(path_instrumented_contract: InstrumentedPath, verbose: bool) -> Child {
+pub fn fuzz_test(verbose: bool, phink_toml: &str) -> Result<Child> {
     let stdio_stdout = if verbose {
         Stdio::inherit()
     } else {
@@ -224,15 +217,18 @@ pub fn fuzz(path_instrumented_contract: InstrumentedPath, verbose: bool) -> Chil
     let child = NativeCommand::new("cargo")
         .arg("run")
         .arg("--")
-        .args(["--config", DEFAULT_TEST_PHINK_TOML])
+        .args(["--config", phink_toml])
         .arg("fuzz")
-        .arg(path_instrumented_contract.path.to_str().unwrap())
         .stdout(stdio_stdout)
         .stderr(stdio_stderr)
-        .spawn()
-        .expect("Failed to start the process");
+        .spawn();
 
-    child
+    match child {
+        Ok(child) => Ok(child),
+        Err(e) => {
+            bail!(format!("{e:?}"))
+        }
+    }
 }
 
 /// Returns `true` if `matching_string` is found in any `*.rs` file of `dir`, otherwise `false`

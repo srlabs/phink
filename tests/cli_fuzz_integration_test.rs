@@ -34,6 +34,7 @@ mod tests {
     };
     use tempfile::{
         tempdir,
+        tempdir_in,
         TempDir,
     };
 
@@ -46,6 +47,8 @@ mod tests {
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(15),
             show_ui: false,
+            verbose: false,
+
             ..Default::default()
         };
 
@@ -84,18 +87,18 @@ mod tests {
 
     #[test]
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
-        // let fuzz_output = tempdir()?.into_path();
-        let fuzz_output = TempDir::with_prefix("test_fuzz_assert_output")?.into_path();
+        let fuzz_output = tempdir()?.into_path();
         let config = Configuration {
             instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
             show_ui: false,
+            verbose: false,
             ..Default::default()
         };
 
-        let buf = fuzz_output.to_str().unwrap();
-        println!("{:?}", buf);
+        assert!(fuzz_output.exists(), "output should be created by TempDir");
+        println!("Output dir: {:?}", fuzz_output.to_str().unwrap());
 
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
@@ -146,7 +149,8 @@ mod tests {
 
                     ensure!(
                         dash.is_ready(),
-                        "'logs/afl.log' didn't return a successfull dashboard"
+                        "'logs/afl.log' didn't return a successfull dashboard,\
+                         maybe there was an AFL++ bug ? Try to tail the afl.log"
                     );
 
                     // We don't use allowlist for macos
@@ -188,6 +192,8 @@ mod tests {
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(2),
             show_ui: false,
+            verbose: false,
+
             ..Default::default()
         };
 
