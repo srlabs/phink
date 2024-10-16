@@ -11,9 +11,13 @@
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 
-## Key Features
+### Dashboard Overview
 
-### Property-based Testing
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/dashboard.png" alt="phink" width="250"/>
+
+### Key Features
+
+#### Property-based Testing
 
 Phink requires developers to define properties directly within ink! smart contracts. By prefixing functions with
 `phink`, such as `fn phink_assert_abc_always_true()`, developers create properties that
@@ -22,15 +26,13 @@ property’s assertion fails, it
 triggers a panic, signaling that an invariant has been broken. This method ensures thorough validation of contract logic
 and behavior.
 
-### Coverage-guided Fuzzing
+#### Coverage-guided Fuzzing
 
 In order to become coverage-guided, Phink needs to instrument the ink! smart contract. Although
 currently adding feedback on each line executed, Phink is designed to evolve, eventually monitoring coverage across new
 edges and code branches. Feedback is transmitted to the `pallet_contract` via the `debug_message`.
 
-## Why Use Phink
-
-### Detect Security Vulnerabilities
+### Why Use Phink
 
 Phink addresses security concerns by:
 
