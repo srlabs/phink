@@ -1,17 +1,23 @@
 # Summary
 
-[Introduction](./INTRO.md)
+## Introduction
 
-# User guide
+Explore the basics in our [Introduction](./INTRO.md) section.
 
-- [Installation](./START.md)
-- [Configuration](./CONFIG.md)
-- [Starting a campaign](./CAMPAIGN.md)
-- [Improving the campaign](./ADVANCED.md)
-- [Plug-in your runtime](./RUNTIME.md)
+---
 
-# Concepts and understanding
+## User Guide
 
-- [Concept and terminology](./CONCEPT.md)
-- [Seeds](./SEEDS.md)
-- [Troubleshoting](./TROUBLESHOTING.md)
+- [Installation](./START.md): Step-by-step setup instructions.
+- [Configuration](./CONFIG.md): Customizing Phink.
+- [Starting a Campaign](./CAMPAIGN.md): Kick off your first fuzzing campaign.
+- [Improving the Campaign](./ADVANCED.md): Advanced tips to enhance your campaign.
+- [Plug-In Your Runtime](./RUNTIME.md): Integration with your Substrate runtime environment.
+- [Seeds](./SEEDS.md): Understanding and creating corpus seeds.
+
+---
+
+## Concepts and Understanding
+
+- [Concept and Terminology](./CONCEPT.md): Understanding the fuzzing world.
+- [Troubleshooting](./TROUBLESHOTING.md): Solutions for common issues.

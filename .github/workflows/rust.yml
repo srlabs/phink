@@ -68,7 +68,6 @@ jobs:
         run:
           cargo afl config --build --plugins --verbose --force
 
-
       - name: Compile samples in `sample`
         working-directory: ./sample
         run: bash build.sh
