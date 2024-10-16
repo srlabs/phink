@@ -72,7 +72,26 @@ appear.
 
 ### Crashes
 
-In case of crashes, you should see something like
+In case of crashes, you should see something like the following.
+
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/crashed.png" alt="crash"/>
+
+To analyze the crash, you can run `phink execute <your_crash>`, for instance
+`phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2`
+
+| Component                | Description                                                  |
+|--------------------------|--------------------------------------------------------------|
+| 1729082451630 (dir name) | Timestamp representing when the crash was recorded.          |
+| id:000000                | Unique identifier for the crash.                             |
+| sig:06                   | Signal number that triggered the crash.                      |
+| src:000008               | Source test case number.                                     |
+| time:627512              | Execution time since the start of the testing process.       |
+| execs:3066742            | Cumulative number of executions performed until the crash.   |
+| op:havoc,rep:2           | Type of fuzzing operation (havoc) and its repetition number. |
+
+By running this, you should have something similar to
+
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtace.png" alt="crash"/>
 
 ### Coverage
 
@@ -86,8 +105,5 @@ Generate coverage reports to analyze which parts of the contract were tested:
 phink coverage my_contract/
 ```
 
-Some HTML files should then be generated in the path you've configured inside your `phink.toml`.
-
-#### Interpreting Coverage Reports
-
-The coverage report provides a visual representation of tested code areas. Basically, the more green lines, the better. 
+Some HTML files should then be generated in the path you've configured inside your `phink.toml`. The coverage report
+provides a visual representation of tested code areas. Basically, the more green lines, the better. 
