@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="spacer"></li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a Campaign</a></li><li class="chapter-item expanded "><a href="ADVANCED.html"><strong aria-hidden="true">4.</strong> Improving the Campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-In Your Runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html" class="active"><strong aria-hidden="true">6.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="spacer"></li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">7.</strong> Concept and Terminology</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshooting</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">4.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html" class="active"><strong aria-hidden="true">5.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">7.</strong> Troubleshoting</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -179,11 +179,97 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="seed-format"><a class="header" href="#seed-format">Seed format</a></h1>
-<h1 id="running-one-seed"><a class="header" href="#running-one-seed">Running one seed</a></h1>
-<h1 id="running-all-the-seeds"><a class="header" href="#running-all-the-seeds">Running all the seeds</a></h1>
-<h1 id="generating-a-seed"><a class="header" href="#generating-a-seed">Generating a seed</a></h1>
-<h1 id="adding-a-seed-to-the-corpus"><a class="header" href="#adding-a-seed-to-the-corpus">Adding a seed to the corpus</a></h1>
+                        <h1 id="seed-format"><a class="header" href="#seed-format">Seed Format</a></h1>
+<p>In Phink, a seed is structured to guide the fuzzing process effectively. The seed is composed of:</p>
+<ul>
+<li><strong>4 bytes</strong>: Represents the balance value to be transferred to the message if it’s payable.</li>
+<li><strong>1 byte</strong>: Specifies the origin, applicable if fuzzing origin is enabled in the configuration.</li>
+<li><strong>4 bytes</strong>: Identifies the message selector.</li>
+<li><strong>Remaining bytes</strong>: Contains the SCALE-encoded parameters for the message.</li>
+</ul>
+<p>If your configuration allows more than one message per input, Phink uses the delimiter <code>"********"</code> to separate multiple
+messages within a single input. This allows for comprehensive testing across multiple scenarios from a single seed.</p>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Here’s an example explanation for the seed <code>0000000001fa80c2f6002a2a2a2a2a2a2a2a0000000003fa80c2f600</code> :</p>
+<div class="table-wrapper"><table><thead><tr><th>Segment</th><th>Bytes</th><th>Description</th></tr></thead><tbody>
+<tr><td>Balance Transfer</td><td><code>00000000</code></td><td>4 bytes for balance (no transfer in this case).</td></tr>
+<tr><td>Origin</td><td><code>01</code></td><td>1 byte indicating the origin (Alice) (enabled in config).</td></tr>
+<tr><td>Message Selector 1</td><td><code>fa80c2f6</code></td><td>4 bytes for the first message selector.</td></tr>
+<tr><td>Parameters 1</td><td><code>00</code></td><td>SCALE-encoded parameters for the first message.</td></tr>
+<tr><td>Message Delimiter</td><td><code>2a2a2a2a2a2a2a2a</code></td><td>Delimits the first and second messages (<code>********</code>).</td></tr>
+<tr><td>Balance Transfer</td><td><code>00000001</code></td><td>4 bytes for balance (1 unit transfered).</td></tr>
+<tr><td>Origin</td><td><code>03</code></td><td>1 byte indicating the origin (Charlie) for the second message.</td></tr>
+<tr><td>Message Selector 2</td><td><code>fa80c2f6</code></td><td>4 bytes for the second message selector.</td></tr>
+<tr><td>Parameters 2</td><td><code>00</code></td><td>SCALE-encoded parameters for the second message.</td></tr>
+</tbody></table>
+</div>
+<h3 id="explanation"><a class="header" href="#explanation">Explanation</a></h3>
+<ul>
+<li><strong>Balance Transfer</strong>: The 4 bytes representing the balance transfer amount is set to <code>00000000</code>, indicating no value
+is being transferred for either message.</li>
+<li><strong>Origin</strong>: A single byte is used (<code>01</code> for the first message and <code>03</code> for the second) to specify the origin of the
+call, useful for testing scenarios with different origins.</li>
+<li><strong>Message Selector</strong>: Each message begins with a 4-byte identifier (<code>fa80c2f6</code>), indicating which function or method
+within the contract is being invoked.</li>
+<li><strong>Parameters</strong>: Following the message selector, SCALE-encoded parameters are specified using <code>00</code>, representing the
+input data for each message.</li>
+<li><strong>Message Delimiter</strong>: This seed uses the delimiter <code>********</code> (represented as <code>2a2a2a2a2a2a2a2a</code>) to separate
+multiple messages within a single input, allowing more complex interactions to be tested.</li>
+</ul>
+<h1 id="running-one-seed"><a class="header" href="#running-one-seed">Running One Seed</a></h1>
+<p>To execute a single seed, use the following command:</p>
+<pre><code class="language-bash">phink execute my_seed.bin
+</code></pre>
+<p>This command runs the specific seed <code>my_seed.bin</code>, providing targeted fuzzing for individual transaction testing.</p>
+<h1 id="running-all-the-seeds"><a class="header" href="#running-all-the-seeds">Running All the Seeds</a></h1>
+<p>Run all seeds sequentially using:</p>
+<pre><code class="language-bash">phink run
+</code></pre>
+<p>This command iterates over the <code>corpus</code> folder, executing each seed to ensure a comprehensive fuzzing process covering
+all previously discovered cases.</p>
+<h1 id="generating-a-seed"><a class="header" href="#generating-a-seed">Generating a Seed</a></h1>
+<p>To generate a new seed, you need to construct it using the prescribed format. Start with the required byte sequences for
+balance, origin, message selector, and parameters, then save it in your designated seed directory.</p>
+<h2 id="importance-of-seed-generation"><a class="header" href="#importance-of-seed-generation">Importance of seed generation</a></h2>
+<p>The ability to manually create seeds is crucial for enhancing the effectiveness of the fuzz testing process. By creating
+custom seeds, developers can guide the fuzzer to explore paths and scenarios that might not be easily discovered through
+automated means. This, in turn, increases the overall coverage of the fuzzing campaign, ensuring that more potential
+vulnerabilities and edge cases are identified and addressed. For generating the SCALE-encoded parameters, developers can
+utilize tools like <code>cargo contract</code>
+or <a href="https://polkadot.js.org/apps/">Polkadot.js</a>.</p>
+<h1 id="adding-a-seed-to-the-corpus"><a class="header" href="#adding-a-seed-to-the-corpus">Adding a Seed to the Corpus</a></h1>
+<p>To add a custom seed to the corpus, you can use the following command:</p>
+<pre><code class="language-bash">cargo ziggy add-seeds -i my_custom_seeds/ -z output/
+</code></pre>
+<ul>
+<li><code>my_custom_seeds/</code>: Directory containing your custom seeds.</li>
+<li><code>output/</code>: Directory where the fuzzing output is stored.</li>
+</ul>
+<p>Once added, the corpus will use these seeds in subsequent fuzzing processes.</p>
+<h1 id="viewing-and-editing-seeds"><a class="header" href="#viewing-and-editing-seeds">Viewing and Editing Seeds</a></h1>
+<p>To view the hexadecimal content of a seed, use:</p>
+<pre><code class="language-bash">xxd -c 3000 -p output/phink/corpus/one_seed.bin &gt; abc.out
+</code></pre>
+<p>This command converts the binary seed file into hex for easier reading and editing.</p>
+<p>To edit a seed:</p>
+<ol>
+<li>
+<p>Open the hex file in your editor:</p>
+<pre><code class="language-bash">vim abc.out
+</code></pre>
+</li>
+<li>
+<p>Save changes and revert the hex file to binary:</p>
+<pre><code class="language-bash">rm seed.bin # used to bypass cached seed
+xxd -r -p abc.out seed.bin
+</code></pre>
+</li>
+<li>
+<p>Execute the updated seed with:</p>
+<pre><code class="language-bash">phink execute seed.bin
+</code></pre>
+</li>
+</ol>
 
                     </main>
 

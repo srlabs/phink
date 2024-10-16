@@ -128,8 +128,7 @@ impl DomainNameService {
 #### Catching an invariant
 
 ```bash
-phink execute output/phink/crashes/<timestamp>/<id:000x:seed> \
-      /tmp/ink_fuzzed_<random_string>/
+phink execute output/phink/crashes/<timestamp>/<id:000x:seed>  
 ```
 
 Below, the trace after executing the crash:
