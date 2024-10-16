@@ -672,12 +672,13 @@ tail -f output/phink/logs/afl_1.log #if multi-threaded
 <p>Additionally, tools like <code>afl_showmap</code> allow developers to debug and visualize the coverage maps.</p>
 <h2 id="coverage-guided-strategy"><a class="header" href="#coverage-guided-strategy">Coverage-Guided Strategy</a></h2>
 <p>Currently, Phink employs a partially coverage-guided approach. While full coverage feedback from low-level
-instrumentation is not available yet, plans are underway to integrate this capability via WASM VM or PolkaVM in future
+instrumentation is not available yet, plans are underway to integrate this capability
+via <a href="https://github.com/wasmi-labs/wasmi">WASMI</a> or <a href="https://github.com/koute/polkavm">PolkaVM</a> in future
 versions.</p>
 <h2 id="execution-and-validation"><a class="header" href="#execution-and-validation">Execution and Validation</a></h2>
-<p>For each generated seed, Phink executes the associated input on a local Substrate node, which is emulated using mocks.
-This setup ensures that invariants are verified : known selectors are checked to ensure contract robustness and that
-invariants hold across different execution paths.</p>
+<p>For each generated seed, Phink executes the associated input on a mock-emulated ‘node’.
+This setup ensures that invariants are verified : known selectors are checked to ensure that
+invariants hold across different message calls.</p>
 <h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract Instrumentation</a></h2>
 <p>Phink instruments contracts using the <code>syn</code> crate, allowing for precise modification and analysis of the smart contract
 code. This instrumentation is crucial for identifying potential vulnerabilities and ensuring the integrity of the fuzz

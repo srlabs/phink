@@ -31,14 +31,15 @@ Additionally, tools like `afl_showmap` allow developers to debug and visualize t
 ## Coverage-Guided Strategy
 
 Currently, Phink employs a partially coverage-guided approach. While full coverage feedback from low-level
-instrumentation is not available yet, plans are underway to integrate this capability via WASM VM or PolkaVM in future
+instrumentation is not available yet, plans are underway to integrate this capability
+via [WASMI](https://github.com/wasmi-labs/wasmi) or [PolkaVM](https://github.com/koute/polkavm) in future
 versions.
 
 ## Execution and Validation
 
-For each generated seed, Phink executes the associated input on a local Substrate node, which is emulated using mocks.
-This setup ensures that invariants are verified : known selectors are checked to ensure contract robustness and that
-invariants hold across different execution paths.
+For each generated seed, Phink executes the associated input on a mock-emulated 'node'.
+This setup ensures that invariants are verified : known selectors are checked to ensure that
+invariants hold across different message calls.
 
 ## Contract Instrumentation
 
