@@ -98,7 +98,6 @@ mod tests {
         };
 
         assert!(fuzz_output.exists(), "output should be created by TempDir");
-        println!("Output dir: {:?}", fuzz_output.to_str().unwrap());
 
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
@@ -111,7 +110,7 @@ mod tests {
                 let fuzz_created = phink_output.exists();
                 ensure!(
                     fuzz_created,
-                    format!("Fuzz output directory wasn't created ({:?})", fuzz_output)
+                    "Fuzz output directory wasn't created ({fuzz_output:?})"
                 );
                 if fuzz_created {
                     let corpus_res = get_corpus_files(&phink_output.join("corpus"));
@@ -132,32 +131,28 @@ mod tests {
 
                     ensure!(
                         initial_corpus_len > 0,
-                        "Corpus directory is empty after creation: {:?} files",
-                        initial_corpus_len
+                        "Corpus directory is empty after creation: {initial_corpus_len:?} files"
                     );
 
-                    // Todo: commented out as we're not sure if we keep the dict
-                    // let selector = phink_output.join("selectors.dict");
-                    // ensure!(selector.exists(), "selectors.dict doesn't exist");
-                    //
-                    // ensure!(
-                    //     fs::read_to_string(selector).unwrap().lines().count() == 5,
-                    //     "There should be 5 lines in selectors, 2 for crash_with_invariant and
-                    // phink_assert_dangerous_number, 1 for demimiter, and two comments"
-                    // );
-                    let dash = AFLDashboard::from_output(fuzz_output.clone())?;
+                    let selector = phink_output.join("selectors.dict");
+                    ensure!(selector.exists(), "selectors.dict doesn't exist");
 
                     ensure!(
-                        dash.is_ready(),
-                        "'logs/afl.log' didn't return a successfull dashboard,\
-                         maybe there was an AFL++ bug ? Try to tail the afl.log"
+                        fs::read_to_string(selector).unwrap().lines().count() > 1,
+                        "at least two entries inside the dict"
                     );
+
+                    let dash = AFLDashboard::from_output(fuzz_output.clone())?;
+
+                    ensure!(dash.is_ready(), "afl.log' didn't return a successfull dashboard, maybe there was an AFL++ bug ? The latest AFL log was: {dash:#?}");
 
                     // We don't use allowlist for macos
                     if cfg!(not(target_os = "macos")) {
+                        let allowlist = phink_output.join("allowlist.txt");
+                        ensure!(allowlist.exists(), "allowlist.txt for AFL doesn't exist");
                         ensure!(
-                            phink_output.join("allowlist.txt").exists(),
-                            "allowlist.txt for AFL doesn't exist"
+                            fs::read_to_string(allowlist).unwrap().lines().count() > 0,
+                            "at least two entries inside the dict"
                         );
                     }
                 }

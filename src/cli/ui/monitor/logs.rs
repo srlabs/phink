@@ -13,7 +13,20 @@ use ratatui::{
 };
 use regex::Regex;
 use std::{
+    fmt,
+    fmt::{
+        Debug,
+        Formatter,
+    },
     fs,
+    fs::File,
+    io,
+    io::{
+        BufRead,
+        BufReader,
+        Seek,
+        SeekFrom,
+    },
     path::PathBuf,
     str::FromStr,
 };
@@ -126,9 +139,27 @@ impl FromStr for AFLProperties {
         Ok(props)
     }
 }
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct AFLDashboard {
     pub log_fullpath: PathBuf,
+}
+
+impl Debug for AFLDashboard {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Path for the log: {:?}", self.log_fullpath)?;
+
+        let file = File::open(&self.log_fullpath).map_err(|_| fmt::Error)?;
+        let mut reader = BufReader::new(file);
+        reader.seek(SeekFrom::Start(0)).map_err(|_| fmt::Error)?;
+
+        if let Ok(lines) = reader.lines().collect() {
+            let last_20_lines = lines.iter().rev().take(20).cloned().collect::<Vec<_>>();
+            for line in last_20_lines.iter().rev() {
+                writeln!(f, "{line}")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl FromPath for AFLDashboard {
