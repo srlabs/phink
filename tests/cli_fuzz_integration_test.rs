@@ -32,11 +32,7 @@ mod tests {
         fs,
         time::Duration,
     };
-    use tempfile::{
-        tempdir,
-        tempdir_in,
-        TempDir,
-    };
+    use tempfile::tempdir;
 
     #[test]
     #[cfg_attr(target_os = "macos", ignore)]

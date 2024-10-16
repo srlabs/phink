@@ -23,7 +23,7 @@ pub trait FromPath {
     }
 
     fn from_output(output: PathBuf) -> anyhow::Result<Self::Output> {
-        let path = PhinkFiles::new(output).path(Self::get_pfile_type());
+        let path = PhinkFiles::new(output).path(Self::get_filetype());
 
         match path.exists() {
             true => Self::from_fullpath(path),
@@ -33,5 +33,5 @@ pub trait FromPath {
 
     fn create_instance(path: PathBuf) -> Self::Output;
 
-    fn get_pfile_type() -> PFiles;
+    fn get_filetype() -> PFiles;
 }

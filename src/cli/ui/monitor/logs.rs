@@ -152,8 +152,13 @@ impl Debug for AFLDashboard {
         let mut reader = BufReader::new(file);
         reader.seek(SeekFrom::Start(0)).map_err(|_| fmt::Error)?;
 
-        if let Ok(lines) = reader.lines().collect() {
-            let last_20_lines = lines.iter().rev().take(20).cloned().collect::<Vec<_>>();
+        if let Ok(lines) = reader.lines().collect::<io::Result<Vec<String>>>() {
+            let last_20_lines = lines
+                .iter()
+                .rev()
+                .take(20)
+                .cloned()
+                .collect::<Vec<String>>();
             for line in last_20_lines.iter().rev() {
                 writeln!(f, "{line}")?;
             }
@@ -169,7 +174,7 @@ impl FromPath for AFLDashboard {
         AFLDashboard { log_fullpath }
     }
 
-    fn get_pfile_type() -> PFiles {
+    fn get_filetype() -> PFiles {
         PFiles::AFLLog
     }
 }

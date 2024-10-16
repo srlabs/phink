@@ -134,8 +134,9 @@ impl Instrumenter {
         } else {
             bail!(
                 "{stderr} - {stdout} It seems that your instrumented smart contract did not compile properly. \
-        Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance.\
-        Also, make sur that your Cargo.toml contains the `phink` feature.\nMore informations in the stacktrace above.",
+        Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance. \
+        Also, make sur that your Cargo.toml contains the `phink` feature. Sometimes it's because you need to recompile the contract, as you've changed the toolchain.\
+        \nMore informations in the stacktrace above.",
             )
         }
 

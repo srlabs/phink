@@ -67,7 +67,7 @@ jobs:
       - name: Run AFL++ configuration
         run:
           cargo afl config --build --plugins --verbose --force
-          sudo cargo-afl afl system-config
+          e
 
       - name: Compile samples in `sample`
         working-directory: ./sample

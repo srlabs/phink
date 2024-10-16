@@ -8,10 +8,7 @@ use anyhow::{
     Result,
 };
 use assert_cmd::Command;
-use phink_lib::{
-    cli::config::Configuration,
-    instrumenter::path::InstrumentedPath,
-};
+use phink_lib::cli::config::Configuration;
 
 use assert_cmd::assert::Assert;
 use std::{

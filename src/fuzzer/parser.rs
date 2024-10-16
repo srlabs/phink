@@ -252,7 +252,7 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
 
                     input.messages.push(Message {
                         is_payable,
-                        payload: encoded_message.into(),
+                        payload: encoded_message,
                         value_token,
                         message_metadata,
                         origin,
@@ -274,7 +274,7 @@ pub fn decode_contract_message(
     use contract_transcode::Map;
     use std::io::Read;
 
-    let mut data_as_slice = data.as_slice().clone();
+    let mut data_as_slice = data.as_slice();
     let mut msg_selector: [u8; 4] = [0u8; 4];
     data_as_slice.read_exact(&mut msg_selector)?;
     let msg_spec = guard

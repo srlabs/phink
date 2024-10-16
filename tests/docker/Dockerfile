@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     software-properties-common \
     ca-certificates \
+    sudo \
     && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
     && echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main" >> /etc/apt/sources.list.d/llvm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
@@ -48,4 +49,3 @@ RUN chmod 777 build.sh && bash build.sh
 WORKDIR /phink
 ENV RUST_BACKTRACE=1
 CMD ["cargo", "test", "--no-fail-fast", "--", "--show-output", "--test-threads=1"]
-#CMD ["cargo", "run"]

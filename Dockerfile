@@ -31,9 +31,7 @@ RUN rustup default nightly \
 # Clone and build the project
 WORKDIR /phink
 
-RUN git clone https://github.com/srlabs/phink . \
-    && cargo update \
-    && cargo build --release
+RUN git clone https://github.com/srlabs/phink . && cargo build --release
 
 RUN cargo afl config --build --plugins --verbose --force
 

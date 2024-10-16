@@ -40,7 +40,7 @@ impl FromPath for CorpusWatcher {
         }
     }
 
-    fn get_pfile_type() -> PFiles {
+    fn get_filetype() -> PFiles {
         PFiles::CorpusPath
     }
 }

@@ -17,7 +17,7 @@ includes:
     - LLVM 19 and Clang 19 are installed
 
 2. **Setting Up Rust**:
-   - This Dockerfile sets Rust to nightly version (`nightly`) to ensure compatibility with Phink's
+    - This Dockerfile sets Rust to nightly version (`nightly`) to ensure compatibility with Phink's
       codebase.
     - Additional Rust components and tools such as `rust-src`, `cargo-afl`, `honggfuzz`, `grcov`, and `cargo-contract`
       are installed to support fuzzing and coverage instrumentation.
@@ -52,15 +52,11 @@ includes:
 
    To fuzz your instrumented ink! smart-contract:
    ```bash
-   docker run --rm phink fuzz <path_to_instrumented_contract>
+   docker run --rm phink fuzz  
    ```
-   Please, note that `path_to_instrumented_contract` corresponds to the directory created after the instrumentation
-   step (as shown above). `path_to_instrumented_contract` is *not* the same path as `path_to_your_contract` !
 
 ### Notes
 
 - **No files copied into `/bin`**: The Dockerfile intentionally avoids copying files into `/bin` to keep the
   `phink.toml` configuration and `sample/` directory accessible for user interaction within the container.
 
-- **Minimal image size**: Unnecessary files, such as package lists, are removed during the build to reduce the image
-  size.

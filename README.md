@@ -79,7 +79,7 @@ _Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on
 
 ```bash
 phink instrument path/to/ink_contract
-phink fuzz /tmp/ink_fuzzed_Bb9Zp # you can get this path by reading the output of the previous command
+phink fuzz  
 ```  
 
 ## Example
