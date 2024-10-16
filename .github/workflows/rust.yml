@@ -72,10 +72,4 @@ jobs:
         run: bash build.sh
 
       - name: Run all unit tests
-        run: cargo test -- --show-output --test-threads=1
-
-      - name: Run integration tests
-        run: |
-          cargo test --test cli_instrument_integration_test -- --show-output
-          cargo test --test sample_integration_test -- --show-output
-          cargo test --test cli_fuzz_integration_test -- --show-output
+        run: cargo test --no-fail-fast  -- --test-threads=1
