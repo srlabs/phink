@@ -19,9 +19,9 @@ You can install Phink by building it from the source or by using Docker. Choose 
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/srlabs/phink
-   cd phink/
+   git clone https://github.com/srlabs/phink && cd phink/
    ```
+   
    You can also use:
    ```bash 
    cargo +nightly install --git https://github.com/srlabs/phink
@@ -46,10 +46,7 @@ You can install Phink by building it from the source or by using Docker. Choose 
 5. **Run Phink**
    ```bash
    ./target/release/phink --help
-   ```
-   Or if installed via `cargo install`:
-   ```bash
-   phink --help
+   phink --help # if installed via `cargo install`
    ```
 
 ##### Using Docker

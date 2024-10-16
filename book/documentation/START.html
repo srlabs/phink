@@ -195,8 +195,7 @@ been tested on Windows.</li>
 <ol>
 <li>
 <p><strong>Clone the Repository</strong></p>
-<pre><code class="language-bash">git clone https://github.com/srlabs/phink
-cd phink/
+<pre><code class="language-bash">git clone https://github.com/srlabs/phink &amp;&amp; cd phink/
 </code></pre>
 <p>You can also use:</p>
 <pre><code class="language-bash">cargo +nightly install --git https://github.com/srlabs/phink
@@ -221,9 +220,7 @@ sudo cargo-afl afl system-config
 <li>
 <p><strong>Run Phink</strong></p>
 <pre><code class="language-bash">./target/release/phink --help
-</code></pre>
-<p>Or if installed via <code>cargo install</code>:</p>
-<pre><code class="language-bash">phink --help
+phink --help # if installed via `cargo install`
 </code></pre>
 </li>
 </ol>

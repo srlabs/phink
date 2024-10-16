@@ -224,36 +224,24 @@ impl DomainNameService {
 <p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process. It creates a fork of the
 contract, so you don’t have to make a copy before.</p>
 <h3 id="2-run-the-fuzzer"><a class="header" href="#2-run-the-fuzzer">2. Run the fuzzer</a></h3>
-<p>After instrumenting your contract and writing properties, execute the fuzzing process:</p>
+<p>After <strong>instrumenting</strong> your contract and <strong>writing</strong> properties and <strong>configuring</strong> your <code>phink.toml</code>, execute the
+fuzzing process:</p>
 <pre><code class="language-sh">phink fuzz
 </code></pre>
 <p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file. A user interface should
 appear.</p>
 <h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
-<h3 id="coverage-reports"><a class="header" href="#coverage-reports">Coverage Reports</a></h3>
+<h3 id="crashes"><a class="header" href="#crashes">Crashes</a></h3>
+<p>In case of crashes, you should see something like</p>
+<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
+<p><strong>IMPORTANT: this feature is in alpha.</strong></p>
+<h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
 <p>Generate coverage reports to analyze which parts of the contract were tested:</p>
-<pre><code class="language-sh">phink coverage
+<pre><code class="language-sh">phink coverage my_contract/
 </code></pre>
-<h3 id="log-analysis"><a class="header" href="#log-analysis">Log Analysis</a></h3>
-<p>Check detailed logs if <code>verbose</code> is enabled in your configuration. Logs provide insights into fuzzing processes and
-detected issues.</p>
-<h2 id="interpreting-coverage-reports"><a class="header" href="#interpreting-coverage-reports">Interpreting Coverage Reports</a></h2>
-<p>The coverage report provides a visual representation of tested code areas. Ensure that all critical paths of your
-contract are covered.</p>
-<h2 id="debugging-fuzzing-results"><a class="header" href="#debugging-fuzzing-results">Debugging Fuzzing Results</a></h2>
-<h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness Coverage</a></h3>
-<p>Use the harness coverage feature for debugging:</p>
-<pre><code class="language-sh">phink harness-cover
-</code></pre>
-<p>This isolates test harness issues from contract logic problems.</p>
-<h2 id="writing-effective-properties"><a class="header" href="#writing-effective-properties">Writing Effective Properties</a></h2>
-<h3 id="key-tips"><a class="header" href="#key-tips">Key Tips:</a></h3>
-<ul>
-<li>Ensure properties are clear and address potential vulnerabilities.</li>
-<li>Regularly update properties based on contract changes.</li>
-</ul>
-<p>By following these guidelines, you can effectively leverage Phink to ensure the reliability and security of your ink!
-smart contracts.</p>
+<p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>.</p>
+<h4 id="interpreting-coverage-reports"><a class="header" href="#interpreting-coverage-reports">Interpreting Coverage Reports</a></h4>
+<p>The coverage report provides a visual representation of tested code areas. Basically, the more green lines, the better.</p>
 
                     </main>
 

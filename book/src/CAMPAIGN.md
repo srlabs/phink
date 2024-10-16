@@ -58,7 +58,8 @@ contract, so you don't have to make a copy before.
 
 ### 2. Run the fuzzer
 
-After instrumenting your contract and writing properties, execute the fuzzing process:
+After **instrumenting** your contract and **writing** properties and **configuring** your `phink.toml`, execute the
+fuzzing process:
 
 ```sh
 phink fuzz
@@ -69,42 +70,24 @@ appear.
 
 ## Analyzing Results
 
-### Coverage Reports
+### Crashes
+
+In case of crashes, you should see something like
+
+### Coverage
+
+**IMPORTANT: this feature is in alpha.**
+
+#### Generating a coverage report
 
 Generate coverage reports to analyze which parts of the contract were tested:
 
 ```sh
-phink coverage
+phink coverage my_contract/
 ```
 
-### Log Analysis
+Some HTML files should then be generated in the path you've configured inside your `phink.toml`.
 
-Check detailed logs if `verbose` is enabled in your configuration. Logs provide insights into fuzzing processes and
-detected issues.
+#### Interpreting Coverage Reports
 
-## Interpreting Coverage Reports
-
-The coverage report provides a visual representation of tested code areas. Ensure that all critical paths of your
-contract are covered.
-
-## Debugging Fuzzing Results
-
-### Harness Coverage
-
-Use the harness coverage feature for debugging:
-
-```sh
-phink harness-cover
-```
-
-This isolates test harness issues from contract logic problems.
-
-## Writing Effective Properties
-
-### Key Tips:
-
-- Ensure properties are clear and address potential vulnerabilities.
-- Regularly update properties based on contract changes.
-
-By following these guidelines, you can effectively leverage Phink to ensure the reliability and security of your ink!
-smart contracts.
+The coverage report provides a visual representation of tested code areas. Basically, the more green lines, the better. 
