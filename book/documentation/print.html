@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">4.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">5.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">7.</strong> Troubleshoting</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">4.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">5.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TECH.html"><strong aria-hidden="true">7.</strong> How does Phink work</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshoting</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -649,6 +649,38 @@ good assessment of the contracts logic.</p>
 <p><strong>ink! contract selectors</strong> are unique identifiers for functions within ink! smart contracts. Selectors are derived from
 function signatures and are used to call specific functions within a contract deployed on the blockchain.</p>
 <hr />
+<div style="break-before: page; page-break-before: always;"></div><h1 id="how-phink-works"><a class="header" href="#how-phink-works">How Phink Works</a></h1>
+<p>Phink is built on top of AFL++, leveraging its capabilities to provide effective fuzz testing for ink! smart contracts.
+Here’s an overview of how it operates:</p>
+<h2 id="afl-integration"><a class="header" href="#afl-integration">AFL++ Integration</a></h2>
+<p>Phink utilizes AFL++ through two key components:</p>
+<ul>
+<li><strong>ziggy</strong>: A multifuzzing crate that enables integration with multiple fuzzers.</li>
+<li><strong>afl.rs</strong>: A crate that spawns AFL++ fuzzers, facilitating seamless mutation and coverage tracking.</li>
+</ul>
+<h3 id="afl-mechanics"><a class="header" href="#afl-mechanics">AFL++ Mechanics</a></h3>
+<p>AFL++ mutates the input bytes and evaluates whether these mutations increase code coverage. If a mutation results in new
+execution paths, the modified seed is retained in the corpus. This iterative process enhances the likelihood of
+discovering hidden vulnerabilities.</p>
+<h3 id="monitoring-execution"><a class="header" href="#monitoring-execution">Monitoring Execution</a></h3>
+<p>Users can monitor the execution logs using familiar AFL++ tools. For instance, by using <code>tail</code>, you can view real-time
+fuzzer logs and activity:</p>
+<pre><code class="language-bash">tail -f output/phink/logs/afl.log
+tail -f output/phink/logs/afl_1.log #if multi-threaded
+</code></pre>
+<p>Additionally, tools like <code>afl_showmap</code> allow developers to debug and visualize the coverage maps.</p>
+<h2 id="coverage-guided-strategy"><a class="header" href="#coverage-guided-strategy">Coverage-Guided Strategy</a></h2>
+<p>Currently, Phink employs a partially coverage-guided approach. While full coverage feedback from low-level
+instrumentation is not available yet, plans are underway to integrate this capability via WASM VM or PolkaVM in future
+versions.</p>
+<h2 id="execution-and-validation"><a class="header" href="#execution-and-validation">Execution and Validation</a></h2>
+<p>For each generated seed, Phink executes the associated input on a local Substrate node, which is emulated using mocks.
+This setup ensures that invariants are verified : known selectors are checked to ensure contract robustness and that
+invariants hold across different execution paths.</p>
+<h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract Instrumentation</a></h2>
+<p>Phink instruments contracts using the <code>syn</code> crate, allowing for precise modification and analysis of the smart contract
+code. This instrumentation is crucial for identifying potential vulnerabilities and ensuring the integrity of the fuzz
+testing process.</p>
 <div style="break-before: page; page-break-before: always;"></div><h3 id="debugging-phink"><a class="header" href="#debugging-phink">Debugging Phink</a></h3>
 <p>Use the harness coverage feature for debugging. You should only use this if you want to have a coverage of Phink itself,
 for instance if you are planning to contribute to Phink, or to debug it.</p>

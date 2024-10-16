@@ -13,4 +13,5 @@
 # Concepts and understanding
 
 - [Concept and terminology](./CONCEPT.md)
+- [How does Phink work](./TECH.md)
 - [Troubleshoting](./TROUBLESHOTING.md)
