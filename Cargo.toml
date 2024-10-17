@@ -89,14 +89,14 @@ pallet-contracts = { version = "38.0.0" }
 pallet-insecure-randomness-collective-flip = { version = "26.0.0" }
 
 # ink! crates
-ink_metadata = { version = "*" }
-ink_env = { version = "*" }
-contract-transcode = { version = "*" }
-contract-metadata = { version = "*" }
+ink_metadata = { version = "5.0.0" }
+ink_env = { version = "5.0.0" }
+contract-transcode = { version = "4.1.1" }
+contract-metadata = { version = "4.1.1" }
 predicates = { version = "3.1.2" }
 colored = { version = "2.1.0" }
-thiserror = "1.0.63"
-time = "0.3.36"
+thiserror = { version = "1.0.63" }
+time = { version = "0.3.36" }
 
 
 [lints.rust]
