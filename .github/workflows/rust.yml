@@ -71,7 +71,7 @@ jobs:
 
       - name: Run AFL++ configuration
         run:
-          cargo afl config --build --plugins --verbose --force
+          sudo -E cargo afl config --build --plugins --verbose --force
 
       - name: Build in release mode
         run: cargo build --release --verbose

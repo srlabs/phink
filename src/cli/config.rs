@@ -303,6 +303,7 @@ mod tests {
             max_messages_per_exec = 20
             storage_deposit_limit = "200000000000"
             verbose = false
+            catch_trapped_contract = true
             show_ui = true
         "#;
 
