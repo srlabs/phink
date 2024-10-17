@@ -52,22 +52,10 @@ jobs:
       - name: Install LLVM
         run: |
           LLVM_VERSION="$(rustc --version -v | grep '^LLVM version:' | grep -o '[0-9]\+' | head -n 1)"
-          if [[ ${{ matrix.environment  }} = 'macos-latest' ]]; then
-            # smoelius: Around the time Rust 1.80 was released, running `brew update` would be
-            # followed by "cargo: command not found" errors.
-            # brew update
-            brew install llvm@"$LLVM_VERSION" || true
-            echo "/usr/local/opt/llvm/bin" >> "$GITHUB_PATH"
-          else
-            wget https://apt.llvm.org/llvm.sh
-            chmod +x llvm.sh
-            sudo ./llvm.sh "$LLVM_VERSION"
-          fi
-          
-
-      - name: rustup component add
-        run: rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
-
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo -E ./llvm.sh "$LLVM_VERSION"
+ 
       - name: Install required tools
         run: |
           cargo install --force ziggy cargo-afl honggfuzz  cargo-contract
