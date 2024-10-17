@@ -23,7 +23,6 @@ use frame_support::{
 };
 use frame_system::EnsureSigned;
 pub use pallet_transaction_payment::{
-    CurrencyAdapter,
     Multiplier,
     TargetedFeeAdjustment,
 };
@@ -140,7 +139,8 @@ impl pallet_balances::Config for Runtime {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    #[allow(deprecated)]
+    type OnChargeTransaction = pallet_transaction_payment::CurrencyAdapter<Balances, ()>;
     type WeightToFee = IdentityFee<Balance>;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = TargetedFeeAdjustment<
@@ -168,8 +168,9 @@ impl pallet_contracts::Config for Runtime {
     type Time = Timestamp;
     type Randomness = Randomness;
     type Currency = Balances;
+    type MaxTransientStorageSize = ConstU32<{ 1024 * 1024 }>;
+
     type RuntimeEvent = RuntimeEvent;
-    // type MaxTransientStorageSize = ConstU32<{ 1 * 1024 * 1024 }>;
     type RuntimeCall = RuntimeCall;
     /// The safest default is to allow no calls at all.
     ///
