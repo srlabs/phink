@@ -27,6 +27,10 @@ use serde_derive::{
 };
 use sp_core::crypto::AccountId32;
 use std::{
+    fmt::{
+        Display,
+        Formatter,
+    },
     fs,
     fs::File,
     io::Write,
@@ -122,6 +126,12 @@ pub enum PFiles {
 pub struct PhinkFiles {
     output: PathBuf,
 }
+impl Display for PhinkFiles {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.output.to_str().unwrap())
+    }
+}
+
 impl PhinkFiles {
     const PHINK_PATH: &str = "phink";
 

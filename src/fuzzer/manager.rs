@@ -91,14 +91,14 @@ impl CampaignManager {
                 self.display_trap(decoded_msgs, response);
             });
         }
-        if let Ok(invariant) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
+        if let Ok(invariant_tested) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
             // TODO: We only try to run the invariants as the first message's origin here
-            self.display_invariant(responses.to_vec(), decoded_msgs, invariant);
+            self.display_invariant(responses.to_vec(), decoded_msgs, invariant_tested);
         }
 
         // If we are running the seeds or that we want the fuzzer to catch the trapped contract AND
         // that we have a trapped contract, we panic artificially trigger a bug for AFL
-        if (cfg!(not(fuzzing)) || !catch_trapped_contract) && trapped.next().is_some() {
+        if catch_trapped_contract && trapped.next().is_some() {
             panic!("Contract Trapped !");
         }
     }

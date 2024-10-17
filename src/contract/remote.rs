@@ -149,10 +149,7 @@ impl ContractSetup {
             .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
 
         if conf.verbose {
-            println!(
-                "🛠️Initializing contract address from the origin: {:?}",
-                contract_address
-            );
+            println!("🛠️Initializing contract address from the origin: {contract_address:?}");
         }
 
         let path_to_specs = finder.specs_path;
@@ -233,7 +230,7 @@ impl ContractSetup {
                 hash
             }
             Err(e) => {
-                panic!("❌ Upload failed for: {:?} with error: {:?}", who, e);
+                panic!("❌ Upload failed for: {who:?} with error: {e:?}");
             }
         }
     }
@@ -269,11 +266,11 @@ impl ContractSetup {
 
         match instantiate.result {
             Ok(contract_info) => {
-                println!("🔍 Instantiated the contract, using account {:?}", who);
+                println!("🔍 Instantiated the contract, using account {who:?}");
                 Ok(contract_info.account_id)
             }
             Err(e) => {
-                bail!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {:?}", e);
+                bail!("❌ Failed to instantiate the contract, double check your `constructor_payload` please : {e:?}");
             }
         }
     }

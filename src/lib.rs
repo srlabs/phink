@@ -61,7 +61,7 @@ struct Cli {
 #[derive(clap::Subcommand, Debug)]
 #[allow(deprecated)]
 enum Commands {
-    /// Starts the fuzzing process. Instrumentation required before!
+    /// Starts the fuzzing campaign. Instrumentation required before!
     Fuzz,
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument(Contract),

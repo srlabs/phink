@@ -165,7 +165,7 @@ impl ZiggyConfig {
         config
     }
 
-    /// This function executes `cargo ziggy 'command' 'args'`
+    /// This function executes 'cargo ziggy `command` `args`'
     fn build_command(
         &self,
         command: ZiggyCommand,
@@ -225,13 +225,17 @@ impl ZiggyConfig {
             .stdout(Stdio::piped());
 
         if ziggy_command == ZiggyCommand::Run {
+            let output = self.to_owned().fuzz_output();
+
             command_builder.args(vec![
                 "--inputs",
-                PhinkFiles::new(self.to_owned().fuzz_output())
+                PhinkFiles::new_by_ref(&output)
                     .path(PFiles::CorpusPath)
                     .to_str()
                     .unwrap(),
             ]);
+
+            command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
         }
 
         self.with_allowlist(command_builder)
@@ -329,8 +333,8 @@ impl ZiggyConfig {
         let covpath = PhinkFiles::new(self.clone().fuzz_output()).path(CoverageTracePath);
 
         // We clean up the old one first
-        if fs::remove_file(covpath).is_ok() {
-            println!("💨 Removed previous coverage file")
+        if fs::remove_file(&covpath).is_ok() {
+            println!("💨 Removed previous coverage file at {covpath:?}")
         }
 
         self.build_command(
