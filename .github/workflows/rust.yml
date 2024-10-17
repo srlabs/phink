@@ -34,8 +34,7 @@ jobs:
 
       - name: Set up LLVM & Clang
         run: |
-          if! command -v clang-19; then
-            # Reduced apt-get update to only update the newly added source
+          if ! command -v clang-19 &> /dev/null; then
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo -E apt-key add -
             echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo -E  tee -a /etc/apt/sources.list.d/llvm.list
             sudo -E  apt-get update --only-source
