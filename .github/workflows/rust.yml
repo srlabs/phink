@@ -60,7 +60,7 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
           chmod +x afl-system-config.sh
-          sudo -E./afl-system-config.sh
+          sudo -E ./afl-system-config.sh
 
       - name: Run AFL++ configuration
         run:
