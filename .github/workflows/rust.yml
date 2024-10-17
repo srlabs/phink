@@ -35,7 +35,8 @@ jobs:
             #      - name: Set up LLVM z& Clang
             #        run: |
             #          if ! command -v clang-19 &> /dev/null; then
-            #                          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo -E apt-key add -
+            #  # Reduced apt-get update to only update the newly added source
+                          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo -E apt-key add -
             #            echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo -E  tee -a /etc/apt/sources.list.d/llvm.list
             #            sudo -E  apt-get update --only-source
             #            sudo -E  apt-get install -y --no-install-recommends llvm-19 clang-19 libclang-19-dev
@@ -48,6 +49,8 @@ jobs:
           toolchain: nightly
           override: true
 
+      - name: Add rust-src
+        run: rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
 
       - name: Install LLVM
         run: |
@@ -55,7 +58,7 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo -E ./llvm.sh "$LLVM_VERSION"
- 
+
       - name: Install required tools
         run: |
           cargo install --force ziggy cargo-afl honggfuzz  cargo-contract

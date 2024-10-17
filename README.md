@@ -19,7 +19,7 @@ embed inviolable properties into their smart contract testing workflows, equippi
 vulnerabilities and ensure contract reliability before deployment.
 
 For comprehensive documentation, visit
-our [official documentation site](https://srlabs.github.io/phink/). If you have any question, feedback,
+our [**official documentation site**](https://srlabs.github.io/phink/). If you have any question, feedback,
 features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
 
