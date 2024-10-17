@@ -122,8 +122,14 @@ Some HTML files should then be generated in the path you've configured inside yo
 provides a visual representation of tested code areas. Basically, the more green lines, the better. You can find below
 an example of the coverage report.
 
+### Coverage Report Example
 
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_1.png" alt="coverage_1"/>
+**Green Lines**: Code that has been tested.
 
+![Coverage Report Part 1](https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_1.png)
 
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_2.png" alt="coverage_1" />
+*Figure 1: Coverage Report of one specific file.*
+
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_2.png" alt="coverage_2" width="400"/>
+
+*Figure 2: List of fuzzed Rust files from the ink! smart-contract.*
