@@ -179,14 +179,32 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h3 id="debugging-phink"><a class="header" href="#debugging-phink">Debugging Phink</a></h3>
-<p>Use the harness coverage feature for debugging. You should only use this if you want to have a coverage of Phink itself,
-for instance if you are planning to contribute to Phink, or to debug it.</p>
+                        <h1 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h1>
+<h2 id="debugging-phink"><a class="header" href="#debugging-phink">Debugging Phink</a></h2>
+<h3 id="afl-logs"><a class="header" href="#afl-logs">AFL++ Logs</a></h3>
+<p>If you encounter unexpected behavior, examining the AFL++ logs can provide good insights. In most cases, developers
+will find more information by executing:</p>
+<pre><code class="language-sh">tail -f your_output/phink/logs/afl.log
+</code></pre>
+<p>Replace <code>your_output</code> with the directory defined in your <code>phink.toml</code> under <code>fuzz_output</code>. This will give you a
+real-time view of the log output, helping you identify any issues during the fuzzing process.</p>
+<h3 id="executing-a-single-seed"><a class="header" href="#executing-a-single-seed">Executing a Single Seed</a></h3>
+<p>To debug specific cases where a contract crashes, you can execute a single seed. This method allows you to instantiate a
+contract and identify crash points more easily:</p>
+<pre><code class="language-sh">phink execute output/phink/corpus/selector_1.bin
+</code></pre>
+<p>This command runs a single fuzzing input, making it easier to pinpoint problems.</p>
+<h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness Coverage</a></h3>
+<p>Use the harness coverage feature if you need insights into Phink’s functionality, particularly if you plan to contribute
+or debug the tool itself:</p>
 <pre><code class="language-sh">phink harness-cover
 </code></pre>
+<p>Be aware that this is primarily for those who want to dive deeper into the coverage of Phink and is not generally
+necessary for regular debugging.</p>
 <h3 id="support-channels"><a class="header" href="#support-channels">Support Channels</a></h3>
-<p>You can find us on <a href="https://discord.gg/4MakDGwFEK">Discord</a>. Alternatively, you can message me
-on <a href="kevin%5B%F0%9F%8E%A9%5Dsrlabs.de">kevin[🎩]srlabs.de</a>.</p>
+<p>For additional help, you can join us on <a href="https://discord.gg/4MakDGwFEK">Discord</a> where our community and team are
+active. Alternatively, feel free to message me at <a href="mailto:kevin%5B%F0%9F%8E%A9%5Dsrlabs.de">kevin[🎩]srlabs.de</a>.</p>
+<p>Happy fuzzing!</p>
 
                     </main>
 

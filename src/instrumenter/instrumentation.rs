@@ -133,9 +133,9 @@ impl Instrumenter {
             );
         } else {
             bail!(
-                "{stderr} - {stdout} It seems that your instrumented smart contract did not compile properly. \
+                "{stderr} - {stdout}\n\n\nIt seems that your instrumented smart contract did not compile properly. \
         Please go to `{p_display}`, edit the source code, and run `cargo contract build --features phink` again. It might be because your contract has a bug inside, or because you haven't created any invariants for instance. \
-        Also, make sur that your Cargo.toml contains the `phink` feature. Sometimes it's because you need to recompile the contract, as you've changed the toolchain.\
+        \nAlso, make sur that your `Cargo.toml` contains the `phink` feature. It can also be that you need to recompile the contract, as you've changed the toolchain.\
         \nMore informations in the stacktrace above.",
             )
         }
@@ -152,7 +152,7 @@ impl Instrumenter {
     /// Create a temporary `clippy.toml` file and return its full path.
     ///
     /// # Returns
-    /// A `Result` containing the canonicalized path of the temporary file as a `String`.
+    /// `Result<String>` containing the canonicalized path of the temporary file as a `String`.
     fn create_temp_clippy() -> anyhow::Result<String> {
         let temp_dir = tempfile::TempDir::new().context("Failed to create temporary directory")?;
         let clippy_toml_path = temp_dir.path().join("clippy.toml");

@@ -131,7 +131,10 @@ mod tests {
                     );
 
                     let selector = phink_output.join("selectors.dict");
-                    ensure!(selector.exists(), "selectors.dict doesn't exist");
+                    ensure!(
+                        selector.exists(),
+                        "selectors.dict doesn't exist ({selector:?})"
+                    );
 
                     ensure!(
                         fs::read_to_string(selector).unwrap().lines().count() > 1,
