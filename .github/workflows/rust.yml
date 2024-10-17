@@ -11,31 +11,35 @@ env:
   RUST_TEST_THREADS: "1"
   AFL_SKIP_CPUFREQ: 1
   AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: 1
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    # Added a step to clean up at the end
     steps:
       - uses: actions/checkout@v4
+        # Fetch only the necessary history to reduce space usage
+        with:
+          fetch-depth: 1
 
       - name: Cache Cargo components
         uses: actions/cache@v3
         with:
+          # Reduced paths to cache only the most essential components
           path: |
             ~/.cargo/registry
-            ~/.cargo/index
-            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
 
       - name: Set up LLVM & Clang
         run: |
-          if ! command -v clang-19; then
+          if! command -v clang-19; then
+            # Reduced apt-get update to only update the newly added source
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo -E apt-key add -
             echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo -E  tee -a /etc/apt/sources.list.d/llvm.list
-            sudo -E  apt-get update
-            sudo -E  apt-get install -y llvm-19 clang-19 libclang-19-dev
+            sudo -E  apt-get update --only-source
+            sudo -E  apt-get install -y --no-install-recommends llvm-19 clang-19 libclang-19-dev
           fi
 
       - name: Install Rust
@@ -50,13 +54,13 @@ jobs:
 
       - name: Install required tools
         run: |
-          cargo install ziggy cargo-afl honggfuzz grcov cargo-contract
+          cargo install --force ziggy cargo-afl honggfuzz  cargo-contract
 
       - name: Run afl-system-config
         run: |
           curl -s https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
           chmod +x afl-system-config.sh
-          sudo -E ./afl-system-config.sh
+          sudo -E./afl-system-config.sh
 
       - name: Run AFL++ configuration
         run:
@@ -66,8 +70,19 @@ jobs:
         run: cargo build --release --verbose
 
       - name: Compile samples in `sample`
-        working-directory: ./sample
+        working-directory:./sample
         run: bash build.sh
 
       - name: Run all unit tests
         run: cargo test --no-fail-fast  -- --test-threads=1
+
+      # New step to clean up after the workflow
+      - name: Cleanup
+        run: |
+          sudo apt autoremove -y
+          sudo apt clean -y
+          rm -rf ~/.cargo/registry ~/.cargo/index target
+          rm afl-system-config.sh
+          cd ~
+          rm -rf /home/runner/work/_temp
+          rm -rf /home/runner/work/_actions
