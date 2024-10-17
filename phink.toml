@@ -20,6 +20,7 @@ fuzz_origin = false  # Attempt to call each message as a different user (affects
 verbose = true       # Print detailed debug messages
 show_ui = true       # Display advanced UI
 use_honggfuzz = false # Use Honggfuzz (set as false)
+catch_trapped_contract = false # Not setting trapped contract as a bug, only detecting invariant-based bugs
 
 # Gas Limits
 [default_gas_limit]

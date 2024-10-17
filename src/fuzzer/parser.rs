@@ -80,7 +80,7 @@ impl Message {
             "Payload:\t0x{}\n\
              Origin:\t{:?} (identifier: {})\n\
              {}\
-             Message:\t{}\n\n",
+             Message:\t{:#?}\n\n",
             hex::encode(&self.payload),
             AccountId32::new([self.origin.into(); 32]),
             self.origin.0,

@@ -58,7 +58,7 @@ impl InputCoverage {
         }
     }
 
-    pub fn save(&self, output: PathBuf) -> std::io::Result<()> {
+    pub fn save(&self, output: &PathBuf) -> std::io::Result<()> {
         let mut trace_strings: Vec<String> = self
             .messages_coverage()
             .iter()
@@ -70,7 +70,7 @@ impl InputCoverage {
         let mut file = OpenOptions::new()
             .append(true)
             .create(true)
-            .open(PhinkFiles::new(output).path(CoverageTracePath))?;
+            .open(PhinkFiles::new_by_ref(output).path(CoverageTracePath))?;
 
         // Write each unique ID to the file, one per line
         writeln!(file, "{}", trace_strings.join("\n"))?;
@@ -163,7 +163,7 @@ mod tests {
             .make_all()
             .path(CoverageTracePath);
 
-        coverage.save(output).unwrap();
+        coverage.save(&output).unwrap();
 
         let content = std::fs::read_to_string(cov_trace_path).unwrap();
         let lines: Vec<String> = content.lines().map(String::from).collect();

@@ -74,6 +74,10 @@ pub struct Configuration {
     pub fuzz_output: Option<PathBuf>,
     /// Use the Phink UI. If set to `false`, the Ziggy native UI will be used.
     pub show_ui: bool,
+    /// If `true`, the fuzzer will detect trapped contracts (`ContractTrapped`) as a bug. Set this
+    /// to false if you just want to catch invariants. Set this to true if you want any kind of
+    /// bugs.
+    pub catch_trapped_contract: bool,
 }
 
 impl Default for Configuration {
@@ -93,6 +97,7 @@ impl Default for Configuration {
             instrumented_contract_path: Some(InstrumentedPath::default()),
             fuzz_output: Some(PathBuf::from("output")),
             show_ui: true,
+            catch_trapped_contract: false,
         }
     }
 }
@@ -123,7 +128,11 @@ impl PhinkFiles {
     pub fn new(output: PathBuf) -> Self {
         Self { output }
     }
-
+    pub fn new_by_ref(output: &PathBuf) -> Self {
+        Self {
+            output: output.to_owned(),
+        }
+    }
     pub fn output(self) -> PathBuf {
         self.output
     }
@@ -227,6 +236,7 @@ mod tests {
             max_messages_per_exec: Some(10),
             report_path: Some(PathBuf::from("/tmp/report")),
             fuzz_origin: true,
+            catch_trapped_contract: false,
             default_gas_limit: Some(Weight::from_parts(100_000_000_000, 0)),
             storage_deposit_limit: Some("1000000000".into()),
             instantiate_initial_value: Some("500".into()),

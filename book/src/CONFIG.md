@@ -27,6 +27,7 @@ fuzz_origin = false  # Attempt to call each message as a different user (affects
 verbose = true       # Print detailed debug messages
 show_ui = true       # Display advanced UI
 use_honggfuzz = false # Use Honggfuzz (set as false)
+catch_trapped_contract = false # Not setting trapped contract as a bug, only detecting invariant-based bugs
 
 # Gas Limits
 [default_gas_limit]
@@ -71,6 +72,13 @@ proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
 - **show_ui**: Toggle for displaying the advanced user interface.
 - **use_honggfuzz**: Determines whether to use Honggfuzz; remains `false` by
   default. (**let it false! not handled currently** )
+- **catch_trapped_contract**: Indicate whether the fuzzer should treat trapped contracts as bugs.
+    - When set to `true`: The fuzzer will identify any contracts that become trapped (`ContractTrapped`) as bugs. This
+      is
+      useful for an examination of potential issues, as it covers all types of bugs, not just ones related to
+      logic or state invariants.
+    - When set to `false`: Focuses only on catching bugs related to invariant violations, ignoring trapped contract
+      scenarios. This is preferable when you are only interested in logical correctness and not in trapping errors.
 
 ## Gas Limits
 

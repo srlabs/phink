@@ -135,7 +135,7 @@ impl EnvironmentBuilder {
     pub fn build_env(self, conf: ZiggyConfig) -> anyhow::Result<()> {
         let phink_file = PhinkFiles::new(conf.clone().fuzz_output());
 
-        let _dict = Dict::new(
+        let dict = Dict::new(
             phink_file.clone(),
             conf.config().max_messages_per_exec.unwrap_or_default(),
         )?;
@@ -153,9 +153,7 @@ impl EnvironmentBuilder {
                 .write_corpus_file(i, selector)
                 .with_context(|| "Couldn't write corpus file")?;
 
-            // todo: not sure if we keep the selectors inside the dict
-            _dict
-                .write_dict_entry(selector)
+            dict.write_dict_entry(selector)
                 .with_context(|| "Couldn't write the dictionnary entries")?;
         }
 

@@ -319,6 +319,7 @@ fuzz_origin = false  # Attempt to call each message as a different user (affects
 verbose = true       # Print detailed debug messages
 show_ui = true       # Display advanced UI
 use_honggfuzz = false # Use Honggfuzz (set as false)
+catch_trapped_contract = false # Not setting trapped contract as a bug, only detecting invariant-based bugs
 
 # Gas Limits
 [default_gas_limit]
@@ -362,6 +363,16 @@ set to <code>false</code>, the fuzzer will fuzz any message with the one input (
 <li><strong>show_ui</strong>: Toggle for displaying the advanced user interface.</li>
 <li><strong>use_honggfuzz</strong>: Determines whether to use Honggfuzz; remains <code>false</code> by
 default. (<strong>let it false! not handled currently</strong> )</li>
+<li><strong>catch_trapped_contract</strong>: Indicate whether the fuzzer should treat trapped contracts as bugs.
+<ul>
+<li>When set to <code>true</code>: The fuzzer will identify any contracts that become trapped (<code>ContractTrapped</code>) as bugs. This
+is
+useful for an examination of potential issues, as it covers all types of bugs, not just ones related to
+logic or state invariants.</li>
+<li>When set to <code>false</code>: Focuses only on catching bugs related to invariant violations, ignoring trapped contract
+scenarios. This is preferable when you are only interested in logical correctness and not in trapping errors.</li>
+</ul>
+</li>
 </ul>
 <h2 id="gas-limits"><a class="header" href="#gas-limits">Gas Limits</a></h2>
 <h3 id="default-gas-limit-configuration"><a class="header" href="#default-gas-limit-configuration">Default Gas Limit Configuration</a></h3>
@@ -423,8 +434,13 @@ contract, so you don’t have to make a copy before.</p>
 fuzzing process:</p>
 <pre><code class="language-sh">phink fuzz
 </code></pre>
-<p>This command runs your fuzzing tests based on the configuration set in your <code>phink.toml</code> file. A user interface should
-appear.</p>
+<p>After executing this command, your fuzzing tests will begin based on the configurations specified in your <code>phink.toml</code>
+file. You should see a user interface appear.</p>
+<p>If you’re utilizing the advanced UI, you’ll receive <em>real-time</em> updates on the fuzzed messages at the bottom of the
+screen. For more detailed log information, you can use the following command:</p>
+<pre><code class="language-sh">watch -c -t -n 0.1 "clear &amp;&amp; cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
+</code></pre>
+<p>This will provide you with clearer logs by continuously updating them every <strong>0.1</strong> seconds.</p>
 <h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
 <h3 id="crashes"><a class="header" href="#crashes">Crashes</a></h3>
 <p>In case of crashes, you should see something like the following.</p>

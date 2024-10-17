@@ -78,42 +78,37 @@ impl CampaignManager {
 
     pub fn check_invariants(
         &self,
-        all_msg_responses: &[FullContractResponse],
+        responses: &[FullContractResponse],
         decoded_msgs: &OneInput,
+        catch_trapped_contract: bool,
     ) {
-        let first = decoded_msgs.messages[0].to_owned();
+        let mut trapped = responses.iter().filter(|response| response.is_trapped());
 
-        // We print the details only when we don't fuzz, so when we run a seed for instance,
-        // otherwise this will pollute the AFL logs
+        // We print the details only when we don't fuzz, so when we run a seed for instance
         #[cfg(not(fuzzing))]
         {
-            all_msg_responses
-                .iter()
-                .filter(|response| response.is_trapped())
-                .for_each(|response| {
-                    self.display_trap(first.clone(), response.clone());
-                });
+            trapped.clone().for_each(|response| {
+                self.display_trap(decoded_msgs, response);
+            });
         }
-        if let Ok(invariant_tested) = self.are_invariants_failing(first.origin) {
-            self.display_invariant(
-                all_msg_responses.to_vec(),
-                decoded_msgs.to_owned(),
-                invariant_tested,
-            );
+        if let Ok(invariant) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
+            // TODO: We only try to run the invariants as the first message's origin here
+            self.display_invariant(responses.to_vec(), decoded_msgs, invariant);
+        }
+
+        // If we are running the seeds or that we want the fuzzer to catch the trapped contract AND
+        // that we have a trapped contract, we panic artificially trigger a bug for AFL
+        if (cfg!(not(fuzzing)) || !catch_trapped_contract) && trapped.next().is_some() {
+            panic!("Contract Trapped !");
         }
     }
 
-    pub fn display_trap(&self, message: Message, response: FullContractResponse) {
+    pub fn display_trap(&self, message: &OneInput, response: &FullContractResponse) {
         println!("\n🤯 A trapped contract got caught! Let's dive into it");
-        println!("\n🐛 IMPORTANT STACKTRACE : {}\n", response);
+        println!("\n🐛 IMPORTANT STACKTRACE : {response}\n");
         println!("🎉 Find below the trace that caused that trapped contract");
 
-        let input = OneInput {
-            messages: vec![message.clone()],
-            fuzz_option: self.configuration.should_fuzz_origin(),
-            raw_binary: vec![],
-        };
-        input.pretty_print(vec![response.clone()]);
+        message.pretty_print(vec![response.clone()]);
 
         // Artificially trigger a bug for AFL
         panic!("\n🫡  Job is done! Please, don't mind the backtrace below/above.\n\n");
@@ -122,7 +117,7 @@ impl CampaignManager {
     pub fn display_invariant(
         &self,
         responses: Vec<FullContractResponse>,
-        decoded_msg: OneInput,
+        decoded_msg: &OneInput,
         mut invariant_tested: Selector,
     ) {
         let hex = self

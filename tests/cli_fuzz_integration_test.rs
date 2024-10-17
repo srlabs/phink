@@ -44,7 +44,6 @@ mod tests {
             cores: Some(15),
             show_ui: false,
             verbose: false,
-
             ..Default::default()
         };
 

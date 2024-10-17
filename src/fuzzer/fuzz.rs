@@ -168,8 +168,6 @@ impl Fuzzer {
         let mut coverage = InputCoverage::new();
         let all_msg_responses = self.execute_messages(&parsed_input, &mut chain, &mut coverage);
 
-        chain.execute_with(|| manager.check_invariants(&all_msg_responses, &parsed_input));
-
         let cov = coverage.messages_coverage();
 
         // If we are not in fuzzing mode, we save the coverage
@@ -177,11 +175,11 @@ impl Fuzzer {
         // of performance) Simply comment out the following line :)
         #[cfg(not(fuzzing))]
         {
-            parsed_input.pretty_print(all_msg_responses);
+            parsed_input.pretty_print(all_msg_responses.clone());
 
             println!("[🚧UPDATE] Adding to the coverage file...");
             coverage
-                .save(manager.config().fuzz_output.unwrap_or_default())
+                .save(&manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
             println!("[🚧DEBUG TRACE] Caught coverage identifiers {cov:?}\n",);
@@ -191,13 +189,22 @@ impl Fuzzer {
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config().show_ui {
-            let seeder = SeedWriter::new(parsed_input, coverage.to_owned());
+            let seeder = SeedWriter::new(parsed_input.to_owned(), coverage.to_owned());
             if SeedWriter::should_save() {
                 seeder
                     .save(self.clone().ziggy_config.fuzz_output())
                     .unwrap();
             }
         }
+
+        // We check the invariants at the end, as we might panic
+        chain.execute_with(|| {
+            manager.check_invariants(
+                &all_msg_responses,
+                &parsed_input,
+                manager.config().catch_trapped_contract,
+            )
+        });
     }
 }
 
@@ -291,22 +298,6 @@ mod tests {
         let dict: String = fs::read_to_string(dict_path.clone())?;
         assert!(dict.contains("********"));
         assert!(dict.contains("# Dictionary file for selector"));
-        // todo: not sure if we keep the dict
-        // assert!(dict.contains("9bae9d5e"));
-        // assert!(dict.contains("229b553f"));
-        // assert!(dict.contains("b8a4d3d9"));
-        // assert!(dict.contains("84a15da1"));
-        // assert!(dict.contains("d259f7ba"));
-        // assert!(dict.contains("07fcd0b1"));
-        //   1   │ # Dictionary file for selectors
-        //    2   │ # Lines starting with '#' and empty lines are ignored.
-        //    3   │ delimiter="********"
-        //    4   │ "9bae9d5e"
-        //    5   │ "229b553f"
-        //    6   │ "b8a4d3d9"
-        //    7   │ "84a15da1"
-        //    8   │ "d259f7ba"
-        //    9   │ "07fcd0b1"
 
         Ok(())
     }

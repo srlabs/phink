@@ -65,8 +65,17 @@ fuzzing process:
 phink fuzz
 ```
 
-This command runs your fuzzing tests based on the configuration set in your `phink.toml` file. A user interface should
-appear.
+After executing this command, your fuzzing tests will begin based on the configurations specified in your `phink.toml`
+file. You should see a user interface appear.
+
+If you’re utilizing the advanced UI, you'll receive _real-time_ updates on the fuzzed messages at the bottom of the
+screen. For more detailed log information, you can use the following command:
+
+```sh
+watch -c -t -n 0.1 "clear && cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
+```
+
+This will provide you with clearer logs by continuously updating them every **0.1** seconds.
 
 ## Analyzing Results
 
