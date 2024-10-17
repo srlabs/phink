@@ -13,7 +13,7 @@ vulnerabilities and ensure contract reliability before deployment.
 
 ### Dashboard Overview
 
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/dashboard.png" alt="phink" width="250"/>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/dashboard.png" alt="dashboard" />
 
 ### Key Features
 
