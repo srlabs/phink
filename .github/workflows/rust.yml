@@ -70,7 +70,7 @@ jobs:
         run: cargo build --release --verbose
 
       - name: Compile samples in `sample`
-        working-directory:./sample
+        working-directory: ./sample
         run: bash build.sh
 
       - name: Run all unit tests
