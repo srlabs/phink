@@ -10,6 +10,7 @@ version = "0.1.3"
 license = "WTFPL"
 edition = "2021"
 categories = ["cryptography::cryptocurrencies", "command-line-utilities", "development-tools::testing"]
+exclude = ["tests/fixtures/corpus/**"]
 
 [profile.dev]
 panic = "abort"
