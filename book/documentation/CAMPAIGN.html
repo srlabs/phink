@@ -255,11 +255,17 @@ screen. For more detailed log information, you can use the following command:</p
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
 <h3 id="coverage-this-feature-is-in-alpha-and-unstable"><a class="header" href="#coverage-this-feature-is-in-alpha-and-unstable">Coverage (<strong>this feature is in alpha and unstable</strong>)</a></h3>
 <h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
-<p>Generate coverage reports to analyze which parts of the contract were tested:</p>
+<p>First, you need to create a <code>traces.cov</code> file. For this, execute the command below.</p>
+<pre><code class="language-sh">phink run  
+</code></pre>
+<p>Once done, generate coverage reports to analyze which parts of the contract were tested:</p>
 <pre><code class="language-sh">phink coverage my_contract/
 </code></pre>
 <p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>. The coverage report
-provides a visual representation of tested code areas. Basically, the more green lines, the better.</p>
+provides a visual representation of tested code areas. Basically, the more green lines, the better. You can find below
+an example of the coverage report.</p>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_1.png" alt="coverage_1"/>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_2.png" alt="coverage_1" />
 
                     </main>
 

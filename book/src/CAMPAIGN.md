@@ -106,11 +106,24 @@ By running this, you should have an output similar to the screenshot below:
 
 #### Generating a coverage report
 
-Generate coverage reports to analyze which parts of the contract were tested:
+First, you need to create a `traces.cov` file. For this, execute the command below.
+
+```sh
+phink run  
+```
+
+Once done, generate coverage reports to analyze which parts of the contract were tested:
 
 ```sh
 phink coverage my_contract/
 ```
 
 Some HTML files should then be generated in the path you've configured inside your `phink.toml`. The coverage report
-provides a visual representation of tested code areas. Basically, the more green lines, the better. 
+provides a visual representation of tested code areas. Basically, the more green lines, the better. You can find below
+an example of the coverage report.
+
+
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_1.png" alt="coverage_1"/>
+
+
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_2.png" alt="coverage_1" />
