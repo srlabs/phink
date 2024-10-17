@@ -82,36 +82,34 @@ impl CampaignManager {
         decoded_msgs: &OneInput,
         catch_trapped_contract: bool,
     ) {
-        let mut trapped = responses.iter().filter(|response| response.is_trapped());
-
-        // We print the details only when we don't fuzz, so when we run a seed for instance
-        #[cfg(not(fuzzing))]
-        {
-            trapped.clone().for_each(|response| {
-                self.display_trap(decoded_msgs, response);
-            });
-        }
-        if let Ok(invariant_tested) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
-            // TODO: We only try to run the invariants as the first message's origin here
-            self.display_invariant(responses.to_vec(), decoded_msgs, invariant_tested);
-        }
+        let trapped = responses.iter().filter(|response| response.is_trapped());
 
         // If we are running the seeds or that we want the fuzzer to catch the trapped contract AND
         // that we have a trapped contract, we panic artificially trigger a bug for AFL
-        if catch_trapped_contract && trapped.next().is_some() {
-            panic!("Contract Trapped !");
+        if catch_trapped_contract && trapped.clone().next().is_some() {
+            trapped.for_each(|response| {
+                self.display_trap(decoded_msgs, response);
+            });
+            // Artificially trigger a bug for AFL
+            panic!("\n🫡  Job is done! Please, don't mind the backtrace below/above.\n\n");
+        }
+
+        // TODO: We only try to run the invariants as the first message's origin here
+        if let Ok(invariant) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
+            self.display_invariant(responses.to_vec(), decoded_msgs, invariant);
+            // Artificially trigger a bug for AFL
+            panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");
         }
     }
 
     pub fn display_trap(&self, message: &OneInput, response: &FullContractResponse) {
-        println!("\n🤯 A trapped contract got caught! Let's dive into it");
-        println!("\n🐛 IMPORTANT STACKTRACE : {response}\n");
-        println!("🎉 Find below the trace that caused that trapped contract");
-
-        message.pretty_print(vec![response.clone()]);
-
-        // Artificially trigger a bug for AFL
-        panic!("\n🫡  Job is done! Please, don't mind the backtrace below/above.\n\n");
+        #[cfg(not(fuzzing))]
+        {
+            println!("\n🤯 A trapped contract got caught! Let's dive into it");
+            println!("\n🐛 IMPORTANT STACKTRACE : {response}\n");
+            println!("🎉 Find below the trace that caused that trapped contract");
+            message.pretty_print(vec![response.clone()]);
+        }
     }
 
     pub fn display_invariant(
@@ -120,28 +118,26 @@ impl CampaignManager {
         decoded_msg: &OneInput,
         mut invariant_tested: Selector,
     ) {
-        let hex = self
-            .transcoder()
-            .lock()
-            .unwrap()
-            .decode_contract_message(&mut &*invariant_tested.as_mut())
-            .unwrap();
-
         #[cfg(not(fuzzing))]
         {
+            let hex = self
+                .transcoder()
+                .lock()
+                .unwrap()
+                .decode_contract_message(&mut &*invariant_tested.as_mut())
+                .unwrap();
+
             println!("\n🤯 An invariant got caught! Let's dive into it");
             println!("\n🫵  This was caused by `{hex}`\n");
             println!("🎉 Find below the trace that caused that invariant");
             decoded_msg.pretty_print(responses);
         }
-        // Artificially trigger a bug for AFL
-        panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");
     }
 
     /// This function aims to call every invariants via `invariant_selectors`.
     pub fn are_invariants_failing(&self, origin: Origin) -> anyhow::Result<Selector> {
         for invariant in &self.database.to_owned().invariants()? {
-            let invariant_call: FullContractResponse = self.setup.clone().call(
+            let invariant_call: FullContractResponse = self.to_owned().setup.call(
                 invariant.as_ref(),
                 origin.into(),
                 0,
