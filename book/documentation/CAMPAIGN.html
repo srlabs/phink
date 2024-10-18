@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html" class="active"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">4.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">5.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">6.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TECH.html"><strong aria-hidden="true">7.</strong> How does Phink work</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">8.</strong> Troubleshoting</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html" class="active"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="INVARIANTS.html"><strong aria-hidden="true">4.</strong> Invariants</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">6.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">7.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TECH.html"><strong aria-hidden="true">8.</strong> How does Phink work</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">9.</strong> Troubleshoting</a></li><li class="chapter-item expanded "><a href="FAQ.html"><strong aria-hidden="true">10.</strong> FAQ</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -195,18 +195,6 @@ it under the feature of <code>phink</code>. Use <code>assert!</code> or <code>pa
 </span>#[cfg(feature = "phink")]
 #[ink(impl)]
 impl DomainNameService {
-    // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter 
-    #[ink(message)]
-    #[cfg(feature = "phink")]
-    pub fn phink_assert_hash42_cant_be_registered(&amp;self) {
-        for i in 0..self.domains.len() {
-            if let Some(domain) = self.domains.get(i) {
-                // Invariant triggered! We caught an invalid domain in the storage...
-                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-            }
-        }
-    }
-
     // This invariant ensures that nobody registed the forbidden number
     #[ink(message)]
     #[cfg(feature = "phink")]
@@ -216,6 +204,7 @@ impl DomainNameService {
     }
 }
 <span class="boring">}</span></code></pre></pre>
+<p>You can find more informations in the page dedicated to <a href="INVARIANTS.html">invariants</a>.</p>
 <h2 id="running-phink"><a class="header" href="#running-phink">Running Phink</a></h2>
 <h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the Contract</a></h3>
 <p>Run the following command to instrument your ink! smart contract, enabling it for fuzzing:</p>
@@ -279,7 +268,7 @@ an example of the coverage report.</p>
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="RUNTIME.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="INVARIANTS.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -293,7 +282,7 @@ an example of the coverage report.</p>
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="RUNTIME.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="INVARIANTS.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

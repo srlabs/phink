@@ -7,6 +7,7 @@
 - [Installation](./START.md)
 - [Configuration](./CONFIG.md)
 - [Starting a campaign](./CAMPAIGN.md)
+- [Invariants](./INVARIANTS.md)
 - [Plug-in your runtime](./RUNTIME.md)
 - [Seeds](./SEEDS.md)
 
@@ -15,3 +16,4 @@
 - [Concept and terminology](./CONCEPT.md)
 - [How does Phink work](./TECH.md)
 - [Troubleshoting](./TROUBLESHOTING.md)
+- [FAQ](./FAQ.md)

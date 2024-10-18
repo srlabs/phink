@@ -21,18 +21,6 @@ it under the feature of `phink`. Use `assert!` or `panic!` for your properties.
 #[cfg(feature = "phink")]
 #[ink(impl)]
 impl DomainNameService {
-    // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should regsiter 
-    #[ink(message)]
-    #[cfg(feature = "phink")]
-    pub fn phink_assert_hash42_cant_be_registered(&self) {
-        for i in 0..self.domains.len() {
-            if let Some(domain) = self.domains.get(i) {
-                // Invariant triggered! We caught an invalid domain in the storage...
-                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
-            }
-        }
-    }
-
     // This invariant ensures that nobody registed the forbidden number
     #[ink(message)]
     #[cfg(feature = "phink")]
@@ -42,6 +30,8 @@ impl DomainNameService {
     }
 }
 ```
+
+You can find more informations in the page dedicated to [invariants](INVARIANTS.md).
 
 ## Running Phink
 
