@@ -38,7 +38,7 @@ RUN git clone https://github.com/srlabs/phink .
 
 RUN curl -s https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
 RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
-RUN sudo -E cargo afl config --build --plugins --verbose --force
+RUN cargo afl config --build --plugins --verbose --force
 RUN #cargo update && cargo build --release
 RUN #cp target/release/phink /usr/local/bin/phink
 

@@ -43,7 +43,7 @@ If you prefer to install Phink manually, follow these steps:
 git clone https://github.com/kevin-valerio/phink
 cd phink/
 cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
-sudo -E cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
+cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
 sudo cargo-afl afl system-config
 cargo build --release
 ./target/release/phink --help

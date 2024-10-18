@@ -34,7 +34,7 @@ RUN rustup toolchain install nightly \
 WORKDIR /phink
 
 RUN git clone https://github.com/srlabs/phink .
-RUN sudo -E cargo afl config --build --plugins --verbose --force
+RUN cargo afl config --build --plugins --verbose --force
 RUN cargo build --release
 
 RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh

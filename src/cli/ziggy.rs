@@ -496,7 +496,7 @@ mod tests {
         }
         assert!(
             success,
-            "One possibility could be `sudo -E cargo afl config --build`"
+            "One possibility could be `cargo afl config --build --verbose --force`"
         );
         Ok(())
     }

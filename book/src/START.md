@@ -38,7 +38,7 @@ You can install Phink by building it from the source or by using Docker. Choose 
 
 3. **Configure AFL++**
    ```bash
-   sudo -E cargo afl config --build --plugins --verbose --force
+   cargo afl config --build --plugins --verbose --force
    sudo cargo-afl afl system-config
    ```
 
