@@ -33,7 +33,7 @@ jobs:
 
       - name: Check for unused dependencies
         run: |
-          if grep -q "unused crates:" output.log; then
+          if grep -q -e "unused crates:" -e "unused dependencies:" output.log; then
             echo "::error::Unused dependencies found:"
             cat output.log
             exit 1
