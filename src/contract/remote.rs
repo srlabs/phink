@@ -163,25 +163,31 @@ impl ContractSetup {
             chain.execute_with(|| {
                 let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can `Err()` easily, so we use `let _`
 
-                let code_hash = Self::upload(&wasm_bytes, contract_address.clone());
+                if conf.verbose {
+                    println!("📤 Starting upload of WASM bytes by: {contract_address:?}");
+                }
 
-                contract_address = Self::instantiate(&json_specs, code_hash, contract_address.clone(), conf).expect(
+                let code_hash = Self::upload(&wasm_bytes, &contract_address)?;
+
+                contract_address = Self::instantiate(&json_specs, code_hash, &contract_address, conf).expect(
                     "🙅 Can't fetch the contract address because of incorrect instantiation",
                 );
 
                 // We verify if the contract is correctly instantiated
                 if !ContractInfoOf::<Runtime>::contains_key(&contract_address) {
-                    panic!(
+                    bail!(
                         "🚨 Contract Instantiation Failed!
                             This error is likely due to a misconfigured constructor payload in the configuration file.
                             Please ensure the correct payload for the constructor (selector + parameters) is provided, just as you would for a regular deployment. You can use the `constructor_payload` field inside the TOML configuration file for this purpose.
-                            To generate your payload, please use `cargo contract`:
-                            Example:
+                            To generate your payload, please use `cargo contract`, for instance
+                            ```sh
                             ❯ cargo contract encode --message \"new\" --args 1234 1337 \"0x8bb565d32618e40e8b9991c00d05b52a89ddbed0c7d9103be5610ab8a713fc67\" \"0x2a18c7d454ba9cc46f97fff2f048db136d975fb1401e75c09ed03050864bcd19\" \"0xbf0108f5882aee2e97f84f054c1645c1598499e9dfcf179e367e4d41c3130ee8\" -- target/ink/multi_contract_caller.\
-                            Encoded data: 9BAE9D5E...3130EE8"
+                            Encoded data: 9BAE9D5E...3130EE8\
+                            ```"
                     );
                 }
-            });
+                Ok(())
+            })?;
 
             chain.into_storages()
         };
@@ -215,8 +221,7 @@ impl ContractSetup {
         ))
     }
 
-    pub fn upload(wasm_bytes: &[u8], who: AccountId) -> H256 {
-        println!("📤 Starting upload of WASM bytes by: {:?}", who);
+    pub fn upload(wasm_bytes: &[u8], who: &AccountId) -> anyhow::Result<H256> {
         let upload_result = Contracts::bare_upload_code(
             who.clone(),
             wasm_bytes.to_owned(),
@@ -227,10 +232,10 @@ impl ContractSetup {
             Ok(upload_info) => {
                 let hash = upload_info.code_hash;
                 println!("✅ Upload successful. Code hash: {hash}",);
-                hash
+                Ok(hash)
             }
             Err(e) => {
-                panic!("❌ Upload failed for: {who:?} with error: {e:?}");
+                bail!("❌ Upload failed for: {who:?} with error: {e:?}");
             }
         }
     }
@@ -238,7 +243,7 @@ impl ContractSetup {
     pub fn instantiate(
         json_specs: &str,
         code_hash: H256,
-        who: AccountId,
+        who: &AccountId,
         config: &Configuration,
     ) -> anyhow::Result<AccountIdOf<Runtime>> {
         let data: Vec<u8> = if let Some(payload) = &config.constructor_payload {
