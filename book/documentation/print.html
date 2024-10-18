@@ -521,7 +521,7 @@ impl DomainNameService {
 <p>Large Language Models (LLMs) offer a good (<em>lazy, yes…</em>) approach to generate invariants by interpreting the logic and
 identifying properties from the contract code. Here is an example prompt system you could use to generate a base of
 invariants</p>
-<p><strong>Example Prompt:</strong></p>
+<h5 id="system-prompt"><a class="header" href="#system-prompt">System Prompt</a></h5>
 <pre><code class="language-markdown">You are provided with Rust files containing an ink! smart contract. Your task is to generate invariants, which are
 inviolable properties that a fuzzer will check to ensure the contract's quality and correctness. Please adhere to the
 following requirements while writing the invariants:
@@ -555,6 +555,13 @@ impl DomainNameService {
 }
 ` ` `
 </code></pre>
+<h5 id="sources-in-the-prompt"><a class="header" href="#sources-in-the-prompt">Sources in the Prompt</a></h5>
+<p>If your contract is small enough and contains multiple Rust files, you could use the following snippet, to put
+everything inside <code>everything.rs</code>.</p>
+<pre><code class="language-sh">find . -name "*.rs" -not -path "./target/*" -exec cat {} + &gt; everything.rs
+</code></pre>
+<p>Copy paste the content after your <em>system prompt</em>, and examine the LLM invariants. Otherwise, simply copy paste the code
+from your <code>lib.rs</code></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="runtime-integration"><a class="header" href="#runtime-integration">Runtime Integration</a></h1>
 <p>Phink provides developers with the flexibility to customize their fuzzing environment through a simple interface. By
 editing <code>contract/custom/custom.rs</code> and <code>contract/custom/preferences.rs</code>, developers can tailor the runtime storage and

@@ -56,7 +56,7 @@ Large Language Models (LLMs) offer a good (_lazy, yes..._) approach to generate 
 identifying properties from the contract code. Here is an example prompt system you could use to generate a base of
 invariants
 
-**Example Prompt:**
+##### System Prompt
 
 ```markdown
 You are provided with Rust files containing an ink! smart contract. Your task is to generate invariants, which are
@@ -92,3 +92,15 @@ impl DomainNameService {
 }
 ` ` `
 ```
+
+##### Sources in the Prompt
+
+If your contract is small enough and contains multiple Rust files, you could use the following snippet, to put
+everything inside `everything.rs`.
+
+```sh
+find . -name "*.rs" -not -path "./target/*" -exec cat {} + > everything.rs
+``` 
+
+Copy paste the content after your _system prompt_, and examine the LLM invariants. Otherwise, simply copy paste the code
+from your `lib.rs`
