@@ -169,9 +169,8 @@ impl ContractSetup {
 
                 let code_hash = Self::upload(&wasm_bytes, &contract_address)?;
 
-                contract_address = Self::instantiate(&json_specs, code_hash, &contract_address, conf).expect(
-                    "🙅 Can't fetch the contract address because of incorrect instantiation",
-                );
+                contract_address = Self::instantiate(&json_specs, code_hash, &contract_address, conf)
+                    .context("Can't fetch the contract address because of incorrect instantiation")?;
 
                 // We verify if the contract is correctly instantiated
                 if !ContractInfoOf::<Runtime>::contains_key(&contract_address) {
