@@ -1,0 +1,42 @@
+name: Udeps
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check_unused_dependencies:
+    name: Check Unused Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps --locked
+
+      - name: Run cargo-udeps
+        id: udeps
+        run: cargo +nightly udeps 2>&1 | tee output.log
+
+      - name: Check for unused dependencies
+        run: |
+          if grep -q "unused crates:" output.log; then
+            echo "::error::Unused dependencies found:"
+            cat output.log
+            exit 1
+          else
+            echo "No unused dependencies found."
+          fi
