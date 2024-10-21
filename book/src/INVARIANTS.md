@@ -72,7 +72,7 @@ following requirements while writing the invariants:
 4. Each invariant function must contain at least one assertion statement, such as `assert`, `assert_ne`, `panic`, etc.
 5. Be creative and consider corner cases to ensure the thoroughness of the invariants.
 
-   Example Output:
+Output example:
 
 ```rust
 #[cfg(feature = "phink")]
@@ -90,7 +90,7 @@ impl DomainNameService {
         }
     }
 }
-` ` `
+`` `
 ```
 
 ##### Sources in the Prompt

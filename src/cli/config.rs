@@ -84,6 +84,14 @@ pub struct Configuration {
     pub catch_trapped_contract: bool,
 }
 
+impl Configuration {
+    pub fn deployer_address(&self) -> &AccountId32 {
+        self.deployer_address
+            .as_ref()
+            .unwrap_or(&ContractSetup::DEFAULT_DEPLOYER)
+    }
+}
+
 impl Default for Configuration {
     fn default() -> Self {
         Self {

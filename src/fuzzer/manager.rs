@@ -95,10 +95,9 @@ impl CampaignManager {
         }
 
         // TODO: We only try to run the invariants as the first message's origin here
-        if let Ok(invariant) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
-            self.display_invariant(responses.to_vec(), decoded_msgs, invariant);
-            // Artificially trigger a bug for AFL
-            panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n");
+        if let Ok(invariant_tested) = self.are_invariants_failing(decoded_msgs.messages[0].origin) {
+            self.display_invariant(responses.to_vec(), decoded_msgs, invariant_tested);
+            panic!("\n🫡   Job is done! Please, don't mind the backtrace below/above.\n\n"); // Artificially trigger a bug for AFL
         }
     }
 
@@ -112,6 +111,7 @@ impl CampaignManager {
         }
     }
 
+    #[allow(unused_mut)]
     pub fn display_invariant(
         &self,
         responses: Vec<FullContractResponse>,

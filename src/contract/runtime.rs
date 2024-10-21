@@ -42,6 +42,7 @@ use sp_runtime::{
     Perbill,
     Perquintill,
 };
+use traits::Nothing;
 
 pub type BlockNumber = u32;
 
@@ -161,51 +162,40 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 impl pallet_contracts::Config for Runtime {
-    /// This must be `true` in order to get proper coverage feedback
-    /// As a developper, feel free to change any `type` EXCEPT
-    /// `UnsafeUnstableInterface`
-    type UnsafeUnstableInterface = ConstBool<true>;
     type Time = Timestamp;
     type Randomness = Randomness;
     type Currency = Balances;
-    type MaxTransientStorageSize = ConstU32<{ 1024 * 1024 }>;
-
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
-    /// The safest default is to allow no calls at all.
-    ///
-    /// Runtimes should whitelist dispatchables that are allowed to be called
-    /// from contracts and make sure they are stable. Dispatchables exposed
-    /// to contracts are not allowed to change because that would break
-    /// already deployed contracts. The `Call` structure itself is not
-    /// allowed to change the indices of existing pallets, too.
-    type CallFilter = frame_support::traits::Nothing;
-    type WeightPrice = pallet_transaction_payment::Pallet<Self>;
+
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type CallFilter = Nothing;
+
     type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-    // type ChainExtension = LocalChainExtensions<Self, UnifiedAccounts, Xvm>;
     type ChainExtension = ();
     type Schedule = Schedule;
     type CallStack = [pallet_contracts::Frame<Self>; 5];
     type DepositPerByte = DepositPerByte;
+    type WeightPrice = pallet_transaction_payment::Pallet<Self>;
     type DefaultDepositLimit = DefaultDepositLimit;
     type DepositPerItem = DepositPerItem;
     type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
     type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
     type MaxCodeLen = ConstU32<{ u32::MAX }>; // ConstU32<133641>;
     type MaxStorageKeyLen = ConstU32<128>;
+    type MaxTransientStorageSize = ConstU32<{ 1024 * 1024 }>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
+    type UnsafeUnstableInterface = ConstBool<true>;
+    /// `UnsafeUnstableInterface` must **always** be `true` in order to get proper coverage feedback
     type MaxDebugBufferLen = ConstU32<{ u32::MAX }>;
     type UploadOrigin = EnsureSigned<Self::AccountId>;
     type InstantiateOrigin = EnsureSigned<Self::AccountId>;
-    type RuntimeHoldReason = RuntimeHoldReason;
     type Migrations = ();
     type Debug = ();
     type Environment = ();
-    // pallet_contracts::Environment<Self>
     type ApiVersion = ();
     type Xcm = ();
 }
-
 construct_runtime!(
     pub enum Runtime {
         System: frame_system,

@@ -143,11 +143,7 @@ impl ContractSetup {
             .context(format!("Couldn't read WASM from{:?}", finder.wasm_path))?;
 
         let conf = config.config();
-        let mut contract_address: AccountIdOf<Runtime> = conf
-            .deployer_address
-            .clone()
-            .unwrap_or(ContractSetup::DEFAULT_DEPLOYER);
-
+        let contract_address: &AccountIdOf<Runtime> = conf.deployer_address();
         if conf.verbose {
             println!("🛠️Initializing contract address from the origin: {contract_address:?}");
         }
@@ -156,24 +152,24 @@ impl ContractSetup {
         let json_specs =
             fs::read_to_string(&path_to_specs).context("Couldn't read JSON from {specs:?}")?;
 
-        let genesis: Storage = {
+        let genesis: (Storage, AccountIdOf<Runtime>) = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
 
             let mut chain = BasicExternalities::new(storage.clone());
-            chain.execute_with(|| {
+            let address = chain.execute_with(|| {
                 let _ = <Preferences as DevelopperPreferences>::on_contract_initialize(); //This is optional and can `Err()` easily, so we use `let _`
 
                 if conf.verbose {
                     println!("📤 Starting upload of WASM bytes by: {contract_address:?}");
                 }
 
-                let code_hash = Self::upload(&wasm_bytes, &contract_address)?;
+                let code_hash = Self::upload(&wasm_bytes, contract_address)?;
 
-                contract_address = Self::instantiate(&json_specs, code_hash, &contract_address, conf)
+                let  new_contract_address: AccountIdOf<Runtime> =   Self::instantiate(&json_specs, code_hash, contract_address, conf)
                     .context("Can't fetch the contract address because of incorrect instantiation")?;
 
                 // We verify if the contract is correctly instantiated
-                if !ContractInfoOf::<Runtime>::contains_key(&contract_address) {
+                if !ContractInfoOf::<Runtime>::contains_key(&new_contract_address) {
                     bail!(
                         "🚨 Contract Instantiation Failed!
                             This error is likely due to a misconfigured constructor payload in the configuration file.
@@ -185,15 +181,15 @@ impl ContractSetup {
                             ```"
                     );
                 }
-                Ok(())
+                Ok(new_contract_address)
             })?;
 
-            chain.into_storages()
+            (chain.into_storages(), address)
         };
 
         Ok(Self {
-            genesis,
-            contract_address,
+            genesis: genesis.0,
+            contract_address: genesis.1,
             json_specs,
             path_to_specs,
         })
