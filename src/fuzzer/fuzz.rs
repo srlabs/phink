@@ -256,7 +256,7 @@ mod tests {
     #[test]
     fn test_database_and_envbuilder() -> anyhow::Result<()> {
         let config = create_test_config();
-        let contract_bridge = Fuzzer::new(config.clone())?.setup;
+        let contract_bridge = Fuzzer::new(Ok(config.clone()))?.setup;
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs).unwrap();
 

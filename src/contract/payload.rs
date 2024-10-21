@@ -392,9 +392,9 @@ mod test {
         };
 
         let ziggy_config: ZiggyConfig =
-            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
+            ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy")).unwrap();
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
@@ -436,7 +436,7 @@ mod test {
         let ziggy_config: ZiggyConfig =
             ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
@@ -486,7 +486,7 @@ mod test {
         let ziggy_config: ZiggyConfig =
             ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dummy"))?;
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
@@ -540,7 +540,7 @@ mod test {
         let ziggy_config: ZiggyConfig =
             ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/transfer"))?;
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
@@ -590,7 +590,7 @@ mod test {
         let ziggy_config: ZiggyConfig =
             ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dns"))?;
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
@@ -639,7 +639,7 @@ mod test {
         let ziggy_config: ZiggyConfig =
             ZiggyConfig::new_with_contract(configuration, PathBuf::from("sample/dns"))?;
 
-        let manager = Fuzzer::new(ziggy_config)?
+        let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
