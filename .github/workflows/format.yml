@@ -1,4 +1,4 @@
-name: Udeps
+name: Linter Clippy
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   check_unused_dependencies:
-    name: Check Unused Dependencies
+    name: Run clippy and lint everything
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -26,4 +26,4 @@ jobs:
 
       - name: Run clippy
         working-directory: scripts
-        run: bash scripts/clippy_fix_fmt.sh --no-clean
+        run: bash clippy_fix_fmt.sh --no-clean
