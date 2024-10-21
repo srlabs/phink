@@ -39,7 +39,6 @@ std = [
     "parity-scale-codec/std",
     "scale-info/std",
 ]
-skip-integrity-tests = []
 
 
 [dev-dependencies]

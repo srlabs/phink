@@ -13,10 +13,11 @@
 
 </div>
 </br>
-
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
+
+<img src="assets/dashboard.gif" alt="Dashboard GIF" width="750"/>
 
 For documentation, visit
 our [**documentation site here**](https://srlabs.github.io/phink/). If you have any question, feedback,
@@ -30,7 +31,17 @@ features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
 ### Building from source
 
-From Cargo via Git
+#### Requirements
+
+##### Install the requirements, configure AFL++ plugins and adapt the system configs
+
+```bash
+cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
+cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
+sudo cargo-afl afl system-config
+```
+
+##### Install Phink
 
 ```bash
 cargo install --git https://github.com/srlabs/phink
@@ -41,20 +52,14 @@ If you prefer to install Phink manually, follow these steps:
 
 ```bash
 git clone https://github.com/kevin-valerio/phink
-cd phink/
-cargo install --force ziggy cargo-afl honggfuzz grcov cargo-contract --locked 
-cargo afl config --build --plugins --verbose --force # don't use `--plugins` if you're on macOS
-sudo cargo-afl afl system-config
-cargo build --release
+cd phink/ && cargo build --release
 ./target/release/phink --help
 ```
 
-### Using Docker
+##### Install Phink via Docker
 
 Alternatively, you can use Docker to set up and run Phink without needing to manually install dependencies. Detailed
-instructions are available in [README.Docker.md](README.Docker.md).
-
-To build the Docker image:
+instructions are available in [README.Docker.md](README.Docker.md). To build the Docker image:
 
 ```bash
 docker build -t phink .
@@ -62,7 +67,14 @@ docker build -t phink .
 
 ## Usage
 
-### Docker Usage
+### Via normal installation
+
+```bash
+phink instrument path/to/ink_contract
+phink fuzz  
+```  
+
+### If installed via Docker
 
 To use Phink via Docker, you can run:
 
@@ -70,20 +82,13 @@ To use Phink via Docker, you can run:
 docker run --rm phink
 ```
 
-For instrumenting a specific contract:
+For instrumenting a contract:
 
 ```bash
 docker run --rm phink instrument path/to/ink_contract
 ```
 
 _Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on using Phink with Docker._
-
-### Manual Usage
-
-```bash
-phink instrument path/to/ink_contract
-phink fuzz  
-```  
 
 ## Example
 
