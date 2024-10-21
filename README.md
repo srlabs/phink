@@ -18,8 +18,8 @@
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 
-For comprehensive documentation, visit
-our [**official documentation site**](https://srlabs.github.io/phink/). If you have any question, feedback,
+For documentation, visit
+our [**documentation site here**](https://srlabs.github.io/phink/). If you have any question, feedback,
 features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
 
@@ -96,7 +96,6 @@ contract.
 
 ```toml
 [features]
-...
 phink = []
 ```
 
@@ -138,13 +137,9 @@ Below, the trace after executing the crash:
 
 ```
 🚀 Now fuzzing `/tmp/ink_fuzzed_XqUCn/target/ink/transfer.json` (5H31F11yQUkqugbgC7ur4rT2WLKSkZKAZUfcmHkKoLkaRaZ4)!
-
 🤯 An invariant got caught! Let's dive into it
-
 🫵  This was caused by `phink_assert_cannot_transfer_1337`
-
 🎉 Find below the trace that caused that invariant
-
 🌱 Executing new seed
 
 +---------+-------------------------------------------------------------------+
@@ -155,9 +150,6 @@ Below, the trace after executing the crash:
 |         | 💾 Storage deposit : StorageDeposit::Charge(0)                    |
 |         | 💸 Message was payable, and 1809739 units were transferred        |
 +---------+-------------------------------------------------------------------+
-thread 'main' panicked at src/fuzzer/bug.rs:83:9:
-
-Job is done! Please, don't matter the backtrace below/above 🫡
 ```
 
 #### List of samples
@@ -180,7 +172,5 @@ file.
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
 - [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
 - [ ] Creation of default invariants common to every contract  (_research needed_)
-- [ ] Provision of a specified on-chain state  (_research needed_)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
 - [ ] Extraction of seeds and constants from the codebase (_research needed_)
-- [ ] Creation of LLM-based invariants using [rust-llama](https://github.com/mdrokz/rust-llama.cpp) (_research needed_)
