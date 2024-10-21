@@ -180,7 +180,7 @@ impl pallet_contracts::Config for Runtime {
     type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
     type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
     #[cfg(test)] // Bypass crashes for integrity tests
-    type MaxCodeLen = ConstU32<133641>;
+    type MaxCodeLen = ConstU32<128500>;
     #[cfg(not(test))]
     type MaxCodeLen = ConstU32<{ u32::MAX }>;
     type MaxStorageKeyLen = ConstU32<128>;
