@@ -13,11 +13,12 @@
 
 </div>
 </br>
+
 **Phink** is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
 embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.
 
-<img src="assets/dashboard.gif" alt="Dashboard GIF" />
+![Dashboard GIF](assets/dashboard.gif)
 
 For documentation, visit
 our [**documentation site here**](https://srlabs.github.io/phink/). If you have any question, feedback,
