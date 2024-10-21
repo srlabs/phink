@@ -82,6 +82,10 @@ pub struct Configuration {
     /// to false if you just want to catch invariants. Set this to true if you want any kind of
     /// bugs.
     pub catch_trapped_contract: bool,
+    /// If `true`, Phink will run the tests of the ink! contract to execute the messages and
+    /// extracts valid seeds inside. For instance if a test call three messages, those three
+    /// messages will be SCALE-encoded, and put inside external files.
+    pub generate_seeds: bool,
 }
 
 impl Configuration {
@@ -110,6 +114,7 @@ impl Default for Configuration {
             fuzz_output: Some(PathBuf::from("output")),
             show_ui: true,
             catch_trapped_contract: false,
+            generate_seeds: true,
         }
     }
 }
@@ -263,6 +268,7 @@ mod tests {
             instrumented_contract_path: Some(InstrumentedPath::from("/tmp/instrumented")),
             fuzz_output: Some(PathBuf::from("/tmp/fuzz_output")),
             show_ui: false,
+            ..Default::default()
         }
     }
 

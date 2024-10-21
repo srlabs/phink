@@ -3,6 +3,7 @@
 # General Settings
 cores = 4                # Set to 1 for single-core execution
 max_messages_per_exec = 1 # Maximum number of message calls per input
+generate_seeds = true   # Generate seeds from contract's tests
 
 # Paths
 instrumented_contract_path.path = "toooooooooooz"  # Path to the instrumented contract, after `phink instrument my_contract` is invoked

@@ -65,7 +65,7 @@ impl Instrumenter {
         Self { z_config }
     }
 
-    pub fn verbose(self) -> bool {
+    pub fn verbose(&self) -> bool {
         self.z_config.config().verbose
     }
 
@@ -253,7 +253,9 @@ impl Instrumenter {
             return Ok(())
         }
 
-        println!("📝 Instrumenting {}", path.display());
+        if self.verbose() {
+            println!("📝 Instrumenting {}", path.display());
+        }
 
         let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
             .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
