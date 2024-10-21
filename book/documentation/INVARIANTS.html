@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Invariants - Phink Book</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="Documentation for Phink fuzzer">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="INTRO.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User guide</li><li class="chapter-item expanded "><a href="START.html"><strong aria-hidden="true">1.</strong> Installation</a></li><li class="chapter-item expanded "><a href="CONFIG.html"><strong aria-hidden="true">2.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="CAMPAIGN.html"><strong aria-hidden="true">3.</strong> Starting a campaign</a></li><li class="chapter-item expanded "><a href="INVARIANTS.html" class="active"><strong aria-hidden="true">4.</strong> Invariants</a></li><li class="chapter-item expanded "><a href="RUNTIME.html"><strong aria-hidden="true">5.</strong> Plug-in your runtime</a></li><li class="chapter-item expanded "><a href="SEEDS.html"><strong aria-hidden="true">6.</strong> Seeds</a></li><li class="chapter-item expanded affix "><li class="part-title">Concepts and understanding</li><li class="chapter-item expanded "><a href="CONCEPT.html"><strong aria-hidden="true">7.</strong> Concept and terminology</a></li><li class="chapter-item expanded "><a href="TECH.html"><strong aria-hidden="true">8.</strong> How does Phink work</a></li><li class="chapter-item expanded "><a href="TROUBLESHOTING.html"><strong aria-hidden="true">9.</strong> Troubleshoting</a></li><li class="chapter-item expanded "><a href="FAQ.html"><strong aria-hidden="true">10.</strong> FAQ</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Phink Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/srlabs/phink/blob/main/src/src/INVARIANTS.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="invariants"><a class="header" href="#invariants">Invariants</a></h1>
+<p>Invariants are <strong>fundamental properties that must always hold</strong> true in a smart-contract, regardless of any operations
+performed. They help ensure that certain logical conditions remain constant throughout the
+execution of the contract, preventing potential vulnerabilities and ensuring its reliability.</p>
+<p>We suggest to use <strong>integrity</strong> and <strong>unit tests</strong> from your codebase to get inspiration to generate good invariants.</p>
+<h2 id="creating-good-invariants-for-ink-smart-contracts"><a class="header" href="#creating-good-invariants-for-ink-smart-contracts">Creating good invariants for Ink! smart-contracts</a></h2>
+<p>Below are some guidelines to help you design robust invariants:</p>
+<ol>
+<li>
+<p><strong>Understand the Contract’s Logic</strong>: Before crafting invariants, deeply understand the core logic and expected
+behaviors of your smart contract.</p>
+</li>
+<li>
+<p><strong>Identify Critical Properties</strong>: Determine critical properties or conditions that must hold <strong>true</strong>. This could
+involve
+state variables, transaction outcomes, or other interdependent conditions.</p>
+</li>
+<li>
+<p><strong>Consider Corner Cases</strong>: Think about edge cases and potential attack vectors. Invariants should be designed to
+capture unexpected or extreme scenarios.</p>
+</li>
+<li>
+<p><strong>Focus on Consistency</strong>: Consider properties that ensure data consistency across state changes. This might involve
+ensuring balances are correctly updated or ownership is properly maintained.</p>
+</li>
+<li>
+<p><strong>Keep it Simple</strong>: While considering complex scenarios, ensure your invariants are straightforward to encourage
+maintainability and clarity.</p>
+</li>
+</ol>
+<h2 id="example-invariant-in-ink-smart-contracts"><a class="header" href="#example-invariant-in-ink-smart-contracts">Example invariant in ink! smart-contracts</a></h2>
+<p>Here is a template to get you started on writing invariants for ink! smart contracts:</p>
+<pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg(feature = "phink")]
+#[ink(impl)]
+impl DomainNameService {
+    /// Example invariant:
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_balance_invariant(&amp;self) {
+        // Ensure total supply equals sum of individual balances
+        assert_eq!(self.total_supply, self.calculate_total_balances(), "Balance invariant violated!");
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="important-annotations-explained"><a class="header" href="#important-annotations-explained">Important Annotations Explained</a></h3>
+<ul>
+<li><strong><code>#[cfg(feature = "phink")]</code></strong>: Ensures the function is only compiled when the “phink” feature is enabled.</li>
+<li><strong><code>#[ink(message)]</code></strong>: Marks the function as an executable entry defined by the ink! framework.</li>
+<li><strong>Function Naming</strong>: Begin with “phink_” to indicate the purpose and correlation to fuzz testing.</li>
+</ul>
+<h2 id="creating-invariants-with-llm"><a class="header" href="#creating-invariants-with-llm">Creating Invariants with LLM</a></h2>
+<p>Large Language Models (LLMs) offer a good (<em>lazy, yes…</em>) approach to generate invariants by interpreting the logic and
+identifying properties from the contract code. Here is an example prompt system you could use to generate a base of
+invariants</p>
+<h5 id="system-prompt"><a class="header" href="#system-prompt">System Prompt</a></h5>
+<pre><code class="language-markdown">You are provided with Rust files containing an ink! smart contract. Your task is to generate invariants, which are
+inviolable properties that a fuzzer will check to ensure the contract's quality and correctness. Please adhere to the
+following requirements while writing the invariants:
+
+1. Ensure that the `impl` block is annotated with `#[cfg(feature = "phink")] #[ink(impl)]`.
+2. Confirm that the `impl DomainNameService` is the main implementation block of the contract.
+3. Each invariant must be annotated with:
+    - `#[ink(message)]`
+    - `#[cfg(feature = "phink")]`
+    - Function names must start with "phink_".
+4. Each invariant function must contain at least one assertion statement, such as `assert`, `assert_ne`, `panic`, etc.
+5. Be creative and consider corner cases to ensure the thoroughness of the invariants.
+
+Output example:
+
+```rust
+#[cfg(feature = "phink")]
+#[ink(impl)]
+impl DomainNameService {
+    // This invariant ensures that `domains` doesn't contain the forbidden domain that nobody should register 
+    #[ink(message)]
+    #[cfg(feature = "phink")]
+    pub fn phink_assert_hash42_cant_be_registered(&amp;self) {
+        for i in 0..self.domains.len() {
+            if let Some(domain) = self.domains.get(i) {
+                // Invariant triggered! We caught an invalid domain in the storage...
+                assert_ne!(domain.clone().as_mut(), FORBIDDEN_DOMAIN);
+            }
+        }
+    }
+}
+`` `
+</code></pre>
+<h5 id="sources-in-the-prompt"><a class="header" href="#sources-in-the-prompt">Sources in the Prompt</a></h5>
+<p>If your contract is small enough and contains multiple Rust files, you could use the following snippet, to put
+everything inside <code>everything.rs</code>.</p>
+<pre><code class="language-sh">find . -name "*.rs" -not -path "./target/*" -exec cat {} + &gt; everything.rs
+</code></pre>
+<p>Copy paste the content after your <em>system prompt</em>, and examine the LLM invariants. Otherwise, simply copy paste the code
+from your <code>lib.rs</code></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="CAMPAIGN.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="RUNTIME.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="CAMPAIGN.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="RUNTIME.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
