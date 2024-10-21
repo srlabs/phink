@@ -145,9 +145,8 @@ fn handle_cli() -> anyhow::Result<()> {
                 .ziggy_run()
         }
         Commands::Execute { seed } => {
-            let fuzzer = Fuzzer::new(
-                ZiggyConfig::new(config).context("Couldn't generate handle the ZiggyConfig")?,
-            )?;
+            let fuzzer = Fuzzer::new(ZiggyConfig::new(config))
+                .context("Creating a new fuzzer instance faled")?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }
         Commands::HarnessCover => {

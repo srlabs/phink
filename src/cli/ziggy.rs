@@ -157,12 +157,13 @@ impl ZiggyConfig {
         }
     }
 
-    pub fn parse(config_str: String) -> Self {
-        let config: Self = serde_json::from_str(&config_str).expect("❌ Failed to parse config");
+    pub fn parse(config_str: String) -> anyhow::Result<Self> {
+        let config: Self =
+            serde_json::from_str(&config_str).context("❌ Failed to parse config")?;
         if config.config().verbose {
             println!("🖨️ Using {} = {config_str}\n", FuzzingWithConfig);
         }
-        config
+        Ok(config)
     }
 
     /// This function executes 'cargo ziggy `command` `args`'
@@ -404,7 +405,7 @@ mod tests {
                    "contract_path":"/tmp/ink_fuzzed_3h4Wm/"
                 }
         "#;
-        let config = ZiggyConfig::parse(config_str.to_string());
+        let config = ZiggyConfig::parse(config_str.to_string()).unwrap();
         assert!(!config.config.verbose);
         assert!(config.config.show_ui);
         assert!(!config.config.use_honggfuzz);

@@ -167,16 +167,14 @@ impl pallet_contracts::Config for Runtime {
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
-
     type RuntimeHoldReason = RuntimeHoldReason;
     type CallFilter = Nothing;
-
+    type WeightPrice = pallet_transaction_payment::Pallet<Self>;
     type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
     type ChainExtension = ();
     type Schedule = Schedule;
     type CallStack = [pallet_contracts::Frame<Self>; 5];
     type DepositPerByte = DepositPerByte;
-    type WeightPrice = pallet_transaction_payment::Pallet<Self>;
     type DefaultDepositLimit = DefaultDepositLimit;
     type DepositPerItem = DepositPerItem;
     type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
@@ -185,8 +183,8 @@ impl pallet_contracts::Config for Runtime {
     type MaxStorageKeyLen = ConstU32<128>;
     type MaxTransientStorageSize = ConstU32<{ 1024 * 1024 }>;
     type MaxDelegateDependencies = MaxDelegateDependencies;
-    type UnsafeUnstableInterface = ConstBool<true>;
     /// `UnsafeUnstableInterface` must **always** be `true` in order to get proper coverage feedback
+    type UnsafeUnstableInterface = ConstBool<true>;
     type MaxDebugBufferLen = ConstU32<{ u32::MAX }>;
     type UploadOrigin = EnsureSigned<Self::AccountId>;
     type InstantiateOrigin = EnsureSigned<Self::AccountId>;
@@ -196,6 +194,7 @@ impl pallet_contracts::Config for Runtime {
     type ApiVersion = ();
     type Xcm = ();
 }
+
 construct_runtime!(
     pub enum Runtime {
         System: frame_system,

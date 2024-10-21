@@ -39,6 +39,8 @@ std = [
     "parity-scale-codec/std",
     "scale-info/std",
 ]
+skip-integrity-tests = []
+
 
 [dev-dependencies]
 assert_cmd = { version = "2.0.16" }

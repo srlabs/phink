@@ -53,10 +53,11 @@ pub struct Fuzzer {
 }
 
 impl Fuzzer {
-    pub fn new(ziggy_config: ZiggyConfig) -> anyhow::Result<Self> {
+    pub fn new(ziggy_config: anyhow::Result<ZiggyConfig>) -> anyhow::Result<Self> {
+        let config = ziggy_config?;
         Ok(Self {
-            ziggy_config: ziggy_config.to_owned(),
-            setup: ContractSetup::initialize_wasm(ziggy_config)?,
+            ziggy_config: config.to_owned(),
+            setup: ContractSetup::initialize_wasm(config)?,
         })
     }
 
