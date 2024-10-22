@@ -4,7 +4,7 @@ use crate::{
             DisableOriginFuzzing,
             EnableOriginFuzzing,
         },
-        ui::seed::LAST_SEED_FILENAME,
+        ui::logger::LAST_SEED_FILENAME,
     },
     contract::{
         remote::{

@@ -150,6 +150,10 @@ impl ZiggyConfig {
         self.config.fuzz_output.unwrap_or_default()
     }
 
+    pub fn generate_seeds(&self) -> bool {
+        self.config.generate_seeds
+    }
+
     pub fn afl_debug<'a>(&self) -> &'a str {
         match self.config().verbose {
             true => "1",

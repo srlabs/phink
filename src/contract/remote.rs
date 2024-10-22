@@ -140,7 +140,7 @@ impl ContractSetup {
             .find()
             .context("Couldn't execute `find` for this current config")?;
         let wasm_bytes = fs::read(&finder.wasm_path)
-            .context(format!("Couldn't read WASM from{:?}", finder.wasm_path))?;
+            .context(format!("Couldn't read WASM from {:?}", finder.wasm_path))?;
 
         let conf = config.config();
         let contract_address: &AccountIdOf<Runtime> = conf.deployer_address();
@@ -149,8 +149,10 @@ impl ContractSetup {
         }
 
         let path_to_specs = finder.specs_path;
-        let json_specs =
-            fs::read_to_string(&path_to_specs).context("Couldn't read JSON from {specs:?}")?;
+        let json_specs = fs::read_to_string(&path_to_specs).context(format!(
+            "Couldn't read JSON from {path_to_specs:?}. \
+            Check that you have a WASM AND JSON file in your target/ directory"
+        ))?;
 
         let genesis: (Storage, AccountIdOf<Runtime>) = {
             let storage = <Preferences as DevelopperPreferences>::runtime_storage();
@@ -165,7 +167,7 @@ impl ContractSetup {
 
                 let code_hash = Self::upload(&wasm_bytes, contract_address)?;
 
-                let  new_contract_address: AccountIdOf<Runtime> =   Self::instantiate(&json_specs, code_hash, contract_address, conf)
+                let new_contract_address: AccountIdOf<Runtime> = Self::instantiate(&json_specs, code_hash, contract_address, conf)
                     .context("Can't fetch the contract address because of incorrect instantiation")?;
 
                 // We verify if the contract is correctly instantiated

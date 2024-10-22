@@ -2,6 +2,7 @@ use crate::{
     cli::{
         ui::{
             chart::ChartManager,
+            logger::LogDisplayer,
             monitor::{
                 corpus::CorpusWatcher,
                 logs::{
@@ -9,7 +10,6 @@ use crate::{
                     AFLProperties,
                 },
             },
-            seed::SeedDisplayer,
             traits::{
                 FromPath,
                 Paint,
@@ -368,7 +368,7 @@ impl CustomUI {
     fn display_fuzzed_seed(&mut self) -> Paragraph {
         let mut seed_text: Text = Default::default();
         let seed_info_text: String =
-            match SeedDisplayer::new(self.clone().ziggy_config.fuzz_output()).load() {
+            match LogDisplayer::new(self.clone().ziggy_config.fuzz_output()).load() {
                 None => String::new(),
                 Some(e) => e.to_string(),
             };

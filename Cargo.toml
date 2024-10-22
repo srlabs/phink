@@ -97,6 +97,7 @@ contract-metadata = { version = "4.1.1" }
 colored = { version = "2.1.0" }
 thiserror = { version = "1.0.63" }
 time = { version = "0.3.36" }
+pretty_assertions = "1.4.1"
 
 
 [lints.rust]

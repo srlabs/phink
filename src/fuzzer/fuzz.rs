@@ -4,7 +4,7 @@ use crate::{
             PFiles::CoverageTracePath,
             PhinkFiles,
         },
-        ui::seed::SeedWriter,
+        ui::logger::LogWriter,
         ziggy::ZiggyConfig,
     },
     contract::{
@@ -190,8 +190,8 @@ impl Fuzzer {
 
         // If the user has `show_ui` turned on, we save the fuzzed seed to display it on the UI
         if self.ziggy_config.config().show_ui {
-            let seeder = SeedWriter::new(parsed_input.to_owned(), coverage.to_owned());
-            if SeedWriter::should_save() {
+            let seeder = LogWriter::new(parsed_input.to_owned(), coverage.to_owned());
+            if LogWriter::should_save() {
                 seeder
                     .save(self.clone().ziggy_config.fuzz_output())
                     .unwrap();

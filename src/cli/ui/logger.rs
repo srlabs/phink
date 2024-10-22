@@ -27,14 +27,14 @@ use std::{
 
 pub const LAST_SEED_FILENAME: &str = "last_seed.phink";
 
-pub struct SeedWriter {
+pub struct LogWriter {
     input: OneInput,
     coverage: InputCoverage,
 }
 
-impl SeedWriter {
+impl LogWriter {
     pub fn new(input: OneInput, coverage: InputCoverage) -> Self {
-        SeedWriter { input, coverage }
+        LogWriter { input, coverage }
     }
 
     pub fn should_save() -> bool {
@@ -73,11 +73,11 @@ impl SeedWriter {
     }
 }
 
-pub struct SeedDisplayer {
+pub struct LogDisplayer {
     output: PathBuf,
 }
 
-impl SeedDisplayer {
+impl LogDisplayer {
     pub fn new(output: PathBuf) -> Self {
         Self { output }
     }
@@ -103,11 +103,10 @@ impl SeedDisplayer {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_seed_displayer_load() {
-        let seed_displayer = SeedDisplayer::new(PathBuf::from("tests/fixtures"));
-        let seeds = seed_displayer.load().unwrap();
+        let logger_display = LogDisplayer::new(PathBuf::from("tests/fixtures"));
+        let seeds = logger_display.load().unwrap();
         assert!(seeds.contains("crash_with_invariant"));
     }
 }

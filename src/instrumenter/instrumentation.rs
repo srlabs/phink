@@ -1,6 +1,6 @@
 use crate::{
     cli::ziggy::ZiggyConfig,
-    instrumenter::instrumentation::instrument::ContractCovUpdater,
+    instrumenter::instrumentation::instrument::CoverageInjector,
 };
 use anyhow::{
     anyhow,
@@ -8,6 +8,7 @@ use anyhow::{
     Context,
 };
 
+use crate::instrumenter::seeder::SeedExtractInjector;
 use quote::quote;
 use regex::Regex;
 use std::{
@@ -242,10 +243,11 @@ impl Instrumenter {
     }
 
     fn instrument_file(&self, path: &Path) -> anyhow::Result<()> {
-        let contract_cov_manager = ContractCovUpdater::new();
-        let code = fs::read_to_string(path)?;
+        let contract_cov_manager = CoverageInjector::new();
+        let code = fs::read_to_string(path).context("Couldn't read {path:?}")?;
+        let generate_seed = &self.z_config.generate_seeds();
 
-        if Self::already_instrumented(&code) {
+        if Self::already_instrumented(&code) && !generate_seed {
             println!(
                 "{} was already instrumented",
                 path.to_path_buf().file_name().unwrap().display()
@@ -257,25 +259,42 @@ impl Instrumenter {
             println!("📝 Instrumenting {}", path.display());
         }
 
-        let modified_code = Self::parse_and_visit(&code, contract_cov_manager)
+        let mut modified_code = Self::visit_code(&code, contract_cov_manager)
             .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
 
-        Self::save_and_format(modified_code, PathBuf::from(path))?;
+        if *generate_seed {
+            if self.verbose() {
+                println!("📝 Injecting code for seed extraction");
+            }
+
+            let seed_injector =
+                SeedExtractInjector::new().context("Couldn't create a new seed extractor")?;
+            modified_code = Self::visit_code(&modified_code, seed_injector)
+                .context("Couldn't inject the code to do a seed extraction")?;
+        }
+
+        let rust_file = PathBuf::from(path);
+        Self::save(modified_code, &rust_file)?;
+        Self::format(rust_file)?;
 
         Ok(())
     }
 
-    fn parse_and_visit(code: &str, mut visitor: impl VisitMut) -> anyhow::Result<String> {
+    fn visit_code(code: &str, mut visitor: impl VisitMut) -> anyhow::Result<String> {
         let mut ast = parse_file(code)?;
         visitor.visit_file_mut(&mut ast);
         Ok(quote!(#ast).to_string())
     }
 
-    fn save_and_format(source_code: String, rust_file: PathBuf) -> anyhow::Result<()> {
+    fn save(source_code: String, rust_file: &PathBuf) -> anyhow::Result<()> {
         let mut file = File::create(rust_file.clone())?;
         file.write_all(source_code.as_bytes())?;
         println!("✍️ Writing instrumented source code");
         file.flush()?;
+        Ok(())
+    }
+
+    fn format(rust_file: PathBuf) -> anyhow::Result<()> {
         println!("🛠️ Formatting {} with `rustfmt`...", rust_file.display());
         Command::new("rustfmt")
             .args([rust_file.display().to_string().as_str(), "--edition=2021"])
@@ -306,17 +325,17 @@ mod instrument {
     };
 
     #[derive(Debug, Clone)]
-    pub struct ContractCovUpdater {
+    pub struct CoverageInjector {
         pub line_id: u64,
     }
 
-    impl ContractCovUpdater {
+    impl CoverageInjector {
         pub fn new() -> Self {
             Self { line_id: 0 }
         }
     }
 
-    impl VisitMut for ContractCovUpdater {
+    impl VisitMut for CoverageInjector {
         fn visit_block_mut(&mut self, block: &mut syn::Block) {
             let mut new_stmts = Vec::new();
             // Temporarily replace block.stmts with an empty Vec to avoid
