@@ -1,30 +1,17 @@
-use proc_macro2::Span;
-use quote::{
-    quote,
-    ToTokens,
-};
+use quote::quote;
 use syn::{
-    meta::ParseNestedMeta,
     parse_quote,
     visit_mut::{
         self,
         VisitMut,
     },
-    Attribute,
-    Block,
-    Expr::Path,
     FnArg,
-    Ident,
     ImplItem,
     ImplItemFn,
     Item,
-    ItemFn,
     ItemImpl,
     ItemMod,
-    Meta,
-    Meta::List,
     Pat,
-    PatType,
     Stmt,
 };
 
@@ -138,10 +125,7 @@ impl VisitMut for SeedExtractInjector {
 mod tests {
 
     use crate::instrumenter::seeder::SeedExtractInjector;
-    use quote::{
-        quote,
-        ToTokens,
-    };
+    use quote::quote;
     use syn::{
         parse_str,
         visit_mut::VisitMut,

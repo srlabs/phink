@@ -286,8 +286,8 @@ impl Instrumenter {
         Ok(quote!(#ast).to_string())
     }
 
-    fn save(source_code: String, rust_file: &PathBuf) -> anyhow::Result<()> {
-        let mut file = File::create(rust_file.clone())?;
+    fn save(source_code: String, rust_file: &Path) -> anyhow::Result<()> {
+        let mut file = File::create(rust_file)?;
         file.write_all(source_code.as_bytes())?;
         println!("✍️ Writing instrumented source code");
         file.flush()?;
