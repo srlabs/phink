@@ -50,7 +50,7 @@ macro_rules! phink_log {
 
 impl ContractVisitor for Instrumenter {
     fn input_directory(&self) -> PathBuf {
-        todo!()
+        self.z_config.contract_path().unwrap()
     }
 
     fn output_directory(&self) -> PathBuf {
@@ -213,6 +213,7 @@ mod tests {
             self,
             File,
         },
+        path::Path,
     };
     use tempfile::{
         tempdir,

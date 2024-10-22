@@ -1,7 +1,10 @@
 use crate::instrumenter::traits::visitor::ContractVisitor;
 use anyhow::bail;
 use quote::quote;
-use std::path::PathBuf;
+use std::path::{
+    Path,
+    PathBuf,
+};
 use syn::{
     parse_quote,
     visit_mut::{
@@ -17,19 +20,22 @@ use syn::{
     Pat,
     Stmt,
 };
+use tempfile::tempdir;
 
 #[derive(Debug, Clone)]
 pub struct SeedExtractInjector {
     contract_path: PathBuf,
+    compiled_path: Option<PathBuf>,
 }
 
 impl SeedExtractInjector {
-    pub fn new(contract_path: &PathBuf) -> anyhow::Result<Self> {
+    pub fn new(contract_path: &Path, compiled_path: Option<PathBuf>) -> anyhow::Result<Self> {
         if !contract_path.exists() {
             bail!("Couldn't find the contract at {}", contract_path.display())
         }
         Ok(Self {
             contract_path: contract_path.to_path_buf(),
+            compiled_path,
         })
     }
     pub fn extract_seeds(&self) -> anyhow::Result<()> {
@@ -39,15 +45,18 @@ impl SeedExtractInjector {
 
 impl ContractVisitor for SeedExtractInjector {
     fn input_directory(&self) -> PathBuf {
-        todo!()
+        self.contract_path.to_path_buf()
     }
 
     fn output_directory(&self) -> PathBuf {
-        todo!()
+        match &self.compiled_path {
+            None => tempdir().unwrap().into_path(),
+            Some(contract) => contract.into(),
+        }
     }
 
     fn verbose(&self) -> bool {
-        todo!()
+        true
     }
 }
 
@@ -152,9 +161,9 @@ impl VisitMut for SeedExtractInjector {
 
 #[cfg(test)]
 mod tests {
-
     use crate::instrumenter::seeder::SeedExtractInjector;
     use quote::quote;
+    use std::path::PathBuf;
     use syn::{
         parse_str,
         visit_mut::VisitMut,
@@ -246,7 +255,8 @@ mod tests {
                 }"#;
 
         let mut syntax_tree: File = parse_str(input_code).expect("Failed to parse code");
-        let mut seed_injector = SeedExtractInjector::new().unwrap();
+        let mut seed_injector =
+            SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
         seed_injector.visit_file_mut(&mut syntax_tree);
 
         let generated_code = quote!(#syntax_tree).to_string();

@@ -258,7 +258,6 @@ mod tests {
             default_gas_limit: Some(Weight::from_parts(100_000_000_000, 0)),
             storage_deposit_limit: Some("1000000000".into()),
             instantiate_initial_value: Some("500".into()),
-            constructor_payload: Some("0x1234".into()),
             verbose: true,
             instrumented_contract_path: Some(InstrumentedPath::from("/tmp/instrumented")),
             fuzz_output: Some(PathBuf::from("/tmp/fuzz_output")),

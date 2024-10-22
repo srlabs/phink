@@ -70,7 +70,14 @@ enum Commands {
     /// Run the tests of the ink! smart-contract to execute the
     /// messages and extracts valid seeds fromit. For instance, if a test call three messages,
     /// those three messages will be extracted to be used as seeds inside the corpus directory
-    GenerateSeed(Contract),
+    GenerateSeed {
+        /// Path where the contract is located. It must be the root directory of
+        /// the contract
+        contract: PathBuf,
+        /// Path where the temporary contract will be compiled to. Optionnal. In `tmp` if not
+        /// defined.
+        compiled_directory: Option<PathBuf>,
+    },
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument(Contract),
     /// Run all the seeds
@@ -87,7 +94,7 @@ enum Commands {
     },
 }
 
-#[derive(clap::Args, Debug)]
+#[derive(clap::Args, Debug, Clone)]
 struct Contract {
     /// Path where the contract is located. It must be the root directory of
     /// the contract
@@ -174,11 +181,14 @@ fn handle_cli() -> anyhow::Result<()> {
                     .context("Couldn't generate handle the ZiggyConfig")?,
             )
         }
-        Commands::GenerateSeed(contract_path) => {
-            let seeder = SeedExtractInjector::new(&contract_path.contract_path)?;
+        Commands::GenerateSeed {
+            contract,
+            compiled_directory,
+        } => {
+            let seeder = SeedExtractInjector::new(&contract, compiled_directory)?;
             seeder
                 .extract_seeds()
-                .context(format!("Couldn't extract the seed from {contract_path:?}"))?;
+                .context(format!("Couldn't extract the seed from {contract:?}"))?;
             Ok(())
         }
     }
