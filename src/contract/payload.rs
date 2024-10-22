@@ -326,7 +326,7 @@ mod test {
             .collect();
 
         // Dummy selectors
-        assert_eq!(extracted, "9bae9d5e fa80c2f6 27d8f137 ");
+        assert_eq!(extracted, "9bae9d5e fa80c2f6 4c406b48 27d8f137 ");
     }
     #[test]
     fn fetch_correct_selectors() {
@@ -401,7 +401,7 @@ mod test {
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
         let msg = input.messages;
-        println!("{:?}", msg);
+        // println!("{:?}", msg);
 
         assert_eq!(msg.len(), 1, "No messages decoded");
         assert_eq!(

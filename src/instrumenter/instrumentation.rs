@@ -243,9 +243,8 @@ impl Instrumenter {
     fn instrument_file(&self, path: &Path) -> anyhow::Result<()> {
         let contract_cov_manager = CoverageInjector::new();
         let code = fs::read_to_string(path).context("Couldn't read {path:?}")?;
-        let generate_seed = &self.z_config.generate_seeds();
 
-        if Self::already_instrumented(&code) && !generate_seed {
+        if Self::already_instrumented(&code) {
             println!(
                 "{} was already instrumented",
                 path.to_path_buf().file_name().unwrap().display()
@@ -258,7 +257,7 @@ impl Instrumenter {
         let mut modified_code = Self::visit_code(&code, contract_cov_manager)
             .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
 
-        if *generate_seed {
+        if self.z_config.generate_seeds() {
             phink_log!(self, "📝 Injecting code for seed extraction");
 
             let seed_injector =

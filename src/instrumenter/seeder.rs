@@ -83,6 +83,7 @@ impl VisitMut for SeedExtractInjector {
                         let fn_name_str = fn_name.to_string();
 
                         let mut push_args = quote! {
+                            use ink_prelude::format;
                             let mut toz = ink::env::call::ExecutionInput::new(
                                 ink::env::call::Selector::new(ink::selector_bytes!(#fn_name_str))
                             )
@@ -91,7 +92,7 @@ impl VisitMut for SeedExtractInjector {
                         for arg in args {
                             push_args = quote! {
                                 #push_args
-                                .push_arg(#arg)
+                                .push_arg(&#arg)
                             };
                         }
 
@@ -224,10 +225,10 @@ mod tests {
         let generated_code = quote!(#syntax_tree).to_string();
         // println!("{generated_code}");
 
-        let expected_snippet = r#"let mut toz = ink :: env :: call :: ExecutionInput :: new (ink :: env :: call :: Selector :: new (ink :: selector_bytes ! ("toz"))) . push_arg (a) . push_arg (name) ;"#;
+        let expected_snippet = r#"let mut toz = ink :: env :: call :: ExecutionInput :: new (ink :: env :: call :: Selector :: new (ink :: selector_bytes ! ("toz"))) . push_arg (& a) . push_arg (& name) ;"#;
         assert!(
             generated_code.contains(&expected_snippet.to_string()),
-            "The code snippet was not injected correctly."
+            "The code snippet was not injected correctly. Expected: \n{expected_snippet} == \n to be contained in: \n\n{generated_code} ==\n"
         );
     }
 }

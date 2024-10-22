@@ -329,6 +329,7 @@ mod tests {
             verbose = false
             catch_trapped_contract = true
             show_ui = true
+            generate_seeds = false
         "#;
 
         let config: Configuration = config_str.to_string().try_into().unwrap();
@@ -339,6 +340,7 @@ mod tests {
         assert_eq!(config.storage_deposit_limit, Some("200000000000".into()));
         assert!(!config.verbose);
         assert!(config.show_ui);
+        assert!(!config.generate_seeds);
     }
 
     #[test]

@@ -221,7 +221,7 @@ impl ContractSetup {
     pub fn upload(wasm_bytes: &[u8], who: &AccountId) -> anyhow::Result<H256> {
         let upload_result = Contracts::bare_upload_code(
             who.clone(),
-            wasm_bytes.to_owned(),
+            Vec::from(wasm_bytes),
             None,
             Determinism::Enforced,
         );
