@@ -180,18 +180,16 @@ impl Instrumenter {
         fs::create_dir_all(new_dir)
             .with_context(|| format!("🙅 Failed to create directory: {}", new_dir.display()))?;
 
-        phink_log!(
-            self,
-            "📁 Starting to copy files from {:?}",
-            self.z_config.contract_path()?
-        );
+        let c_path = &self.z_config.contract_path()?;
 
-        for entry in WalkDir::new(self.z_config.contract_path()?) {
+        phink_log!(self, "📁 Starting to copy files from {c_path:?}",);
+
+        for entry in WalkDir::new(c_path) {
             let entry = entry?;
             let target_path = new_dir.join(
                 entry
                     .path()
-                    .strip_prefix(self.z_config.contract_path()?)
+                    .strip_prefix(c_path)
                     .with_context(|| "Couldn't `strip_prefix`")?,
             );
 
@@ -255,17 +253,13 @@ impl Instrumenter {
             return Ok(())
         }
 
-        if self.verbose() {
-            println!("📝 Instrumenting {}", path.display());
-        }
+        phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
 
         let mut modified_code = Self::visit_code(&code, contract_cov_manager)
             .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
 
         if *generate_seed {
-            if self.verbose() {
-                println!("📝 Injecting code for seed extraction");
-            }
+            phink_log!(self, "📝 Injecting code for seed extraction");
 
             let seed_injector =
                 SeedExtractInjector::new().context("Couldn't create a new seed extractor")?;

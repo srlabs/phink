@@ -61,7 +61,7 @@ impl VisitMut for SeedExtractInjector {
                     let fn_name = &method.sig.ident;
                     // If the visited function isn't an invariant
                     if !fn_name.to_string().starts_with("phink_") {
-                        // Collect the argument identifiers
+                        // Args of the ink! message
                         let args: Vec<syn::Ident> = method
                             .sig
                             .inputs
@@ -79,6 +79,7 @@ impl VisitMut for SeedExtractInjector {
                             })
                             .collect();
 
+                        // Ink message function name
                         let fn_name_str = fn_name.to_string();
 
                         let mut push_args = quote! {
@@ -94,6 +95,7 @@ impl VisitMut for SeedExtractInjector {
                             };
                         }
 
+                        // Full snippet
                         let snippet: Stmt = parse_quote! {
                             {
                             #push_args;
@@ -111,7 +113,6 @@ impl VisitMut for SeedExtractInjector {
         visit_mut::visit_item_impl_mut(self, i);
     }
 
-    // Ensure we visit items inside modules
     fn visit_item_mod_mut(&mut self, i: &mut ItemMod) {
         if let Some(ref mut content) = i.content {
             for item in content.1.iter_mut() {
@@ -221,8 +222,7 @@ mod tests {
         seed_injector.visit_file_mut(&mut syntax_tree);
 
         let generated_code = quote!(#syntax_tree).to_string();
-
-        println!("{}", generated_code);
+        // println!("{generated_code}");
 
         let expected_snippet = r#"let mut toz = ink :: env :: call :: ExecutionInput :: new (ink :: env :: call :: Selector :: new (ink :: selector_bytes ! ("toz"))) . push_arg (a) . push_arg (name) ;"#;
         assert!(
