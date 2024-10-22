@@ -21,7 +21,11 @@ use crate::{
             Fuzz,
         },
     },
-    instrumenter::instrumentation::Instrumenter,
+    instrumenter::{
+        instrumentation::Instrumenter,
+        seeder::SeedExtractInjector,
+        traits::visitor::ContractVisitor,
+    },
 };
 use anyhow::{
     bail,
@@ -63,6 +67,10 @@ struct Cli {
 enum Commands {
     /// Starts the fuzzing campaign. Instrumentation required before!
     Fuzz,
+    /// Run the tests of the ink! smart-contract to execute the
+    /// messages and extracts valid seeds fromit. For instance, if a test call three messages,
+    /// those three messages will be extracted to be used as seeds inside the corpus directory
+    GenerateSeed(Contract),
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument(Contract),
     /// Run all the seeds
@@ -126,12 +134,18 @@ fn handle_cli() -> anyhow::Result<()> {
             )
             .context("Couldn't generate handle the ZiggyConfig")?;
 
-            let engine = Instrumenter::new(z_config);
+            let engine = Instrumenter::new(z_config.to_owned());
             engine
                 .to_owned()
                 .instrument()
                 .context("Couldn't instrument")?;
             engine.build().context("Couldn't run the build")?;
+
+            println!(
+                "\n🤞 Contract '{}' has been instrumented and compiled.\n🤞 You can find the instrumented contract in `{}`",
+                z_config.contract_path()?.display(),
+                z_config.config().instrumented_contract().display()
+            );
             Ok(())
         }
         Commands::Fuzz => {
@@ -159,6 +173,13 @@ fn handle_cli() -> anyhow::Result<()> {
                 ZiggyConfig::new_with_contract(config, contract_path.contract_path)
                     .context("Couldn't generate handle the ZiggyConfig")?,
             )
+        }
+        Commands::GenerateSeed(contract_path) => {
+            let seeder = SeedExtractInjector::new(&contract_path.contract_path)?;
+            seeder
+                .extract_seeds()
+                .context(format!("Couldn't extract the seed from {contract_path:?}"))?;
+            Ok(())
         }
     }
 }

@@ -1,3 +1,4 @@
 pub mod instrumentation;
 pub mod path;
-mod seeder;
+pub mod seeder;
+pub mod traits;

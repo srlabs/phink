@@ -150,10 +150,6 @@ impl ZiggyConfig {
         self.config.fuzz_output.unwrap_or_default()
     }
 
-    pub fn generate_seeds(&self) -> bool {
-        self.config.generate_seeds
-    }
-
     pub fn afl_debug<'a>(&self) -> &'a str {
         match self.config().verbose {
             true => "1",
@@ -404,7 +400,6 @@ mod tests {
                       "constructor_payload":"9BAE9D5E5C1100007B000000279C603E9D4B5C6C8C672893AB54D068CECCBFBEC619E56E819A7769EADCBD766D714E7624D4BE6A35BED20D0730277D0F3A13A7B01DCDA7CEDBF67FE3A4E95F0758D2DF54F30DD663424723E09A56B19E1325B830E6CCCCF63C6FF12B78C79A",
                       "verbose":false,
                       "catch_trapped_contract": false,
-                      "generate_seeds": false,
                       "show_ui":true
                    },
                    "contract_path":"/tmp/ink_fuzzed_3h4Wm/"

@@ -1,4 +1,7 @@
+use crate::instrumenter::traits::visitor::ContractVisitor;
+use anyhow::bail;
 use quote::quote;
+use std::path::PathBuf;
 use syn::{
     parse_quote,
     visit_mut::{
@@ -16,17 +19,41 @@ use syn::{
 };
 
 #[derive(Debug, Clone)]
-pub struct SeedExtractInjector {}
+pub struct SeedExtractInjector {
+    contract_path: PathBuf,
+}
 
 impl SeedExtractInjector {
-    pub fn new() -> anyhow::Result<Self> {
-        Ok(Self {})
+    pub fn new(contract_path: &PathBuf) -> anyhow::Result<Self> {
+        if !contract_path.exists() {
+            bail!("Couldn't find the contract at {}", contract_path.display())
+        }
+        Ok(Self {
+            contract_path: contract_path.to_path_buf(),
+        })
+    }
+    pub fn extract_seeds(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+impl ContractVisitor for SeedExtractInjector {
+    fn input_directory(&self) -> PathBuf {
+        todo!()
+    }
+
+    fn output_directory(&self) -> PathBuf {
+        todo!()
+    }
+
+    fn verbose(&self) -> bool {
+        todo!()
     }
 }
 
 impl SeedExtractInjector {
     // Check if the function has the #[ink(message)] attribute
-    pub fn has_ink_message_attribute(i: &mut ImplItemFn) -> bool {
+    fn has_ink_message_attribute(i: &mut ImplItemFn) -> bool {
         for attr in &i.attrs {
             if attr.path().is_ident("ink") {
                 let res = attr.parse_nested_meta(|meta| {
