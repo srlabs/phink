@@ -195,7 +195,7 @@ fn handle_cli() -> EmptyResult {
                 .prepare()
                 .context(format!("Couldn't extract the seed from {contract:?}"))?;
 
-            // TODO: Run the tests,
+            seeder.run_tests()?.context("xxxxxxx");
             Ok(())
         }
     }

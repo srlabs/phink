@@ -56,7 +56,7 @@ impl PayloadCrafter {
 
         let target_ink_path = contract_path.join("target/ink");
         let entries = fs::read_dir(&target_ink_path)
-            .with_context(|| format!("Failed to read directory {:?}", target_ink_path))?;
+            .with_context(|| format!("Failed to read directory {target_ink_path:?}"))?;
 
         for entry in entries {
             let path = entry
@@ -67,13 +67,13 @@ impl PayloadCrafter {
                 && !path.file_name().unwrap().to_str().unwrap().starts_with(".")
             {
                 let contents = fs::read_to_string(&path)
-                    .with_context(|| format!("Failed to read file {:?}", path))?;
+                    .with_context(|| format!("Failed to read file {path:?}"))?;
 
                 let v: Value = serde_json::from_str(&contents)
-                    .with_context(|| format!("Failed to parse JSON from file {:?}", path))?;
+                    .with_context(|| format!("Failed to parse JSON from file {path:?}"))?;
 
                 let spec: Spec = serde_json::from_value(v["spec"].clone())
-                    .with_context(|| format!("Failed to deserialize spec from file {:?}", path))?;
+                    .with_context(|| format!("Failed to deserialize spec from file {path:?}"))?;
 
                 let selectors = spec.parse().context("Couldn't parse all the selectors")?;
                 all_selectors.extend(selectors);
