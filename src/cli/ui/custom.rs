@@ -1,18 +1,21 @@
-use crate::cli::{
-    config::{
-        PFiles,
-        PhinkFiles,
+use crate::{
+    cli::{
+        config::{
+            PFiles,
+            PhinkFiles,
+        },
+        env::PhinkEnv::{
+            AflDebug,
+            AflForkServerTimeout,
+            FromZiggy,
+        },
+        ui::ratatui::CustomUI,
+        ziggy::{
+            ZiggyConfig,
+            AFL_FORKSRV_INIT_TMOUT,
+        },
     },
-    env::PhinkEnv::{
-        AflDebug,
-        AflForkServerTimeout,
-        FromZiggy,
-    },
-    ui::ratatui::CustomUI,
-    ziggy::{
-        ZiggyConfig,
-        AFL_FORKSRV_INIT_TMOUT,
-    },
+    EmptyResult,
 };
 use anyhow::{
     bail,
@@ -87,7 +90,7 @@ impl CustomManager {
         Ok(child)
     }
 
-    pub fn start(self) -> anyhow::Result<()> {
+    pub fn start(self) -> EmptyResult {
         let (tx, rx) = mpsc::channel();
         let cloned_config = self.ziggy_config.clone();
 

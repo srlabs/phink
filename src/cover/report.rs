@@ -6,6 +6,7 @@ use crate::{
         PhinkFiles,
     },
     cover::trace::COV_IDENTIFIER,
+    EmptyResult,
 };
 use anyhow::bail;
 use std::{
@@ -162,7 +163,7 @@ impl CoverageTracker {
         Ok(())
     }
 
-    pub fn generate(config: ZiggyConfig) -> anyhow::Result<()> {
+    pub fn generate(config: ZiggyConfig) -> EmptyResult {
         let cov_trace_path =
             PhinkFiles::new(config.to_owned().fuzz_output()).path(CoverageTracePath);
 

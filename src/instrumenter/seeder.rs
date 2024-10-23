@@ -1,9 +1,18 @@
-use crate::instrumenter::traits::visitor::ContractVisitor;
-use anyhow::bail;
+use crate::{
+    instrumenter::traits::visitor::ContractVisitor,
+    EmptyResult,
+};
+use anyhow::{
+    bail,
+    Context,
+};
 use quote::quote;
-use std::path::{
-    Path,
-    PathBuf,
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 use syn::{
     parse_quote,
@@ -31,14 +40,37 @@ pub struct SeedExtractInjector {
 impl SeedExtractInjector {
     pub fn new(contract_path: &Path, compiled_path: Option<PathBuf>) -> anyhow::Result<Self> {
         if !contract_path.exists() {
-            bail!("Couldn't find the contract at {}", contract_path.display())
+            bail!("Couldn't find the contract at {contract_path:?}")
         }
         Ok(Self {
             contract_path: contract_path.to_path_buf(),
             compiled_path,
         })
     }
-    pub fn extract_seeds(&self) -> anyhow::Result<()> {
+    pub fn prepare(&self) -> EmptyResult {
+        self.fork()
+            .context("Forking the project to a new directory failed")?;
+
+        self.insert_snippet()
+            .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
+
+        // self.build()
+        //     .context("Couldn't build the contract required for seed extraction")?;
+        Ok(())
+    }
+
+    pub fn run_tests(&self) -> EmptyResult {
+        todo!()
+    }
+
+    fn insert_snippet(&self) -> EmptyResult {
+        self.for_each_file(|file_path| {
+            let source_code =
+                fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
+
+            self.instrument_file(file_path, &source_code, self.clone())
+                .context("Failed to instrument the file")
+        })?;
         Ok(())
     }
 }
@@ -50,6 +82,7 @@ impl ContractVisitor for SeedExtractInjector {
 
     fn output_directory(&self) -> PathBuf {
         match &self.compiled_path {
+            // We create a new directory in tmp/ if nothing is passed
             None => tempdir().unwrap().into_path(),
             Some(contract) => contract.into(),
         }
@@ -61,7 +94,7 @@ impl ContractVisitor for SeedExtractInjector {
 }
 
 impl SeedExtractInjector {
-    // Check if the function has the #[ink(message)] attribute
+    /// Check if the function has the `#[ink(message)]` attribute
     fn has_ink_message_attribute(i: &mut ImplItemFn) -> bool {
         for attr in &i.attrs {
             if attr.path().is_ident("ink") {

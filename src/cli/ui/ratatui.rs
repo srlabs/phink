@@ -18,6 +18,7 @@ use crate::{
         ziggy::ZiggyConfig,
     },
     instrumenter::instrumentation::Instrumenter,
+    EmptyResult,
 };
 use anyhow::Context;
 use backend::CrosstermBackend;
@@ -117,7 +118,7 @@ impl CustomUI {
         })
     }
 
-    fn ui(&mut self, f: &mut Frame) -> anyhow::Result<()> {
+    fn ui(&mut self, f: &mut Frame) -> EmptyResult {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(0)
@@ -338,7 +339,7 @@ impl CustomUI {
         f.render_widget(chart_manager.create_chart(), chunks[0]);
     }
 
-    fn render_bottom(&mut self, f: &mut Frame, area: Rect) -> anyhow::Result<()> {
+    fn render_bottom(&mut self, f: &mut Frame, area: Rect) -> EmptyResult {
         let bottom_parts = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(100)].as_ref())
@@ -405,7 +406,7 @@ impl CustomUI {
         )
     }
 
-    pub fn initialize_tui(&mut self, mut child: Child) -> anyhow::Result<()> {
+    pub fn initialize_tui(&mut self, mut child: Child) -> EmptyResult {
         let backend = CrosstermBackend::new(io::stdout());
         let mut terminal =
             ratatui::Terminal::new(backend).context("Couldn't create the terminal backend")?;

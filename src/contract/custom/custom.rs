@@ -1,13 +1,16 @@
-use crate::contract::{
-    custom::preferences::{
-        DevelopperPreferences,
-        Preferences,
+use crate::{
+    contract::{
+        custom::preferences::{
+            DevelopperPreferences,
+            Preferences,
+        },
+        runtime::{
+            BalancesConfig,
+            Contracts,
+            RuntimeGenesisConfig,
+        },
     },
-    runtime::{
-        BalancesConfig,
-        Contracts,
-        RuntimeGenesisConfig,
-    },
+    EmptyResult,
 };
 use anyhow::{
     bail,
@@ -43,7 +46,7 @@ impl DevelopperPreferences for Preferences {
 
     /// We want for our test case to upload other contracts
     /// Most of the time, you might want this function to be empty
-    fn on_contract_initialize() -> anyhow::Result<()> {
+    fn on_contract_initialize() -> EmptyResult {
         let ink_fuzzed_path: &str = "/tmp/ink_fuzzed_UfY2T";
 
         let adder = Contracts::bare_upload_code(

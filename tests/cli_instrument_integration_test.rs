@@ -17,6 +17,7 @@ mod tests {
     use phink_lib::{
         cli::config::Configuration,
         instrumenter::path::InstrumentedPath,
+        EmptyResult,
     };
     use predicates::prelude::predicate;
     use std::fs;
@@ -24,7 +25,7 @@ mod tests {
     use walkdir::WalkDir;
 
     #[test]
-    fn test_instrument_respects_configuration() -> anyhow::Result<()> {
+    fn test_instrument_respects_configuration() -> EmptyResult {
         let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
@@ -67,7 +68,7 @@ mod tests {
     }
 
     #[test]
-    fn test_instrumentation_multifile_contract() -> anyhow::Result<()> {
+    fn test_instrumentation_multifile_contract() -> EmptyResult {
         let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
@@ -115,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn test_instrument_contains_instrumented_code() -> anyhow::Result<()> {
+    fn test_instrument_contains_instrumented_code() -> EmptyResult {
         let path_instrumented_contract = InstrumentedPath::from(tempdir()?.into_path());
 
         let config = Configuration {
@@ -139,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_instrument_help_terminates_correctly() -> anyhow::Result<()> {
+    fn test_instrument_help_terminates_correctly() -> EmptyResult {
         CommandAssertCmd::cargo_bin("phink")?
             .args(["--config", DEFAULT_TEST_PHINK_TOML])
             .arg("instrument")

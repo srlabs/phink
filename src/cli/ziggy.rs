@@ -1,6 +1,7 @@
 use crate::{
     cli::config::Configuration,
     fuzzer::parser::MIN_SEED_LEN,
+    EmptyResult,
 };
 use io::BufReader;
 use std::io::BufRead;
@@ -127,7 +128,7 @@ impl ZiggyConfig {
             Ensure that your `phink.toml` is properly configured",
         )
     }
-    fn is_valid(config: &Configuration, contract_path: Option<&PathBuf>) -> anyhow::Result<()> {
+    fn is_valid(config: &Configuration, contract_path: Option<&PathBuf>) -> EmptyResult {
         if let Some(path) = contract_path {
             if !path.exists() {
                 bail!(format!(
@@ -172,7 +173,7 @@ impl ZiggyConfig {
         command: ZiggyCommand,
         args: Option<Vec<String>>,
         env: Vec<(String, String)>,
-    ) -> anyhow::Result<()> {
+    ) -> EmptyResult {
         AllowListBuilder::build(self.clone().fuzz_output())
             .context("Building LLVM allowlist failed")?;
 
@@ -197,7 +198,7 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    fn exist_or_bail(&self) -> anyhow::Result<()> {
+    fn exist_or_bail(&self) -> EmptyResult {
         let loc = &self.config().instrumented_contract();
         if !loc.exists() {
             bail!(format!(
@@ -214,7 +215,7 @@ impl ZiggyConfig {
         maybe_args: Option<Vec<String>>,
         env: Vec<(String, String)>,
         ziggy_command: ZiggyCommand,
-    ) -> anyhow::Result<()> {
+    ) -> EmptyResult {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")
@@ -271,7 +272,7 @@ impl ZiggyConfig {
     /// # Arguments
     ///
     /// * `command_builder`: The prepared command to which we'll add the AFL ALLOWLIST
-    pub fn with_allowlist(&self, command_builder: &mut Command) -> anyhow::Result<()> {
+    pub fn with_allowlist(&self, command_builder: &mut Command) -> EmptyResult {
         if cfg!(not(target_os = "macos")) {
             let allowlist = PhinkFiles::new(self.clone().fuzz_output()).path(AllowlistPath);
             command_builder.env(
@@ -286,7 +287,7 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    pub fn ziggy_fuzz(&self) -> anyhow::Result<()> {
+    pub fn ziggy_fuzz(&self) -> EmptyResult {
         let fuzzoutput = &self.config.fuzz_output;
         let dict = PhinkFiles::new(fuzzoutput.to_owned().unwrap_or_default()).path(DictPath);
 
@@ -321,7 +322,7 @@ impl ZiggyConfig {
         self.build_command(ZiggyCommand::Fuzz, Some(fuzzing_args), fuzz_config)
     }
 
-    pub fn ziggy_cover(&self) -> anyhow::Result<()> {
+    pub fn ziggy_cover(&self) -> EmptyResult {
         self.build_command(
             ZiggyCommand::Cover,
             None,
@@ -330,7 +331,7 @@ impl ZiggyConfig {
         Ok(())
     }
 
-    pub fn ziggy_run(&self) -> anyhow::Result<()> {
+    pub fn ziggy_run(&self) -> EmptyResult {
         let covpath = PhinkFiles::new(self.clone().fuzz_output()).path(CoverageTracePath);
 
         // We clean up the old one first
@@ -444,7 +445,7 @@ mod tests {
     }
 
     #[test]
-    fn test_with_allowlist() -> anyhow::Result<()> {
+    fn test_with_allowlist() -> EmptyResult {
         if cfg!(not(target_os = "macos")) {
             let temp_dir = tempdir()?;
             let config = Configuration {
@@ -479,7 +480,7 @@ mod tests {
     }
 
     #[test]
-    fn test_start_build_command() -> anyhow::Result<()> {
+    fn test_start_build_command() -> EmptyResult {
         let config = create_test_config();
         let temp_dir = tempdir()?;
 

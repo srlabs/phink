@@ -1,3 +1,4 @@
+use crate::EmptyResult;
 use anyhow::{
     bail,
     Context,
@@ -21,6 +22,7 @@ use syn::{
     visit_mut::VisitMut,
 };
 use walkdir::WalkDir;
+
 /// Invokes `println!` only if `verbose` is `true`
 macro_rules! phink_log {
     ($self:expr, $($arg:tt)*) => {
@@ -37,11 +39,11 @@ pub trait ContractVisitor {
 
     /// Execute `fn_manipulate` for each Rust file (*.rs) inside `from`, except *.rs contained
     /// inside target/
-    fn for_each_file<F>(from: PathBuf, mut fn_manipulate: F) -> anyhow::Result<()>
+    fn for_each_file<F>(&self, mut fn_manipulate: F) -> EmptyResult
     where
-        F: FnMut(PathBuf) -> anyhow::Result<()>,
+        F: FnMut(PathBuf) -> EmptyResult,
     {
-        for entry in WalkDir::new(&from)
+        for entry in WalkDir::new(self.output_directory())
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
@@ -51,46 +53,69 @@ pub trait ContractVisitor {
         }
         Ok(())
     }
-    fn fork(&self) -> anyhow::Result<PathBuf> {
-        let new_dir = self.output_directory();
-        let c_path = self.input_directory();
 
-        phink_log!(self, "🏗️ Creating new directory {:?}", new_dir.display());
+    /// Create a copy of `input_directory()` to `output_directory()`
+    fn fork(&self) -> EmptyResult {
+        let output_p = self.output_directory();
+        let contract_p = self.input_directory();
 
-        fs::create_dir_all(new_dir.clone())
-            .with_context(|| format!("🙅 Failed to create directory: {new_dir:?}"))?;
+        phink_log!(self, "🏗️ Creating new directory {:?}", output_p.display());
 
-        phink_log!(self, "📁 Starting to copy files from {c_path:?}",);
+        fs::create_dir_all(output_p.clone())
+            .with_context(|| format!("🙅 Failed to create directory: {output_p:?}"))?;
 
-        for entry in WalkDir::new(&c_path) {
+        phink_log!(self, "📁 Starting to copy files from {contract_p:?}",);
+
+        for entry in WalkDir::new(&contract_p) {
             let entry = entry?;
-            let target_path = new_dir.join(
-                entry
-                    .path()
-                    .strip_prefix(&c_path)
-                    .with_context(|| "Couldn't `strip_prefix`")?,
+            let path = entry.path();
+            let target_path = output_p.join(
+                path.strip_prefix(&contract_p)
+                    .context("Couldn't `strip_prefix`")?,
             );
 
-            if entry.path().is_dir() {
-                phink_log!(self, "📂 Creating subdirectory: {:?}", target_path);
+            if path.is_dir() {
+                phink_log!(self, "📂 Creating subdirectory: {target_path:?}");
                 fs::create_dir_all(&target_path)?;
             } else {
-                phink_log!(
-                    self,
-                    "📄 Copying file: {:?} -> {target_path:?}",
-                    entry.path(),
-                );
+                phink_log!(self, "📄 Copying file: {path:?} -> {target_path:?}",);
 
-                copy(entry.path(), &target_path)
+                copy(path, &target_path)
                     .with_context(|| format!("🙅 Failed to copy file to {target_path:?}"))?;
             }
         }
+        phink_log!(
+            self,
+            "{}",
+            format!(
+                "✅ Fork completed successfully! New directory: {}",
+                &self.output_directory().display()
+            )
+        );
 
-        Ok(new_dir.clone())
+        Ok(())
+    }
+
+    /// Depending the `injector`, we visit the `code` and save + format it into `path`
+    fn instrument_file(
+        &self,
+        path: PathBuf,
+        code: &String,
+        injector: impl VisitMut,
+    ) -> EmptyResult {
+        phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
+
+        let modified_code = Self::visit_code(code, injector)
+            .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
+
+        self.save(&modified_code, &path)?;
+        self.format(&path)?;
+
+        Ok(())
     }
 
     /// Go to a contract path and compile the contract with the phink feature.
-    fn build(&self) -> anyhow::Result<()> {
+    fn build(&self) -> EmptyResult {
         let path = self.output_directory();
         let p_display = &path.display();
         if !path.exists() {
@@ -101,7 +126,7 @@ pub trait ContractVisitor {
 
         phink_log!(self, "✂️ Creating `{}` to bypass errors", clippy_d);
 
-        // We must NOT compile in release mode (`--release`), otherwise we won't receive the
+        // We must **not** compile in release mode (`--release`), otherwise we won't receive the
         // `debug_println`
         let output = Command::new("cargo")
             .current_dir(&path)
@@ -136,16 +161,22 @@ pub trait ContractVisitor {
         Ok(quote!(#ast).to_string())
     }
 
-    fn save(source_code: String, rust_file: &Path) -> anyhow::Result<()> {
+    /// Save `source_code` to `rust_file`
+    fn save(&self, source_code: &String, rust_file: &Path) -> EmptyResult {
         let mut file = File::create(rust_file)?;
         file.write_all(source_code.as_bytes())?;
-        println!("✍️ Writing instrumented source code");
+        phink_log!(&self, "✍️ Writing instrumented source code");
         file.flush()?;
         Ok(())
     }
 
-    fn format(rust_file: PathBuf) -> anyhow::Result<()> {
-        println!("🛠️ Formatting {} with `rustfmt`...", rust_file.display());
+    /// Run `rustfmt` on a `rust_file`
+    fn format(&self, rust_file: &PathBuf) -> EmptyResult {
+        phink_log!(
+            &self,
+            "🛠️ Formatting {} with `rustfmt`...",
+            rust_file.display()
+        );
         Command::new("rustfmt")
             .args([rust_file.display().to_string().as_str(), "--edition=2021"])
             .status()?;

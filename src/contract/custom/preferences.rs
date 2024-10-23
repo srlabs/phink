@@ -1,4 +1,6 @@
+use crate::EmptyResult;
 use sp_core::storage::Storage;
+
 pub struct Preferences {}
 
 pub trait DevelopperPreferences {
@@ -10,5 +12,5 @@ pub trait DevelopperPreferences {
     /// Developpers can `impl` this function in order to execute any code during the main
     /// contract initialization. This can be for example, uploading other contracts or
     /// other dependencies. Often, you might want this function to be empty
-    fn on_contract_initialize() -> anyhow::Result<()>;
+    fn on_contract_initialize() -> EmptyResult;
 }

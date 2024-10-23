@@ -227,11 +227,12 @@ impl AFLDashboard {
 mod tests {
     use super::*;
 
+    use crate::EmptyResult;
     use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_is_ready() -> anyhow::Result<()> {
+    fn test_is_ready() -> EmptyResult {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 0 days, 0 hrs, 2 min, 49 sec      │  cycles done : 312   │
@@ -267,7 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn test_spot_crashes() -> anyhow::Result<()> {
+    fn test_spot_crashes() -> EmptyResult {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 0 days, 0 hrs, 2 min, 1 sec      │  cycles done : 312   │
@@ -314,7 +315,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_crashes_or_hangs() -> anyhow::Result<()> {
+    fn test_no_crashes_or_hangs() -> EmptyResult {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 0 days, 1 hrs, 30 min, 0 sec      │  cycles done : 500   │
@@ -354,7 +355,7 @@ mod tests {
     }
 
     #[test]
-    fn test_with_crashes_and_hangs() -> anyhow::Result<()> {
+    fn test_with_crashes_and_hangs() -> EmptyResult {
         let afl_dashboard = "      AFL ++4.21c {mainaflfuzzer} (./target/afl/debug/phink) [explore]
 ┌─ process timing ────────────────────────────────────┬─ overall results ────┐
 │        run time : 1 days, 2 hrs, 45 min, 30 sec     │  cycles done : 1000  │
@@ -395,7 +396,7 @@ mod tests {
     }
 
     #[test]
-    fn test_with_real_fixture() -> anyhow::Result<()> {
+    fn test_with_real_fixture() -> EmptyResult {
         let dashboard = AFLDashboard::from_fullpath(PathBuf::from("tests/fixtures/afl.log"))?;
         let properties = dashboard.read_properties()?;
         assert_eq!(properties.saved_crashes, 42);

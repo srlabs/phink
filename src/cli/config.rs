@@ -15,6 +15,7 @@ use crate::{
     },
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
     instrumenter::path::InstrumentedPath,
+    EmptyResult,
 };
 use anyhow::{
     bail,
@@ -223,10 +224,10 @@ impl Configuration {
             .path
     }
 
-    pub fn save_as_toml(&self, to: &str) -> anyhow::Result<()> {
+    pub fn save_as_toml(&self, to: &str) -> EmptyResult {
         let toml_str =
             toml::to_string(self).with_context(|| "Couldn't serialize to toml".to_string())?;
-        let mut file = File::create(to).with_context(|| format!("Couldn't create file {}", to))?;
+        let mut file = File::create(to).with_context(|| format!("Couldn't create file {to}"))?;
         file.write_all(toml_str.as_bytes())?;
         Ok(())
     }

@@ -166,6 +166,7 @@ mod test {
             },
         },
         instrumenter::path::InstrumentedPath,
+        EmptyResult,
     };
     use contract_transcode::ContractMessageTranscoder;
 
@@ -381,7 +382,7 @@ mod test {
     }
 
     #[test]
-    fn parse_one_message_dummy() -> anyhow::Result<()> {
+    fn parse_one_message_dummy() -> EmptyResult {
         let encoded_bytes = hex::decode("0000000001fa80c2f600")?;
 
         let configuration = Configuration {
@@ -422,7 +423,7 @@ mod test {
     }
 
     #[test]
-    fn test_custom_origin() -> anyhow::Result<()> {
+    fn test_custom_origin() -> EmptyResult {
         let encoded_bytes = hex::decode("00000000fffa80c2f600")?;
 
         let configuration = Configuration {
@@ -466,7 +467,7 @@ mod test {
     }
 
     #[test]
-    fn test_good_money_transfered() -> anyhow::Result<()> {
+    fn test_good_money_transfered() -> EmptyResult {
         let binding = hex::decode(
             "ffffffff\
         ff\
@@ -520,7 +521,7 @@ mod test {
     }
 
     #[test]
-    fn test_good_money_to_transferable_msg_transfered() -> anyhow::Result<()> {
+    fn test_good_money_to_transferable_msg_transfered() -> EmptyResult {
         let binding = hex::decode(
             "ffffffff\
         ff\
@@ -573,7 +574,7 @@ mod test {
         Ok(())
     }
     #[test]
-    fn parse_one_input_with_two_messages_dns() -> anyhow::Result<()> {
+    fn parse_one_input_with_two_messages_dns() -> EmptyResult {
         let encoded_bytes = hex::decode(
             "0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727\
             2a2a2a2a2a2a2a2a\
@@ -618,7 +619,7 @@ mod test {
     }
 
     #[test]
-    fn assert_reached_too_many_message() -> anyhow::Result<()> {
+    fn assert_reached_too_many_message() -> EmptyResult {
         let encoded_bytes = hex::decode(
             "0000000001229b553f9400000000000000000027272727272727272700002727272727272727272727\
             2a2a2a2a2a2a2a2a\

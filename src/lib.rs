@@ -44,6 +44,9 @@ pub mod cover;
 pub mod fuzzer;
 pub mod instrumenter;
 
+/// This type is used to handle all the different errors on Phink. It's a simple biding to anyhow.
+pub type EmptyResult = anyhow::Result<()>;
+
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]
 #[clap(
@@ -122,7 +125,7 @@ pub fn main() {
     }
 }
 
-fn handle_cli() -> anyhow::Result<()> {
+fn handle_cli() -> EmptyResult {
     let cli = Cli::parse();
     let conf = &cli.config;
     if !conf.exists() {
@@ -146,6 +149,7 @@ fn handle_cli() -> anyhow::Result<()> {
                 .to_owned()
                 .instrument()
                 .context("Couldn't instrument")?;
+
             engine.build().context("Couldn't run the build")?;
 
             println!(
@@ -187,8 +191,10 @@ fn handle_cli() -> anyhow::Result<()> {
         } => {
             let seeder = SeedExtractInjector::new(&contract, compiled_directory)?;
             seeder
-                .extract_seeds()
+                .prepare()
                 .context(format!("Couldn't extract the seed from {contract:?}"))?;
+
+            // TODO: Run the tests,
             Ok(())
         }
     }

@@ -79,6 +79,7 @@ impl CorpusWatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::EmptyResult;
     use std::{
         fs,
         io::Write,
@@ -111,7 +112,7 @@ mod tests {
         assert!(result.is_err());
     }
     #[test]
-    fn test_corpus_watcher_data() -> anyhow::Result<()> {
+    fn test_corpus_watcher_data() -> EmptyResult {
         let corpus_path = Path::new("tests/fixtures/corpus").to_path_buf();
 
         let mut watcher = CorpusWatcher::from_fullpath(corpus_path.clone())?;

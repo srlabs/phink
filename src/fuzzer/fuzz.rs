@@ -30,6 +30,7 @@ use crate::{
             MIN_SEED_LEN,
         },
     },
+    EmptyResult,
 };
 use anyhow::Context;
 use frame_support::__private::BasicExternalities;
@@ -61,7 +62,7 @@ impl Fuzzer {
         })
     }
 
-    pub fn execute_harness(self, mode: FuzzingMode) -> anyhow::Result<()> {
+    pub fn execute_harness(self, mode: FuzzingMode) -> EmptyResult {
         let config = &self.ziggy_config;
         match mode {
             Fuzz => {
@@ -254,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_database_and_envbuilder() -> anyhow::Result<()> {
+    fn test_database_and_envbuilder() -> EmptyResult {
         let config = create_test_config();
         let contract_bridge = Fuzzer::new(Ok(config.clone()))?.setup;
 

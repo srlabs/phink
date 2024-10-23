@@ -1,6 +1,7 @@
 use crate::{
     cli::ziggy::ZiggyConfig,
     instrumenter::instrumentation::instrument::CoverageInjector,
+    EmptyResult,
 };
 use anyhow::{
     anyhow,
@@ -37,15 +38,6 @@ pub struct Instrumenter {
 pub struct InkFilesPath {
     pub wasm_path: PathBuf,
     pub specs_path: PathBuf,
-}
-
-/// Invokes `println!` only if `verbose` is `true`
-macro_rules! phink_log {
-    ($self:expr, $($arg:tt)*) => {
-        if $self.z_config.config().verbose {
-            println!($($arg)*);
-        }
-    };
 }
 
 impl ContractVisitor for Instrumenter {
@@ -97,45 +89,22 @@ impl Instrumenter {
         })
     }
 
-    pub fn instrument(self) -> anyhow::Result<()> {
-        let new_working_dir = self
-            .to_owned()
-            .fork()
-            .with_context(|| "Forking the project to a new directory failed".to_string())?;
+    pub fn instrument(self) -> EmptyResult {
+        self.fork()
+            .context("Forking the project to a new directory failed")?;
 
-        phink_log!(
-            self,
-            "✅ Fork completed successfully! New directory: {new_working_dir:?}"
-        );
+        self.for_each_file(|file_path| {
+            let source_code =
+                fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
 
-        Self::for_each_file(new_working_dir, |rs_file| {
-            self.instrument_file(rs_file)
-                .context("Instrumenting the file  wasn't possible".to_string())
+            if Self::already_instrumented(&source_code) {
+                println!("{file_path:?} was already instrumented");
+                return Ok(());
+            }
+
+            self.instrument_file(file_path, &source_code, CoverageInjector::new())
+                .context("Failed to instrument the file")
         })?;
-
-        Ok(())
-    }
-
-    fn instrument_file(&self, path: PathBuf) -> anyhow::Result<()> {
-        let contract_cov_manager = CoverageInjector::new();
-        let code = fs::read_to_string(path.clone()).context(format!("Couldn't read {path:?}"))?;
-
-        if Self::already_instrumented(&code) {
-            println!(
-                "{} was already instrumented",
-                path.file_name().unwrap().display()
-            );
-            return Ok(())
-        }
-
-        phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
-
-        let modified_code = Self::visit_code(&code, contract_cov_manager)
-            .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
-
-        let rust_file = path;
-        Self::save(modified_code, &rust_file)?;
-        Self::format(rust_file)?;
 
         Ok(())
     }
@@ -206,6 +175,7 @@ mod tests {
     use crate::{
         cli::config::Configuration,
         instrumenter::path::InstrumentedPath,
+        EmptyResult,
     };
     use std::{
         default::Default,
@@ -333,8 +303,8 @@ mod tests {
         let config = create_temp_ziggy_config(false, false);
         let instrumenter = Instrumenter::new(config.clone());
 
-        let result = instrumenter.fork().unwrap();
-        let files: Vec<_> = WalkDir::new(&result)
+        instrumenter.fork().unwrap();
+        let files: Vec<_> = WalkDir::new(&instrumenter.output_directory())
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
@@ -345,7 +315,7 @@ mod tests {
     }
 
     #[test]
-    fn test_build_successful() -> anyhow::Result<()> {
+    fn test_build_successful() -> EmptyResult {
         let config = create_temp_ziggy_config(false, false);
 
         let instrumenter = Instrumenter::new(config);

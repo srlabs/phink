@@ -15,6 +15,7 @@ use crate::{
         database::SelectorDatabase,
         selector::Selector,
     },
+    EmptyResult,
 };
 use anyhow::Context;
 use std::{
@@ -59,7 +60,7 @@ pub struct Dict {
 }
 
 impl Dict {
-    pub fn write_dict_entry(&self, selector: &Selector) -> anyhow::Result<()> {
+    pub fn write_dict_entry(&self, selector: &Selector) -> EmptyResult {
         let mut file = OpenOptions::new()
             .append(true)
             .open(&self.file_path)
@@ -132,7 +133,7 @@ impl EnvironmentBuilder {
     }
 
     /// This function builds both the correct seeds and the dict file for AFL++
-    pub fn build_env(self, conf: ZiggyConfig) -> anyhow::Result<()> {
+    pub fn build_env(self, conf: ZiggyConfig) -> EmptyResult {
         let phink_file = PhinkFiles::new(conf.clone().fuzz_output());
 
         let dict = Dict::new(
@@ -164,6 +165,7 @@ impl EnvironmentBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::EmptyResult;
     use std::{
         fs,
         io,
@@ -194,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_dict_entry() -> anyhow::Result<()> {
+    fn test_write_dict_entry() -> EmptyResult {
         let path = create_temp_phink_file("test_dict");
         let phink_file = PhinkFiles::new(path.clone());
         let dict = Dict::new(phink_file, 3)?;
@@ -207,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn test_corpus_manager_new_creates_dir() -> anyhow::Result<()> {
+    fn test_corpus_manager_new_creates_dir() -> EmptyResult {
         let path = create_temp_phink_file("test_corpus");
         let phink_file = PhinkFiles::new(path.clone());
 
