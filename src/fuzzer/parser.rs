@@ -10,6 +10,7 @@ use crate::{
         selectors::selector::Selector,
     },
     fuzzer::manager::CampaignManager,
+    ResultOf,
 };
 use contract_transcode::{
     ContractMessageTranscoder,
@@ -270,7 +271,7 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
 pub fn decode_contract_message(
     guard: &ContractMessageTranscoder,
     data: &mut Vec<u8>,
-) -> anyhow::Result<Value> {
+) -> ResultOf<Value> {
     use contract_transcode::Map;
     use std::io::Read;
 

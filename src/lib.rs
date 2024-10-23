@@ -46,6 +46,7 @@ pub mod instrumenter;
 
 /// This type is used to handle all the different errors on Phink. It's a simple biding to anyhow.
 pub type EmptyResult = anyhow::Result<()>;
+pub type ResultOf<T> = anyhow::Result<T>;
 
 /// This struct defines the command line arguments expected by Phink.
 #[derive(Parser, Debug)]

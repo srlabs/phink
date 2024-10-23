@@ -16,6 +16,7 @@ use crate::{
         },
     },
     EmptyResult,
+    ResultOf,
 };
 use anyhow::{
     bail,
@@ -63,7 +64,7 @@ impl CustomManager {
         }
     }
 
-    pub fn cmd_fuzz(self) -> anyhow::Result<Child> {
+    pub fn cmd_fuzz(self) -> ResultOf<Child> {
         let mut binding = Command::new("cargo");
         let command_builder = binding
             .arg("ziggy")

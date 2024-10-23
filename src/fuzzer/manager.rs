@@ -17,6 +17,7 @@ use crate::{
         OneInput,
         Origin,
     },
+    ResultOf,
 };
 use anyhow::{
     bail,
@@ -50,7 +51,7 @@ impl CampaignManager {
         database: SelectorDatabase,
         setup: ContractSetup,
         configuration: Configuration,
-    ) -> anyhow::Result<Self> {
+    ) -> ResultOf<Self> {
         let transcoder = Arc::new(Mutex::new(
             ContractMessageTranscoder::load(Path::new(&setup.path_to_specs))
                 .context("Cannot instantiante the `ContractMessageTranscoder`")?,
@@ -135,7 +136,7 @@ impl CampaignManager {
     }
 
     /// This function aims to call every invariants via `invariant_selectors`.
-    pub fn are_invariants_failing(&self, origin: Origin) -> anyhow::Result<Selector> {
+    pub fn are_invariants_failing(&self, origin: Origin) -> ResultOf<Selector> {
         for invariant in &self.database.to_owned().invariants()? {
             let invariant_call: FullContractResponse = self.to_owned().setup.call(
                 invariant.as_ref(),

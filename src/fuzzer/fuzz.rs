@@ -31,6 +31,7 @@ use crate::{
         },
     },
     EmptyResult,
+    ResultOf,
 };
 use anyhow::Context;
 use frame_support::__private::BasicExternalities;
@@ -54,7 +55,7 @@ pub struct Fuzzer {
 }
 
 impl Fuzzer {
-    pub fn new(ziggy_config: anyhow::Result<ZiggyConfig>) -> anyhow::Result<Self> {
+    pub fn new(ziggy_config: anyhow::Result<ZiggyConfig>) -> ResultOf<Self> {
         let config = ziggy_config?;
         Ok(Self {
             ziggy_config: config.to_owned(),
@@ -87,7 +88,7 @@ impl Fuzzer {
         Ok(())
     }
 
-    pub fn init_fuzzer(self) -> anyhow::Result<CampaignManager> {
+    pub fn init_fuzzer(self) -> ResultOf<CampaignManager> {
         let contract_bridge = self.setup.clone();
 
         let invariants = PayloadCrafter::extract_invariants(&contract_bridge.json_specs)

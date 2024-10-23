@@ -16,6 +16,7 @@ use crate::{
         selector::Selector,
     },
     EmptyResult,
+    ResultOf,
 };
 use anyhow::Context;
 use std::{
@@ -106,7 +107,7 @@ pub struct CorpusManager {
 }
 
 impl CorpusManager {
-    pub fn new(phink_file: PhinkFiles) -> anyhow::Result<CorpusManager> {
+    pub fn new(phink_file: PhinkFiles) -> ResultOf<CorpusManager> {
         let corpus_dir = phink_file.path(CorpusPath);
         fs::create_dir_all(&corpus_dir)?;
         Ok(Self { corpus_dir })

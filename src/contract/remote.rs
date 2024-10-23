@@ -58,6 +58,7 @@ use crate::{
     },
     cover::trace::CoverageTrace,
     instrumenter::instrumentation::Instrumenter,
+    ResultOf,
 };
 
 pub type BalanceOf<T> =
@@ -135,7 +136,7 @@ impl ContractSetup {
 
     /// Create a proper genesis storage, deploy and instantiate a given ink!
     /// contract
-    pub fn initialize_wasm(config: ZiggyConfig) -> anyhow::Result<Self> {
+    pub fn initialize_wasm(config: ZiggyConfig) -> ResultOf<Self> {
         let finder = Instrumenter::new(config.clone())
             .find()
             .context("Couldn't execute `find` for this current config")?;
@@ -218,7 +219,7 @@ impl ContractSetup {
         ))
     }
 
-    pub fn upload(wasm_bytes: &[u8], who: &AccountId) -> anyhow::Result<H256> {
+    pub fn upload(wasm_bytes: &[u8], who: &AccountId) -> ResultOf<H256> {
         let upload_result = Contracts::bare_upload_code(
             who.clone(),
             Vec::from(wasm_bytes),
@@ -242,7 +243,7 @@ impl ContractSetup {
         code_hash: H256,
         who: &AccountId,
         config: &Configuration,
-    ) -> anyhow::Result<AccountIdOf<Runtime>> {
+    ) -> ResultOf<AccountIdOf<Runtime>> {
         let data: Vec<u8> = if let Some(payload) = &config.constructor_payload {
             hex::decode(payload.replace(" ", ""))
                 .context("Impossible to hex-decode this. Check your config file")?

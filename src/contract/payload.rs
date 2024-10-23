@@ -1,4 +1,7 @@
-use crate::contract::selectors::selector::Selector;
+use crate::{
+    contract::selectors::selector::Selector,
+    ResultOf,
+};
 use anyhow::{
     bail,
     Context,
@@ -29,7 +32,7 @@ struct Spec {
 }
 
 impl Spec {
-    pub fn parse(&self) -> anyhow::Result<Vec<Selector>> {
+    pub fn parse(&self) -> ResultOf<Vec<Selector>> {
         if self.constructors.is_empty() || self.messages.is_empty() {
             bail!("Empty constructor or messages vec")
         };
@@ -48,7 +51,7 @@ struct SelectorEntry {
     selector: String,
 }
 impl PayloadCrafter {
-    pub fn extract_all(contract_path: PathBuf) -> anyhow::Result<Vec<Selector>> {
+    pub fn extract_all(contract_path: PathBuf) -> ResultOf<Vec<Selector>> {
         let mut all_selectors = Vec::new();
 
         let target_ink_path = contract_path.join("target/ink");
@@ -130,7 +133,7 @@ impl PayloadCrafter {
     /// multiple constructors, returns the one that preferably doesn't have
     /// args. If no suitable constructor is found or there is an error in
     /// processing, this function returns `Err`.
-    pub fn extract_constructor(json_data: &str) -> anyhow::Result<Selector> {
+    pub fn extract_constructor(json_data: &str) -> ResultOf<Selector> {
         let parsed_json: Value = serde_json::from_str(json_data)?;
 
         let constructors = parsed_json["spec"]["constructors"].as_array().unwrap();

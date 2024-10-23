@@ -2,6 +2,7 @@ use crate::{
     cli::config::Configuration,
     fuzzer::parser::MIN_SEED_LEN,
     EmptyResult,
+    ResultOf,
 };
 use io::BufReader;
 use std::io::BufRead;
@@ -96,7 +97,7 @@ impl Display for ZiggyConfig {
 }
 
 impl ZiggyConfig {
-    pub fn new(config: Configuration) -> anyhow::Result<Self> {
+    pub fn new(config: Configuration) -> ResultOf<Self> {
         Self::is_valid(&config, None)?;
 
         Ok(Self {
@@ -105,10 +106,7 @@ impl ZiggyConfig {
         })
     }
 
-    pub fn new_with_contract(
-        config: Configuration,
-        contract_path: PathBuf,
-    ) -> anyhow::Result<Self> {
+    pub fn new_with_contract(config: Configuration, contract_path: PathBuf) -> ResultOf<Self> {
         Self::is_valid(&config, Some(&contract_path))?;
 
         Ok(Self {
@@ -122,7 +120,7 @@ impl ZiggyConfig {
     }
 
     /// Returns the contract path of the ink! contract
-    pub fn contract_path(&self) -> anyhow::Result<PathBuf> {
+    pub fn contract_path(&self) -> ResultOf<PathBuf> {
         self.contract_path.to_owned().context(
             "Contract path wasn't passed in the config, it is currently `None`.\
             Ensure that your `phink.toml` is properly configured",
@@ -158,7 +156,7 @@ impl ZiggyConfig {
         }
     }
 
-    pub fn parse(config_str: String) -> anyhow::Result<Self> {
+    pub fn parse(config_str: String) -> ResultOf<Self> {
         let config: Self =
             serde_json::from_str(&config_str).context("❌ Failed to parse config")?;
         if config.config().verbose {

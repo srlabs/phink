@@ -1,4 +1,7 @@
-use crate::EmptyResult;
+use crate::{
+    EmptyResult,
+    ResultOf,
+};
 use anyhow::{
     bail,
     Context,
@@ -150,7 +153,7 @@ pub trait ContractVisitor {
         Ok(())
     }
 
-    fn visit_code(code: &str, mut visitor: impl VisitMut) -> anyhow::Result<String> {
+    fn visit_code(code: &str, mut visitor: impl VisitMut) -> ResultOf<String> {
         let mut ast = parse_file(code)?;
         visitor.visit_file_mut(&mut ast);
         Ok(quote!(#ast).to_string())
@@ -183,7 +186,7 @@ pub trait ContractVisitor {
     ///
     /// # Returns
     /// `Result<String>` containing the canonicalized path of the temporary file as a `String`.
-    fn create_temp_clippy() -> anyhow::Result<String> {
+    fn create_temp_clippy() -> ResultOf<String> {
         let temp_dir = tempfile::TempDir::new().context("Failed to create temporary directory")?;
         let clippy_toml_path = temp_dir.path().join("clippy.toml");
 

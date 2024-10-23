@@ -16,6 +16,7 @@ use crate::{
     fuzzer::fuzz::MAX_MESSAGES_PER_EXEC,
     instrumenter::path::InstrumentedPath,
     EmptyResult,
+    ResultOf,
 };
 use anyhow::{
     bail,
@@ -185,7 +186,7 @@ impl PhinkFiles {
 
 impl TryFrom<String> for Configuration {
     type Error = anyhow::Error;
-    fn try_from(config_str: String) -> anyhow::Result<Self> {
+    fn try_from(config_str: String) -> ResultOf<Self> {
         let config: Configuration = match toml::from_str(&config_str) {
             Ok(config) => config,
             Err(e) => bail!("Can't parse config: {e}"),
@@ -201,7 +202,7 @@ impl TryFrom<String> for Configuration {
 
 impl TryFrom<&PathBuf> for Configuration {
     type Error = anyhow::Error;
-    fn try_from(path: &PathBuf) -> anyhow::Result<Self> {
+    fn try_from(path: &PathBuf) -> ResultOf<Self> {
         match fs::read_to_string(path) {
             Ok(config) => config.try_into(),
             Err(err) => bail!("🚫 Can't read config: {err}"),
@@ -343,7 +344,7 @@ mod tests {
             storage_deposit_limit = "not_a_number"
         "#;
 
-        let result: anyhow::Result<Configuration> = invalid_config_str.to_string().try_into();
+        let result: ResultOf<Configuration> = invalid_config_str.to_string().try_into();
         assert!(result.is_err());
     }
 

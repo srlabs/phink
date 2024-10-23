@@ -1,6 +1,9 @@
-use crate::cli::{
-    config::PFiles,
-    ui::traits::FromPath,
+use crate::{
+    cli::{
+        config::PFiles,
+        ui::traits::FromPath,
+    },
+    ResultOf,
 };
 use anyhow::bail;
 use ratatui::{
@@ -181,7 +184,7 @@ impl FromPath for AFLDashboard {
 
 impl AFLDashboard {
     /// Read and parse properties from the log file
-    pub fn read_properties(&self) -> anyhow::Result<AFLProperties> {
+    pub fn read_properties(&self) -> ResultOf<AFLProperties> {
         let content = self.show_log()?;
 
         let delimiter = "AFL";
@@ -208,7 +211,7 @@ impl AFLDashboard {
     }
 
     // Function to parse properties using regex
-    fn parse_properties(content: &str) -> anyhow::Result<AFLProperties> {
+    fn parse_properties(content: &str) -> ResultOf<AFLProperties> {
         match AFLProperties::from_str(content) {
             Ok(e) => Ok(e),
             Err(_) => bail!("Couldn't parse the AFL dashboard"),

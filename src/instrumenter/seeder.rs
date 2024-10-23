@@ -1,6 +1,7 @@
 use crate::{
     instrumenter::traits::visitor::ContractVisitor,
     EmptyResult,
+    ResultOf,
 };
 use anyhow::{
     bail,
@@ -38,7 +39,7 @@ pub struct SeedExtractInjector {
 }
 
 impl SeedExtractInjector {
-    pub fn new(contract_path: &Path, compiled_path: Option<PathBuf>) -> anyhow::Result<Self> {
+    pub fn new(contract_path: &Path, compiled_path: Option<PathBuf>) -> ResultOf<Self> {
         if !contract_path.exists() {
             bail!("Couldn't find the contract at {contract_path:?}")
         }

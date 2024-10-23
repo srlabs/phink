@@ -2,6 +2,7 @@ use crate::{
     cli::ziggy::ZiggyConfig,
     instrumenter::instrumentation::instrument::CoverageInjector,
     EmptyResult,
+    ResultOf,
 };
 use anyhow::{
     anyhow,
@@ -59,7 +60,7 @@ impl Instrumenter {
         Self { z_config }
     }
 
-    pub fn find(&self) -> anyhow::Result<InkFilesPath> {
+    pub fn find(&self) -> ResultOf<InkFilesPath> {
         let c_path = self.output_directory();
         let c_path_str = c_path.to_str().unwrap();
 

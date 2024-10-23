@@ -19,6 +19,7 @@ use crate::{
     },
     instrumenter::instrumentation::Instrumenter,
     EmptyResult,
+    ResultOf,
 };
 use anyhow::Context;
 use backend::CrosstermBackend;
@@ -82,7 +83,7 @@ pub struct CustomUI {
 pub static CTOR_VALUE: OnceLock<String> = OnceLock::new();
 
 impl CustomUI {
-    pub fn new(ziggy_config: &ZiggyConfig) -> anyhow::Result<CustomUI> {
+    pub fn new(ziggy_config: &ZiggyConfig) -> ResultOf<CustomUI> {
         CTOR_VALUE.get_or_init(|| {
             if let Ok(maybe_metadata) = Instrumenter::new(ziggy_config.clone()).find() {
                 if let Ok(transcoder) = ContractMessageTranscoder::load(maybe_metadata.specs_path) {

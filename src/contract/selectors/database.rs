@@ -1,4 +1,7 @@
-use crate::contract::selectors::selector::Selector;
+use crate::{
+    contract::selectors::selector::Selector,
+    ResultOf,
+};
 use anyhow::bail;
 
 #[derive(Clone, Debug)]
@@ -49,7 +52,7 @@ impl SelectorDatabase {
         self.messages.extend(messages);
     }
 
-    pub fn get_unique_messages(self) -> anyhow::Result<Vec<Selector>> {
+    pub fn get_unique_messages(self) -> ResultOf<Vec<Selector>> {
         if !self.messages.is_empty() && !self.invariants.is_empty() {
             return Ok(self
                 .messages
@@ -60,14 +63,14 @@ impl SelectorDatabase {
         bail!("No messages were found in the database")
     }
 
-    pub fn invariants(self) -> anyhow::Result<Vec<Selector>> {
+    pub fn invariants(self) -> ResultOf<Vec<Selector>> {
         if !self.invariants.is_empty() {
             return Ok(self.invariants)
         }
         bail!("No invariants were found in the database")
     }
 
-    pub fn messages(self) -> anyhow::Result<Vec<Selector>> {
+    pub fn messages(self) -> ResultOf<Vec<Selector>> {
         if !self.messages.is_empty() {
             return Ok(self.messages)
         }
