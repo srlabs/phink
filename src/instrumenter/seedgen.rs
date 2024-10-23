@@ -3,6 +3,7 @@ use crate::{
     EmptyResult,
     ResultOf,
 };
+
 use anyhow::{
     bail,
     Context,
@@ -30,7 +31,11 @@ use syn::{
     Pat,
     Stmt,
 };
-use tempfile::tempdir;
+use toml_edit::{
+    DocumentMut,
+    Formatted,
+    Value,
+};
 
 #[derive(Debug, Clone)]
 pub struct SeedExtractInjector {
@@ -48,6 +53,9 @@ impl SeedExtractInjector {
             compiled_path,
         })
     }
+
+    /// Fork the contract, insert the snippet to extract the seeds, patch Cargo.toml, run the tests,
+    /// extracts the seeds.
     pub fn prepare(&self) -> EmptyResult {
         self.fork()
             .context("Forking the project to a new directory failed")?;
@@ -55,8 +63,11 @@ impl SeedExtractInjector {
         self.insert_snippet()
             .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
 
-        // self.build()
-        //     .context("Couldn't build the contract required for seed extraction")?;
+        self.patch_toml()
+            .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
+
+        self.build()
+            .context("Couldn't build the contract required for seed extraction")?;
         Ok(())
     }
 
@@ -64,37 +75,63 @@ impl SeedExtractInjector {
         todo!()
     }
 
+    /// Insert the snippet that will extract each call and send it via `debug_println!`
     fn insert_snippet(&self) -> EmptyResult {
         self.for_each_file(|file_path| {
             let source_code =
                 fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
 
-            self.instrument_file(file_path, &source_code, self.clone())
+            self.instrument_file(file_path, &source_code, self)
                 .context("Failed to instrument the file")
         })?;
         Ok(())
     }
-}
 
-impl ContractVisitor for SeedExtractInjector {
-    fn input_directory(&self) -> PathBuf {
-        self.contract_path.to_path_buf()
-    }
+    /// Patch the `Cargo.toml` to use our own version of ink!
+    fn patch_toml(&self) -> EmptyResult {
+        let cargo_path = &self.output_directory().join("Cargo.toml");
+        let cargo_content = fs::read_to_string(cargo_path)?;
+        let mut doc = cargo_content.parse::<DocumentMut>()?;
+        const REPO: &str = "https://github.com/kevin-valerio/ink";
 
-    fn output_directory(&self) -> PathBuf {
-        match &self.compiled_path {
-            // We create a new directory in tmp/ if nothing is passed
-            None => tempdir().unwrap().into_path(),
-            Some(contract) => contract.into(),
+        // Function to update ink dependencies in a table
+        fn update_ink_deps(table: &mut toml_edit::Table) {
+            for (key, value) in table.iter_mut() {
+                if let toml_edit::Item::Value(Value::InlineTable(dep_table)) = value {
+                    // Only modify if it's a table and contains a version
+                    if dep_table.contains_key("version") {
+                        // Check package name if specified, otherwise use the key
+                        let dep_name = dep_table
+                            .get("package")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(&*key);
+
+                        if dep_name.starts_with("ink_") || dep_name == "ink" {
+                            dep_table.insert(
+                                "git",
+                                Value::String(Formatted::new(REPO.parse().unwrap())),
+                            );
+                        }
+                    }
+                }
+            }
         }
+
+        if let Some(deps) = doc.get_mut("dependencies").and_then(|d| d.as_table_mut()) {
+            update_ink_deps(deps);
+        }
+
+        if let Some(dev_deps) = doc
+            .get_mut("dev-dependencies")
+            .and_then(|d| d.as_table_mut())
+        {
+            update_ink_deps(dev_deps);
+        }
+
+        fs::write(cargo_path, doc.to_string())?;
+        Ok(())
     }
 
-    fn verbose(&self) -> bool {
-        true
-    }
-}
-
-impl SeedExtractInjector {
     /// Check if the function has the `#[ink(message)]` attribute
     fn has_ink_message_attribute(i: &mut ImplItemFn) -> bool {
         for attr in &i.attrs {
@@ -113,7 +150,33 @@ impl SeedExtractInjector {
     }
 }
 
-impl VisitMut for SeedExtractInjector {
+impl ContractVisitor for SeedExtractInjector {
+    fn input_directory(&self) -> PathBuf {
+        self.contract_path.to_path_buf()
+    }
+
+    fn output_directory(&self) -> PathBuf {
+        let path = match &self.compiled_path {
+            None => {
+                // Create a new directory that is not tied to `TempDir`
+                let dir = std::env::temp_dir().join("phink_seedgen");
+                fs::create_dir_all(&dir).expect("Failed to create directory");
+                dir
+            }
+            Some(contract) => contract.to_path_buf(),
+        };
+        if self.verbose() {
+            println!("Using {path:?} for contract output");
+        }
+        path
+    }
+
+    fn verbose(&self) -> bool {
+        true
+    }
+}
+
+impl VisitMut for &SeedExtractInjector {
     fn visit_item_mut(&mut self, item: &mut Item) {
         match item {
             Item::Fn(f) => self.visit_item_fn_mut(f),
@@ -127,7 +190,7 @@ impl VisitMut for SeedExtractInjector {
     fn visit_item_impl_mut(&mut self, i: &mut ItemImpl) {
         for item in &mut i.items {
             if let ImplItem::Fn(method) = item {
-                if Self::has_ink_message_attribute(method) {
+                if SeedExtractInjector::has_ink_message_attribute(method) {
                     let fn_name = &method.sig.ident;
                     // If the visited function isn't an invariant
                     if !fn_name.to_string().starts_with("phink_") {
@@ -195,7 +258,7 @@ impl VisitMut for SeedExtractInjector {
 
 #[cfg(test)]
 mod tests {
-    use crate::instrumenter::seeder::SeedExtractInjector;
+    use crate::instrumenter::seedgen::SeedExtractInjector;
     use quote::quote;
     use std::path::PathBuf;
     use syn::{
@@ -243,7 +306,7 @@ mod tests {
                                     if data.chars().nth(1).unwrap() == 'u' {
                                         if data.chars().nth(2).unwrap() == 'z' {
                                             if data.chars().nth(3).unwrap() == 'z' {
-                                                self.forbidden_number = 69;
+                                                self.forbidden_number = 42;
                                             }
                                         }
                                     }
@@ -282,7 +345,7 @@ mod tests {
                         #[cfg(feature = "phink")]
                         #[ink(message)]
                         pub fn phink_assert_dangerous_number(&self) {
-                            let forbidden_number = 69;
+                            let forbidden_number = 42;
                             assert_ne!(self.forbidden_number, forbidden_number);
                         }
                     }
@@ -290,7 +353,7 @@ mod tests {
 
         let mut syntax_tree: File = parse_str(input_code).expect("Failed to parse code");
         let mut seed_injector =
-            SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
+            &SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
         seed_injector.visit_file_mut(&mut syntax_tree);
 
         let generated_code = quote!(#syntax_tree).to_string();

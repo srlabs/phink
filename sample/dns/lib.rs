@@ -2,13 +2,15 @@
 
 #[ink::contract]
 mod dns {
-    use ink::storage::Mapping;
-    use ink::storage::StorageVec;
+    use ink::storage::{
+        Mapping,
+        StorageVec,
+    };
 
     const FORBIDDEN_DOMAIN: [u8; 32] = [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 1,
-    ]; //we forbid it :/
+    ]; // we forbid it :/
 
     /// Emitted whenever a new name is being registered.
     #[ink(event)]
@@ -57,7 +59,6 @@ mod dns {
         state: i32,
 
         should_panic_after_three_calls: bool,
-
     }
 
     impl Default for DomainNameService {
@@ -123,7 +124,6 @@ mod dns {
             Ok(())
         }
 
-
         #[ink(message)]
         pub fn set_address(&mut self, name: Hash, new_address: AccountId) -> Result<()> {
             let caller = self.env().caller();
@@ -157,8 +157,8 @@ mod dns {
                 return Err(Error::CallerIsNotOwner);
             }
 
-            if number == 69i32 {
-                //NOP, 69 is forbidden! right?
+            if number == 42i32 {
+                // NOP, 42 is forbidden! right?
                 return Err(Error::ForbiddenDomain);
             }
 
@@ -240,7 +240,6 @@ mod dns {
             ink::env::test::set_caller::<Environment>(caller);
         }
 
-
         #[ink::test]
         fn test_invariants_nested_calls() {
             let accounts = default_accounts();
@@ -280,7 +279,6 @@ mod dns {
             assert_eq!(contract.get_address(name), accounts.bob);
             assert_eq!(contract.should_panic_after_three_calls, true);
         }
-
 
         #[ink::test]
         fn transfer_works() {

@@ -92,7 +92,7 @@ pub trait ContractVisitor {
             "{}",
             format!(
                 "✅ Fork completed successfully! New directory: {}",
-                &self.output_directory().display()
+                &output_p.display()
             )
         );
 
@@ -104,7 +104,7 @@ pub trait ContractVisitor {
         phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
 
         let modified_code = Self::visit_code(code, injector)
-            .with_context(|| "⚠️ This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.".to_string())?;
+            .context("This is most likely that your ink! contract contains invalid syntax. Try to compile it first. Also, ensure that `cargo-contract` is installed.")?;
 
         self.save(&modified_code, &path)?;
         self.format(&path)?;
@@ -116,19 +116,19 @@ pub trait ContractVisitor {
     fn build(&self) -> EmptyResult {
         let path = self.output_directory();
         let p_display = &path.display();
+
         if !path.exists() {
             bail!("There was probably a fork issue, as {p_display} doesn't exist.")
         }
 
         let clippy_d = Self::create_temp_clippy()?;
 
-        phink_log!(self, "✂️ Creating `{}` to bypass errors", clippy_d);
+        phink_log!(self, "✂️ Creating `{clippy_d}` to bypass errors");
 
         // We must **not** compile in release mode (`--release`), otherwise we won't receive the
-        // `debug_println`
+        // `debug_println` output
         let output = Command::new("cargo")
             .current_dir(&path)
-            .env("RUST_BACKTRACE", "1")
             .env("CLIPPY_CONF_DIR", clippy_d)
             .args(["contract", "build", "--features=phink"])
             .output()?;

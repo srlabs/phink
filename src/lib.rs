@@ -23,7 +23,7 @@ use crate::{
     },
     instrumenter::{
         instrumentation::Instrumenter,
-        seeder::SeedExtractInjector,
+        seedgen::SeedExtractInjector,
         traits::visitor::ContractVisitor,
     },
 };
@@ -195,7 +195,7 @@ fn handle_cli() -> EmptyResult {
                 .prepare()
                 .context(format!("Couldn't extract the seed from {contract:?}"))?;
 
-            seeder.run_tests()?.context("xxxxxxx");
+            // seeder.run_tests().context("xxxxxxx")?;
             Ok(())
         }
     }

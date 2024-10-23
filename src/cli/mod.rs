@@ -41,7 +41,8 @@ pub fn format_error(e: anyhow::Error) -> String {
 
     let mut source = e.source();
     while let Some(cause) = source {
-        message = format!("{message}\n{} {cause}\n", "--> ".cyan().bold());
+        let arrow = "--> ".cyan().bold();
+        message = format!("{message}\n{arrow} {cause}\n");
         source = cause.source();
     }
 

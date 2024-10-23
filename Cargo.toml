@@ -43,9 +43,7 @@ std = [
 
 [dev-dependencies]
 assert_cmd = { version = "2.0.16" }
-toml_edit = { version = "0.22.20" }
 predicates = { version = "3.1.2" }
-
 
 [dependencies]
 # Standard crates and helpers
@@ -74,6 +72,7 @@ regex = { version = "1.10.4" }
 ratatui = { version = "0.28.0", features = ["all-widgets"] }
 crossterm = { version = "0.28.1" }
 chrono = { version = "0.4.38" }
+toml_edit = { version = "0.22.22" }
 
 # Substrate-specific crates
 parity-scale-codec = { version = "3.6.12" }
@@ -97,7 +96,7 @@ contract-metadata = { version = "4.1.1" }
 colored = { version = "2.1.0" }
 thiserror = { version = "1.0.63" }
 time = { version = "0.3.36" }
-
+pretty_assertions = "1.4.1"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
