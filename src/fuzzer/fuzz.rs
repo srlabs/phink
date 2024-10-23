@@ -227,6 +227,7 @@ mod tests {
             manager::CampaignManager,
         },
         instrumenter::path::InstrumentedPath,
+        EmptyResult,
     };
     use contract_transcode::ContractMessageTranscoder;
 

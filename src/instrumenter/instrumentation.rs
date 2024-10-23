@@ -304,7 +304,7 @@ mod tests {
         let instrumenter = Instrumenter::new(config.clone());
 
         instrumenter.fork().unwrap();
-        let files: Vec<_> = WalkDir::new(&instrumenter.output_directory())
+        let files: Vec<_> = WalkDir::new(instrumenter.output_directory())
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))

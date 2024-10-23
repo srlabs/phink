@@ -97,12 +97,7 @@ pub trait ContractVisitor {
     }
 
     /// Depending the `injector`, we visit the `code` and save + format it into `path`
-    fn instrument_file(
-        &self,
-        path: PathBuf,
-        code: &String,
-        injector: impl VisitMut,
-    ) -> EmptyResult {
+    fn instrument_file(&self, path: PathBuf, code: &str, injector: impl VisitMut) -> EmptyResult {
         phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
 
         let modified_code = Self::visit_code(code, injector)
@@ -171,7 +166,7 @@ pub trait ContractVisitor {
     }
 
     /// Run `rustfmt` on a `rust_file`
-    fn format(&self, rust_file: &PathBuf) -> EmptyResult {
+    fn format(&self, rust_file: &Path) -> EmptyResult {
         phink_log!(
             &self,
             "🛠️ Formatting {} with `rustfmt`...",
