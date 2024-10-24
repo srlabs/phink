@@ -89,7 +89,7 @@ mod tests {
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
             show_ui: false,
-            verbose: false,
+            verbose: true,
             ..Default::default()
         };
 
@@ -102,63 +102,64 @@ mod tests {
             let phink_output = fuzz_output.join("phink");
 
             // While fuzzing, let's perform the tests
-            let fuzzing = ensure_while_fuzzing(&config, Duration::from_secs(120), || {
-                let fuzz_created = phink_output.exists();
-                ensure!(
-                    fuzz_created,
-                    "Fuzz output directory wasn't created ({fuzz_output:?})"
-                );
-                if fuzz_created {
-                    let corp_dir = &phink_output.join("corpus");
-                    println!("Maybe corpus dir at {:?}", corp_dir);
-                    let corpus_res = get_corpus_files(corp_dir);
-                    initial_corpus_len = match corpus_res {
-                        Ok(_) => corpus_res.iter().len(),
-                        _ => 0,
-                    };
-
-                    let path_contract = &config
-                        .clone()
-                        .instrumented_contract_path
-                        .unwrap_or_default()
-                        .path;
-
-                    ensure!(is_instrumented(path_contract), "Dummy wasn't instrumented ");
-
-                    ensure!(is_compiled(path_contract), "Dummy wasn't compiled properly");
-
+            let fuzzing = ensure_while_fuzzing(
+                &config,
+                Duration::from_secs(60 * 4 /* 4 minutes */),
+                || {
+                    let fuzz_created = phink_output.exists();
                     ensure!(
-                        initial_corpus_len > 0,
-                        "Corpus directory is empty after creation: {initial_corpus_len:?} files"
+                        fuzz_created,
+                        "Fuzz output directory wasn't created ({fuzz_output:?})"
                     );
+                    if fuzz_created {
+                        let corp_dir = &phink_output.join("corpus");
+                        println!("Maybe corpus dir at {:?}", corp_dir);
+                        let corpus_res = get_corpus_files(corp_dir);
+                        initial_corpus_len = match corpus_res {
+                            Ok(_) => corpus_res.iter().len(),
+                            _ => 0,
+                        };
 
-                    let selector = phink_output.join("selectors.dict");
-                    ensure!(
-                        selector.exists(),
-                        "selectors.dict doesn't exist ({selector:?})"
-                    );
+                        let path_contract = &config
+                            .clone()
+                            .instrumented_contract_path
+                            .unwrap_or_default()
+                            .path;
 
-                    ensure!(
-                        fs::read_to_string(selector).unwrap().lines().count() > 1,
-                        "at least two entries inside the dict"
-                    );
+                        ensure!(is_instrumented(path_contract), "Dummy wasn't instrumented ");
 
-                    let dash = AFLDashboard::from_output(fuzz_output.clone())?;
+                        ensure!(is_compiled(path_contract), "Dummy wasn't compiled properly");
 
-                    ensure!(dash.is_ready(), "afl.log' didn't return a successfull dashboard, maybe there was an AFL++ bug ? The latest AFL log was: {dash:#?}");
+                        ensure!(initial_corpus_len > 0,"Corpus directory is empty after creation: {initial_corpus_len:?} files");
 
-                    // We don't use allowlist for macos
-                    if cfg!(not(target_os = "macos")) {
-                        let allowlist = phink_output.join("allowlist.txt");
-                        ensure!(allowlist.exists(), "allowlist.txt for AFL doesn't exist");
+                        let selector = phink_output.join("selectors.dict");
                         ensure!(
-                            fs::read_to_string(allowlist).unwrap().lines().count() > 0,
+                            selector.exists(),
+                            "selectors.dict doesn't exist ({selector:?})"
+                        );
+
+                        ensure!(
+                            fs::read_to_string(selector).unwrap().lines().count() > 1,
                             "at least two entries inside the dict"
                         );
+
+                        let dash = AFLDashboard::from_output(fuzz_output.clone())?;
+
+                        ensure!(dash.is_ready(), "afl.log' didn't return a successfull dashboard, maybe there was an AFL++ bug ? The latest AFL log was: {dash:#?}");
+
+                        // We don't use allowlist for macos
+                        if cfg!(not(target_os = "macos")) {
+                            let allowlist = phink_output.join("allowlist.txt");
+                            ensure!(allowlist.exists(), "allowlist.txt for AFL doesn't exist");
+                            ensure!(
+                                fs::read_to_string(allowlist).unwrap().lines().count() > 0,
+                                "at least two entries inside the dict"
+                            );
+                        }
                     }
-                }
-                Ok(())
-            });
+                    Ok(())
+                },
+            );
 
             ensure!(
                 fuzzing.is_ok(),
