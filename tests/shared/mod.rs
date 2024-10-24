@@ -276,10 +276,16 @@ pub fn is_compiled(path_instrumented_contract: &Path) -> bool {
 
 /// A function to get all entries from the corpus directory
 pub fn get_corpus_files(corpus_path: &PathBuf) -> ResultOf<HashSet<PathBuf>> {
-    let corpus_files = fs::read_dir(corpus_path)
-        .context(format!("Can't read {corpus_path:?}"))?
+    let entries = fs::read_dir(corpus_path).context(format!("Can't read {corpus_path:?}"))?;
+
+    let paths: Vec<_> = entries
         .filter_map(|entry| entry.ok().map(|e| e.path()))
-        .collect::<HashSet<PathBuf>>();
+        .collect();
+
+    let i = paths.len();
+    println!("Could read {corpus_path:?} containing {i:?} files");
+
+    let corpus_files: HashSet<PathBuf> = paths.into_iter().collect();
 
     println!(
         "Got {} corpus files in {:?}",

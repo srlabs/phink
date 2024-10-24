@@ -86,18 +86,15 @@ jobs:
         working-directory: ./sample
         run: bash build.sh
 
-      - name: Run all unit tests
+      - name: Run all unit and integration tests
         run: |
           cargo test --no-fail-fast -- --test-threads=1 --show-output
-          # Clean up after tests
-          cargo clean
-          df -h
 
       - name: Final cleanup
         if: always()
         run: |
+          cargo clean
           sudo apt autoremove -y
           sudo apt clean
           rm -rf ~/.cargo/registry ~/.cargo/git ~/.cargo/index
           rm -rf target
-          cargo clean
