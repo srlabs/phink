@@ -88,13 +88,12 @@ jobs:
 
       - name: Run all unit tests
         run: |
-          cargo test --no-fail-fast -- --test-threads=1
+          cargo test --no-fail-fast -- --test-threads=1 --show-output
           # Clean up after tests
           cargo clean
           df -h
 
-      # Final cleanup
-      - name: Final Cleanup
+      - name: Final cleanup
         if: always()
         run: |
           sudo apt autoremove -y
@@ -102,4 +101,3 @@ jobs:
           rm -rf ~/.cargo/registry ~/.cargo/git ~/.cargo/index
           rm -rf target
           cargo clean
-          df -h

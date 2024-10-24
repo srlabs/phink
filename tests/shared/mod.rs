@@ -11,6 +11,7 @@ use assert_cmd::Command;
 use phink_lib::cli::config::Configuration;
 
 use assert_cmd::assert::Assert;
+use phink_lib::ResultOf;
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -274,8 +275,9 @@ pub fn is_compiled(path_instrumented_contract: &Path) -> bool {
 }
 
 /// A function to get all entries from the corpus directory
-pub fn get_corpus_files(corpus_path: &PathBuf) -> Result<HashSet<PathBuf>> {
-    let corpus_files = fs::read_dir(corpus_path)?
+pub fn get_corpus_files(corpus_path: &PathBuf) -> ResultOf<HashSet<PathBuf>> {
+    let corpus_files = fs::read_dir(corpus_path)
+        .context(format!("Can't read {corpus_path:?}"))?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .collect::<HashSet<PathBuf>>();
 

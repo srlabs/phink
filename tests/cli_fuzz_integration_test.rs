@@ -83,8 +83,9 @@ mod tests {
     #[test]
     fn test_fuzz_assert_output_created_when_fuzzing() -> Result<()> {
         let fuzz_output = tempdir()?.into_path();
+        let instrumented_output = tempdir()?.into_path();
         let config = Configuration {
-            instrumented_contract_path: Some(InstrumentedPath::from(tempdir()?.into_path())),
+            instrumented_contract_path: Some(InstrumentedPath::from(instrumented_output)),
             fuzz_output: Some(fuzz_output.clone()),
             cores: Some(1),
             show_ui: false,
@@ -93,7 +94,7 @@ mod tests {
         };
 
         assert!(fuzz_output.exists(), "output should be created by TempDir");
-
+        println!("OUT at {:?}", fuzz_output);
         with_modified_phink_config(&config, || {
             let _ = instrument(Sample::Dummy);
 
@@ -108,7 +109,9 @@ mod tests {
                     "Fuzz output directory wasn't created ({fuzz_output:?})"
                 );
                 if fuzz_created {
-                    let corpus_res = get_corpus_files(&phink_output.join("corpus"));
+                    let corp_dir = &phink_output.join("corpus");
+                    println!("Maybe corpus dir at {:?}", corp_dir);
+                    let corpus_res = get_corpus_files(corp_dir);
                     initial_corpus_len = match corpus_res {
                         Ok(_) => corpus_res.iter().len(),
                         _ => 0,
