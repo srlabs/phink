@@ -138,10 +138,10 @@ impl Paint for Configuration {
                 .bold()
                 .title_alignment(Alignment::Center),
         )
-        .highlight_style(selected_style)
+        .row_highlight_style(selected_style)
         .widths([Constraint::Percentage(25), Constraint::Percentage(75)])
         .column_spacing(1)
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .row_highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ")
         .bg(colors.buffer_bg)
         .highlight_spacing(HighlightSpacing::Always);

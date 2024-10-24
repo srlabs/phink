@@ -51,6 +51,7 @@ use ratatui::{
         Borders,
         Paragraph,
         Sparkline,
+        SparklineBar,
     },
     Frame,
 };
@@ -276,6 +277,7 @@ impl CustomUI {
             .split(area);
 
         let speed_vec = &self.fuzzing_speed.make_contiguous();
+
         let sparkline = Sparkline::default()
             .block(
                 Block::new()
@@ -284,7 +286,11 @@ impl CustomUI {
                     .bold()
                     .title_alignment(Alignment::Center),
             )
-            .data(speed_vec)
+            .data(
+                speed_vec
+                    .iter()
+                    .map(|&value| SparklineBar::from(Some(value))),
+            )
             .style(Style::default().fg(Color::White))
             .bar_set(symbols::bar::NINE_LEVELS);
 

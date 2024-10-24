@@ -4,6 +4,7 @@ use ratatui::{
         Alignment,
         Constraint,
     },
+    prelude::Line,
     style::{
         Color,
         Style,
@@ -13,7 +14,6 @@ use ratatui::{
     text::Span,
     widgets,
     widgets::{
-        block::Title,
         Axis,
         Block,
         Chart,
@@ -96,10 +96,8 @@ impl<'a> ChartManager<'a> {
 
         Chart::new(dataset)
             .block(
-                Block::bordered().title(
-                    Title::default()
-                        .content("Corpus evolution".bold())
-                        .alignment(Alignment::Center),
+                Block::bordered().title_bottom(
+                    Line::from("Corpus evolution".bold()).alignment(Alignment::Center),
                 ),
             )
             .x_axis(
