@@ -179,39 +179,39 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="how-phink-works"><a class="header" href="#how-phink-works">How Phink Works</a></h1>
+                        <h1 id="how-phink-works"><a class="header" href="#how-phink-works">How Phink works</a></h1>
 <p>Phink is built on top of AFL++, leveraging its capabilities to provide effective fuzz testing for ink! smart contracts.
-Here’s an overview of how it operates:</p>
-<h2 id="afl-integration"><a class="header" href="#afl-integration">AFL++ Integration</a></h2>
+Here’s an overview of how the fuzzer operates.</p>
+<h2 id="afl-integration"><a class="header" href="#afl-integration">AFL++ integration</a></h2>
 <p>Phink utilizes AFL++ through two key components:</p>
 <ul>
 <li><strong>ziggy</strong>: A multifuzzing crate that enables integration with multiple fuzzers.</li>
 <li><strong>afl.rs</strong>: A crate that spawns AFL++ fuzzers, facilitating seamless mutation and coverage tracking.</li>
 </ul>
-<h3 id="afl-mechanics"><a class="header" href="#afl-mechanics">AFL++ Mechanics</a></h3>
+<h3 id="afl-mechanics"><a class="header" href="#afl-mechanics">AFL++ mechanics</a></h3>
 <p>AFL++ mutates the input bytes and evaluates whether these mutations increase code coverage. If a mutation results in new
 execution paths, the modified seed is retained in the corpus. This iterative process enhances the likelihood of
 discovering hidden vulnerabilities.</p>
-<h3 id="monitoring-execution"><a class="header" href="#monitoring-execution">Monitoring Execution</a></h3>
+<h3 id="monitoring-execution"><a class="header" href="#monitoring-execution">Monitoring execution</a></h3>
 <p>Users can monitor the execution logs using familiar AFL++ tools. For instance, by using <code>tail</code>, you can view real-time
 fuzzer logs and activity:</p>
 <pre><code class="language-bash">tail -f output/phink/logs/afl.log
 tail -f output/phink/logs/afl_1.log #if multi-threaded
 </code></pre>
 <p>Additionally, tools like <code>afl_showmap</code> allow developers to debug and visualize the coverage maps.</p>
-<h2 id="coverage-guided-strategy"><a class="header" href="#coverage-guided-strategy">Coverage-Guided Strategy</a></h2>
+<h2 id="coverage-guided-strategy"><a class="header" href="#coverage-guided-strategy">Coverage-guided strategy</a></h2>
 <p>Currently, Phink employs a partially coverage-guided approach. While full coverage feedback from low-level
 instrumentation is not available yet, plans are underway to integrate this capability
 via <a href="https://github.com/wasmi-labs/wasmi">WASMI</a> or <a href="https://github.com/koute/polkavm">PolkaVM</a> in future
-versions.</p>
-<h2 id="execution-and-validation"><a class="header" href="#execution-and-validation">Execution and Validation</a></h2>
+releases.</p>
+<h2 id="execution-and-validation"><a class="header" href="#execution-and-validation">Execution and validation</a></h2>
 <p>For each generated seed, Phink executes the associated input on a mock-emulated ‘node’.
-This setup ensures that invariants are verified : known selectors are checked to ensure that
+This setup ensures that invariants are verified: known selectors are checked to ensure that
 invariants hold across different message calls.</p>
-<h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract Instrumentation</a></h2>
+<h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract instrumentation</a></h2>
 <p>Phink instruments contracts using the <code>syn</code> crate, allowing for precise modification and analysis of the smart contract
-code. This instrumentation is crucial for identifying potential vulnerabilities and ensuring the integrity of the fuzz
-testing process.</p>
+code. This instrumentation is pivotal for identifying potential vulnerabilities and safeguarding the integrity of the
+fuzz testing process.</p>
 
                     </main>
 

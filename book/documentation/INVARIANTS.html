@@ -184,7 +184,7 @@
 performed. They help ensure that certain logical conditions remain constant throughout the
 execution of the contract, preventing potential vulnerabilities and ensuring its reliability.</p>
 <p>We suggest to use <strong>integrity</strong> and <strong>unit tests</strong> from your codebase to get inspiration to generate good invariants.</p>
-<h2 id="creating-good-invariants-for-ink-smart-contracts"><a class="header" href="#creating-good-invariants-for-ink-smart-contracts">Creating good invariants for Ink! smart-contracts</a></h2>
+<h2 id="creating-good-invariants-for-ink-smart-contracts"><a class="header" href="#creating-good-invariants-for-ink-smart-contracts">Creating good invariants for ink! smart-contracts</a></h2>
 <p>Below are some guidelines to help you design robust invariants:</p>
 <ol>
 <li>
@@ -225,17 +225,17 @@ impl DomainNameService {
     }
 }
 <span class="boring">}</span></code></pre></pre>
-<h3 id="important-annotations-explained"><a class="header" href="#important-annotations-explained">Important Annotations Explained</a></h3>
+<h3 id="annotations-explaination"><a class="header" href="#annotations-explaination">Annotations explaination</a></h3>
 <ul>
 <li><strong><code>#[cfg(feature = "phink")]</code></strong>: Ensures the function is only compiled when the “phink” feature is enabled.</li>
 <li><strong><code>#[ink(message)]</code></strong>: Marks the function as an executable entry defined by the ink! framework.</li>
 <li><strong>Function Naming</strong>: Begin with “phink_” to indicate the purpose and correlation to fuzz testing.</li>
 </ul>
-<h2 id="creating-invariants-with-llm"><a class="header" href="#creating-invariants-with-llm">Creating Invariants with LLM</a></h2>
+<h2 id="creating-invariants-with-llm"><a class="header" href="#creating-invariants-with-llm">Creating invariants with LLM</a></h2>
 <p>Large Language Models (LLMs) offer a good (<em>lazy, yes…</em>) approach to generate invariants by interpreting the logic and
 identifying properties from the contract code. Here is an example prompt system you could use to generate a base of
 invariants</p>
-<h5 id="system-prompt"><a class="header" href="#system-prompt">System Prompt</a></h5>
+<h5 id="system-prompt"><a class="header" href="#system-prompt">System prompt</a></h5>
 <pre><code class="language-markdown">You are provided with Rust files containing an ink! smart contract. Your task is to generate invariants, which are
 inviolable properties that a fuzzer will check to ensure the contract's quality and correctness. Please adhere to the
 following requirements while writing the invariants:
@@ -269,7 +269,7 @@ impl DomainNameService {
 }
 `` `
 </code></pre>
-<h5 id="sources-in-the-prompt"><a class="header" href="#sources-in-the-prompt">Sources in the Prompt</a></h5>
+<h5 id="sources-in-the-prompt"><a class="header" href="#sources-in-the-prompt">Sources in the prompt</a></h5>
 <p>If your contract is small enough and contains multiple Rust files, you could use the following snippet, to put
 everything inside <code>everything.rs</code>.</p>
 <pre><code class="language-sh">find . -name "*.rs" -not -path "./target/*" -exec cat {} + &gt; everything.rs

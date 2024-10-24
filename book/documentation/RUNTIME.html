@@ -179,14 +179,14 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="runtime-integration"><a class="header" href="#runtime-integration">Runtime Integration</a></h1>
+                        <h1 id="runtime-integration"><a class="header" href="#runtime-integration">Runtime integration</a></h1>
 <p>Phink provides developers with the flexibility to customize their fuzzing environment through a simple interface. By
 editing <code>contract/custom/custom.rs</code> and <code>contract/custom/preferences.rs</code>, developers can tailor the runtime storage and
 contract initialization
-processes to suit their testing needs. Having a clone of Phink is required, in order to modify the source code.</p>
-<h2 id="custom-runtime-storage"><a class="header" href="#custom-runtime-storage">Custom Runtime Storage</a></h2>
-<p>Phink allows developers to tailor the runtime environment by customizing the storage configuration. This enables the
-creation of versatile and realistic testing scenarios.</p>
+processes to suit their testing needs. Have a clone of Phink if you want to modify the source code.</p>
+<h2 id="custom-runtime-storage"><a class="header" href="#custom-runtime-storage">Custom runtime storage</a></h2>
+<p>Phink allows developers to tailor the runtime environment by customizing the storage configuration. Let’s
+create some realistic testing scenarios!</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <pre><code class="language-rust ignore">impl DevelopperPreferences for Preferences {
     fn runtime_storage() -&gt; Storage {
@@ -227,18 +227,39 @@ supplementary contracts or handling dependencies.</p>
     );
     Ok(())
 }</code></pre>
-<h3 id="customization-points-1"><a class="header" href="#customization-points-1">Customization Points</a></h3>
+<h3 id="customization-points-1"><a class="header" href="#customization-points-1">Customization points</a></h3>
+<ul>
+<li><strong><code>runtime_storage</code>:</strong> Use this function as your gateway to defining any mocks or <code>RuntimeGenesisConfig</code> settings
+needed
+for your testing environment. Whether it’s allocating funds, initializing storage items, or setting up custom
+storage, adjust these configurations to mirror your deployment scenarios closely. This flexibility lets
+you test how your ink! smart contract behaves in various simulated network states.</li>
+</ul>
+<h2 id="contract-initialization-1"><a class="header" href="#contract-initialization-1">Contract initialization</a></h2>
+<p>The <code>on_contract_initialize</code> function can be adapted to execute additional initialization logic, such as uploading
+supplementary contracts or handling dependencies.</p>
+<h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
+<pre><code class="language-rust ignore">fn on_contract_initialize() -&gt; anyhow::Result&lt;()&gt; {
+    Contracts::bare_upload_code(
+        AccountId32::new([1; 32]),
+        fs::read("adder.wasm")?,
+        None,
+        Determinism::Enforced,
+    );
+    Ok(())
+}</code></pre>
+<h3 id="customization-points-2"><a class="header" href="#customization-points-2">Customization points</a></h3>
 <ul>
 <li><strong><code>on_contract_initialize</code>:</strong> Use this function to automate contract uploads, configure dependencies, or perform any
 setup necessary before testing.</li>
 </ul>
-<h2 id="custom-runtime-parameters"><a class="header" href="#custom-runtime-parameters">Custom Runtime Parameters</a></h2>
+<h2 id="custom-runtime-parameters"><a class="header" href="#custom-runtime-parameters">Custom runtime parameters</a></h2>
 <p>Phink provides default runtime configurations, but developers can provide their own runtime parameters in
 <code>contract/runtime.rs</code>. This can be particularly useful if you wish to connect your fuzzing environment to your own
 Substrate runtime, so Phink can be adapted to work with your specific runtime.
 <strong>You can edit the runtime configure <a href="https://github.com/srlabs/phink/blob/main/src/contract/runtime.rs">here</a>.</strong></p>
-<h3 id="example-custom-runtime-configuration"><a class="header" href="#example-custom-runtime-configuration">Example: Custom Runtime Configuration</a></h3>
-<p>For instance, users could customize the <code>pallet_timestamp</code> runtime parameters:</p>
+<h3 id="example-custom-runtime-configuration"><a class="header" href="#example-custom-runtime-configuration">Example: custom runtime configuration</a></h3>
+<p>For instance, customize the <code>pallet_timestamp</code> runtime parameters like this:</p>
 <pre><code class="language-rust ignore">impl pallet_timestamp::Config for Runtime {
     type MinimumPeriod = CustomMinimumPeriod;
     ...

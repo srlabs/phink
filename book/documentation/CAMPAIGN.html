@@ -179,15 +179,15 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h2 id="writing-properties-for-ink-contracts"><a class="header" href="#writing-properties-for-ink-contracts">Writing Properties for ink! Contracts</a></h2>
-<h3 id="adding-properties"><a class="header" href="#adding-properties">Adding Properties</a></h3>
+                        <h2 id="writing-properties-for-ink-contracts"><a class="header" href="#writing-properties-for-ink-contracts">Writing properties for ink! contracts</a></h2>
+<h3 id="adding-properties"><a class="header" href="#adding-properties">Adding properties</a></h3>
 <h4 id="inside-your-cargotoml"><a class="header" href="#inside-your-cargotoml">Inside your <code>Cargo.toml</code></a></h4>
-<p>First, you need to add the <code>phink</code> feature to your Cargo.toml, such as:</p>
+<p>First, you need to add the <code>phink</code> feature to your <code>Cargo.toml</code>, such as:</p>
 <pre><code class="language-toml">[features]
 phink = []
 </code></pre>
 <h4 id="inside-your-filers"><a class="header" href="#inside-your-filers">Inside your <code>file.rs</code></a></h4>
-<p>Then, you can use the following example to create invariants. You need to create another <code>impl</code> if your contract, and to
+<p>Then, you can use the following example to create invariants. Create another <code>impl</code> in your contract, and
 put
 it under the feature of <code>phink</code>. Use <code>assert!</code> or <code>panic!</code> for your properties.</p>
 <pre><pre class="playground"><code class="language-rust edition2021"><span class="boring">#![allow(unused)]
@@ -206,15 +206,16 @@ impl DomainNameService {
 <span class="boring">}</span></code></pre></pre>
 <p>You can find more informations in the page dedicated to <a href="INVARIANTS.html">invariants</a>.</p>
 <h2 id="running-phink"><a class="header" href="#running-phink">Running Phink</a></h2>
-<h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the Contract</a></h3>
-<p>Run the following command to instrument your ink! smart contract, enabling it for fuzzing:</p>
+<h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the contract</a></h3>
+<p>First things first: Let’s enable your contract for fuzzing. Run the following command to instrument your ink! smart
+contract:</p>
 <pre><code class="language-sh">phink instrument my_contract/
 </code></pre>
 <p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process. It creates a fork of the
 contract, so you don’t have to make a copy before.</p>
 <h3 id="2-run-the-fuzzer"><a class="header" href="#2-run-the-fuzzer">2. Run the fuzzer</a></h3>
-<p>After <strong>instrumenting</strong> your contract and <strong>writing</strong> properties and <strong>configuring</strong> your <code>phink.toml</code>, execute the
-fuzzing process:</p>
+<p>After <strong>instrumenting</strong> your contract and <strong>writing</strong> properties and <strong>configuring</strong> your <code>phink.toml</code>, let’s get our
+hands on the fuzzing process:</p>
 <pre><code class="language-sh">phink fuzz
 </code></pre>
 <p>After executing this command, your fuzzing tests will begin based on the configurations specified in your <code>phink.toml</code>
@@ -224,25 +225,26 @@ screen. For more detailed log information, you can use the following command:</p
 <pre><code class="language-sh">watch -c -t -n 0.1 "clear &amp;&amp; cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
 </code></pre>
 <p>This will provide you with clearer logs by continuously updating them every <strong>0.1</strong> seconds.</p>
-<h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing Results</a></h2>
+<h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing results</a></h2>
 <h3 id="crashes"><a class="header" href="#crashes">Crashes</a></h3>
 <p>In case of crashes, you should see something like the following.</p>
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/crashed.png" alt="crash"/>
 <p>To analyze the crash, you can run <code>phink execute &lt;your_crash&gt;</code>, for instance
 <code>phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2</code></p>
 <div class="table-wrapper"><table><thead><tr><th>Component</th><th>Description</th></tr></thead><tbody>
-<tr><td>1729082451630</td><td>Timestamp representing when the crash was recorded.</td></tr>
-<tr><td>id:000000</td><td>Unique identifier for the crash.</td></tr>
-<tr><td>sig:06</td><td>Signal number that triggered the crash.</td></tr>
-<tr><td>src:000008</td><td>Source test case number.</td></tr>
-<tr><td>time:627512</td><td>Execution time since the start of the testing process.</td></tr>
-<tr><td>execs:3066742</td><td>Cumulative number of executions performed until the crash.</td></tr>
-<tr><td>op:havoc,rep:2</td><td>Type of fuzzing operation (havoc) and its repetition number.</td></tr>
+<tr><td>1729082451630</td><td>Timestamp representing when the crash was recorded</td></tr>
+<tr><td>id:000000</td><td>Unique identifier for the crash</td></tr>
+<tr><td>sig:06</td><td>Signal number that triggered the crash</td></tr>
+<tr><td>src:000008</td><td>Source test case number</td></tr>
+<tr><td>time:627512</td><td>Execution time since the start of the testing process</td></tr>
+<tr><td>execs:3066742</td><td>Cumulative number of executions performed until the crash</td></tr>
+<tr><td>op:havoc,rep:2</td><td>Type of fuzzing operation (havoc) and its repetition number</td></tr>
 </tbody></table>
 </div>
-<p>By running this, you should have an output similar to the screenshot below:</p>
+<p>By running the above command, you should get an output similar to the screenshot below:</p>
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
-<h3 id="coverage-this-feature-is-in-alpha-and-unstable"><a class="header" href="#coverage-this-feature-is-in-alpha-and-unstable">Coverage (<strong>this feature is in alpha and unstable</strong>)</a></h3>
+<h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
+<p><strong>This feature is in alpha and unstable.</strong></p>
 <h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
 <p>First, you need to create a <code>traces.cov</code> file. For this, execute the command below.</p>
 <pre><code class="language-sh">phink run  
@@ -251,9 +253,9 @@ screen. For more detailed log information, you can use the following command:</p
 <pre><code class="language-sh">phink coverage my_contract/
 </code></pre>
 <p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>. The coverage report
-provides a visual representation of tested code areas. Basically, the more green lines, the better. You can find below
-an example of the coverage report.</p>
-<h3 id="coverage-report-example"><a class="header" href="#coverage-report-example">Coverage Report Example</a></h3>
+provides a visual representation of the tested code areas. As a rule of thumb, the more green lines you can see there,
+the better it is for the code.</p>
+<h3 id="coverage-report-example"><a class="header" href="#coverage-report-example">Coverage report example</a></h3>
 <p><strong>Green Lines</strong>: Code that has been tested.</p>
 <p><img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/coverage_1.png" alt="Coverage Report Part 1" /></p>
 <p><em>Figure 1: Coverage Report of one specific file.</em></p>

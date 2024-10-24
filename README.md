@@ -5,7 +5,7 @@
 </br>
 
 
-![Build Status](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
+![Docker](https://github.com/srlabs/phink/actions/workflows/docker.yml/badge.svg)
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
 [![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
 ![Discord](https://img.shields.io/discord/1276519988349374587?label=Discord)

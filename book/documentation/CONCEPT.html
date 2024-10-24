@@ -179,23 +179,25 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and Terminology</a></h1>
+                        <h1 id="concepts-and-terminology"><a class="header" href="#concepts-and-terminology">Concepts and terminology</a></h1>
 <h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
-<h3 id="fuzzing-in-general"><a class="header" href="#fuzzing-in-general">Fuzzing in general</a></h3>
+<h3 id="fuzzing"><a class="header" href="#fuzzing">Fuzzing</a></h3>
 <p><strong>Fuzzing</strong> is an automated software testing technique that involves providing random data inputs to
-a program. The primary goal is to uncover anomalies, such as crashes, assertion failures, that signify
+a program. The primary goal is to uncover anomalies, such as crashes and assertion failures. These are intriguing
+because they pinpoint
 potential vulnerabilities.</p>
-<h3 id="property-based-fuzzing"><a class="header" href="#property-based-fuzzing">Property-based Fuzzing</a></h3>
+<h3 id="property-based-fuzzing"><a class="header" href="#property-based-fuzzing">Property-based fuzzing</a></h3>
 <p><strong>Property-based testing</strong> involves specifying properties or invariants that your ink! contract should always satisfy.
 In
-Phink, these properties act as assertions. Phink uses this approach by allowing developers to
+Phink, these properties act as assertions. Phink makes it possible for developers to
 define properties directly within ink! smart contracts. Such properties are then tested against varied
-inputs, ensuring the contract maintains its invariants across all possible data conditions.</p>
-<h3 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided Fuzzing</a></h3>
+inputs. In this way, the contract maintains its invariants across all possible data conditions. But there is a final
+twist in the fuzzing tale.</p>
+<h3 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided fuzzing</a></h3>
 <p><strong>Coverage-guided fuzzing</strong> is a fuzzing strategy that focuses on maximizing code coverage during testing. It uses
 feedback from code execution paths to guide input generation, focusing on unexplored parts of the code.
-Phink instruments ink! smart contracts to track code coverage, optimizing its fuzzing efforts by targeting less examined
-paths.</p>
+Phink instruments ink! smart contracts to track code coverage. Optimizing fuzzing efforts by targeting less examined
+paths is what makes the game worth playing.</p>
 <h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
 <h3 id="corpus"><a class="header" href="#corpus">Corpus</a></h3>
 <p>A <strong>corpus</strong> refers to the collection of all input samples used during the testing process. It is
@@ -213,14 +215,14 @@ contracts under various input conditions. Breaking an invariant indicates a pote
 <hr />
 <h3 id="instrumentation"><a class="header" href="#instrumentation">Instrumentation</a></h3>
 <p><strong>Instrumentation</strong> involves modifying a program to collect runtime information such as code coverage data. In fuzzing,
-instrumentation is used to trace execution paths, enabling coverage-guided techniques to generate more informed and
+instrumentation traces execution paths, enabling coverage-guided techniques to generate more informed and
 effective test cases.</p>
 <hr />
 <h3 id="coverage"><a class="header" href="#coverage">Coverage</a></h3>
-<p><strong>Coverage</strong> is a measure of how much of a program’s code is tested during fuzzing. High coverage corresponds to a
-good assessment of the contracts logic.</p>
+<p><strong>Coverage</strong> measures how much of a program’s code is tested during fuzzing. High coverage corresponds to a
+good assessment of the contract’s logic.</p>
 <hr />
-<h3 id="contract-selectors"><a class="header" href="#contract-selectors">Contract Selectors</a></h3>
+<h3 id="contract-selectors"><a class="header" href="#contract-selectors">Contract selectors</a></h3>
 <p><strong>ink! contract selectors</strong> are unique identifiers for functions within ink! smart contracts. Selectors are derived from
 function signatures and are used to call specific functions within a contract deployed on the blockchain.</p>
 <hr />

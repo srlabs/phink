@@ -179,17 +179,17 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h2 id="getting-started-with-phink"><a class="header" href="#getting-started-with-phink">Getting Started with Phink</a></h2>
+                        <h2 id="getting-started-with-phink"><a class="header" href="#getting-started-with-phink">Getting started with Phink</a></h2>
 <h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
-<h4 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h4>
+<h4 id="system-requirements"><a class="header" href="#system-requirements">System requirements</a></h4>
 <p>To successfully install and run Phink, ensure your system meets the following requirements:</p>
 <ul>
 <li>
 <p><strong>Operating System:</strong></p>
 <ul>
-<li><strong>Linux:</strong> <strong>Recommended</strong> for compatibility.</li>
-<li><strong>macOS:</strong> <em>Not recommended</em> as it doesn’t support some AFL++ plugins.</li>
-<li><strong>Windows:</strong> <em>Untested.</em></li>
+<li><strong>Linux:</strong> <strong>Recommended</strong> for compatibility</li>
+<li><strong>macOS:</strong> <em>Not recommended</em> as it doesn’t support some AFL++ plugins</li>
+<li><strong>Windows:</strong> <em>Untested</em></li>
 </ul>
 </li>
 <li>
@@ -200,15 +200,17 @@
 </ul>
 </li>
 </ul>
-<h4 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h4>
-<p>You can install Phink by building it from the source or by using Docker. Choose the method that best suits your setup.</p>
-<h5 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h5>
+<h4 id="installation-guide"><a class="header" href="#installation-guide">Installation guide</a></h4>
+<p>You can install Phink by building it from the source or by using Docker. Choose the method that best suits your setup
+and IT environment. Let’s jump right into it!</p>
+<h5 id="building-from-source"><a class="header" href="#building-from-source">Building from source</a></h5>
+<p>Follow these 5 easy steps:</p>
 <ol>
 <li>
 <p><strong>Clone the Repository</strong></p>
 <pre><code class="language-bash">git clone https://github.com/srlabs/phink &amp;&amp; cd phink/
 </code></pre>
-<p>You can also use:</p>
+<p>You can also run the following command:</p>
 <pre><code class="language-bash">cargo +nightly install --git https://github.com/srlabs/phink
 </code></pre>
 </li>
@@ -237,31 +239,34 @@ phink --help # if installed via `cargo install`
 </ol>
 <h5 id="using-docker"><a class="header" href="#using-docker">Using Docker</a></h5>
 <ol>
-<li><strong>Build the Docker Image</strong>
+<li>
+<p><strong>Build the Docker Image</strong>
+To build the <strong>Phink Docker image</strong>, run the following command in your terminal:</p>
 <pre><code class="language-bash">docker build -t phink .
 </code></pre>
 </li>
 </ol>
-<p>For detailed Docker instructions, refer
+<p>For detailed Phink Docker installation instructions, refer
 to <a href="https://github.com/srlabs/phink/blob/main/README.Docker.md">README.Docker.md</a>.</p>
-<h4 id="basic-workflow"><a class="header" href="#basic-workflow">Basic Workflow</a></h4>
+<h3 id="basic-workflow"><a class="header" href="#basic-workflow">Basic workflow</a></h3>
+<p>Follow these three high-level steps:</p>
 <ol>
 <li>
-<p><strong>Instrument the Contract</strong></p>
+<p><strong>Instrument the contract</strong></p>
 <ul>
-<li>Use Phink to instrument your ink! smart contract for fuzzing.</li>
+<li>Use Phink to instrument your ink! smart contract for fuzzing</li>
 </ul>
 </li>
 <li>
-<p><strong>Configure Fuzzing Parameters</strong></p>
+<p><strong>Configure fuzzing parameters</strong></p>
 <ul>
-<li>Edit the <code>phink.toml</code> file to set paths, deployment settings, and fuzzing options according to your project needs.</li>
+<li>Edit the <code>phink.toml</code> file to set paths, deployment settings, and fuzzing options according to your project needs</li>
 </ul>
 </li>
 <li>
-<p><strong>Run Fuzzing</strong></p>
+<p><strong>Run your fuzzing campaign</strong></p>
 <ul>
-<li>Execute fuzzing with your configured settings to identify vulnerabilities early in the development cycle.</li>
+<li>Execute fuzzing with your configured settings to identify vulnerabilities early in the development cycle</li>
 </ul>
 </li>
 </ol>

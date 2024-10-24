@@ -184,32 +184,36 @@
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 </center>
 <h2 id="overview-of-phink"><a class="header" href="#overview-of-phink">Overview of Phink</a></h2>
-<p><strong>Phink</strong> is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It enables developers to
-embed inviolable properties into their smart contract testing workflows, equipping them with automatic tools to detect
+<p><strong>Phink</strong> is a blazing-fast⚡, property-based, coverage-guided fuzzer for ink! smart contracts. It lets developers
+embed inviolable properties into smart contract testing workflows, equipping teams with automatic tools to detect
 vulnerabilities and ensure contract reliability before deployment.</p>
-<h3 id="dashboard-overview"><a class="header" href="#dashboard-overview">Dashboard Overview</a></h3>
-<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/dashboard.png" alt="dashboard" />
-<h3 id="key-features"><a class="header" href="#key-features">Key Features</a></h3>
-<h4 id="property-based-testing"><a class="header" href="#property-based-testing">Property-based Testing</a></h4>
+<h3 id="dashboard-overview"><a class="header" href="#dashboard-overview">Dashboard overview</a></h3>
+<img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/dashboard.png" alt="phink"/>
+<h3 id="key-features"><a class="header" href="#key-features">Key features</a></h3>
+<h4 id="property-based-testing"><a class="header" href="#property-based-testing">Property-based testing</a></h4>
 <p>Phink requires developers to define properties directly within ink! smart contracts. By prefixing functions with
-<code>phink</code>, such as <code>fn phink_assert_abc_always_true()</code>, developers create properties that
-act as assertions. During testing, these properties are checked against every input (a set of ink! messages). If a
-property’s assertion fails, it
-triggers a panic, signaling that an invariant has been broken. This method ensures thorough validation of contract logic
+<code>phink</code>, such as <code>fn phink_assert_abc_always_true()</code>, you create properties that
+act as assertions. During testing, the fuzzer checks these properties against every input, which is a set of ink!
+messages. If a
+property’s assertion fails, this
+triggers a panic. An invariant has been broken! This method ensures thorough validation of contract logic
 and behavior.</p>
-<h4 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided Fuzzing</a></h4>
-<p>In order to become coverage-guided, Phink needs to instrument the ink! smart contract. Although
-currently adding feedback on each line executed, Phink is designed to evolve, eventually monitoring coverage across new
-edges and code branches. Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>.</p>
-<h3 id="why-use-phink"><a class="header" href="#why-use-phink">Why Use Phink</a></h3>
-<p>Phink addresses security concerns by:</p>
-<ul>
-<li><strong>Automatically generating and testing</strong> a diverse range of inputs</li>
-<li><strong>Uncovering</strong> edge cases, logical flaws, and bugs leading to contract state reversion</li>
-<li><strong>Exploring</strong> different execution paths by generating input mutation</li>
-</ul>
-<p>This extensive testing identifies bugs and potential vulnerabilities in the development cycle, enabling developers to
-address issues before deployment.</p>
+<h4 id="coverage-guided-fuzzing"><a class="header" href="#coverage-guided-fuzzing">Coverage-guided fuzzing</a></h4>
+<p>In order to become coverage-guided, Phink needs to instrument the ink! smart contract.
+Feedback is transmitted to the <code>pallet_contract</code> via the <code>debug_message</code>.
+Although the fuzzer
+currently adds feedback on each line executed, Phink is designed to evolve. It will eventually monitor coverage across
+new
+edges and code branches.</p>
+<h3 id="why-use-phink"><a class="header" href="#why-use-phink">Why use Phink</a></h3>
+<p>Phink addresses security concerns in these three main ways:</p>
+<ol>
+<li><strong>Automatically generate and test</strong> a diverse range of inputs</li>
+<li><strong>Detect</strong> edge cases, logical flaws, and bugs leading to contract state reversion</li>
+<li><strong>Explore</strong> different execution paths by generating input mutation</li>
+</ol>
+<p>This extensive testing identifies bugs and potential flaws early in the development cycle, empowering teams to
+fix vulnerabilities before deployment and deliver safer applications.</p>
 
                     </main>
 

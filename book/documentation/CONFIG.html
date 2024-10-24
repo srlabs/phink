@@ -179,9 +179,12 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="phink-configuration-guide"><a class="header" href="#phink-configuration-guide">Phink Configuration Guide</a></h1>
-<p>This guide provides an overview of the Phink configuration settings.</p>
-<h2 id="configuration-file-overview"><a class="header" href="#configuration-file-overview">Configuration File Overview</a></h2>
+                        <h1 id="phink-configuration-guide"><a class="header" href="#phink-configuration-guide">Phink configuration guide</a></h1>
+<p>This guide provides an overview of the Phink configuration settings. You will learn how to configure the general
+settings, specify some key paths and fuzzing options, and do some other essential tasks. Without further ado, let’s jump
+right into it!</p>
+<h2 id="configuration-file-overview"><a class="header" href="#configuration-file-overview">Configuration file overview</a></h2>
+<p>Here’s how a configuration file looks like:</p>
 <pre><code class="language-toml">### Phink Configuration
 
 # General Settings
@@ -211,43 +214,48 @@ catch_trapped_contract = false # Not setting trapped contract as a bug, only det
 ref_time = 100_000_000_000      # Reference time for gas
 proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
 </code></pre>
-<h2 id="general-settings"><a class="header" href="#general-settings">General Settings</a></h2>
+<h2 id="general-settings"><a class="header" href="#general-settings">General settings</a></h2>
+<p>The General settings cover these 2 parameters:</p>
 <ul>
 <li><strong>cores</strong>: Allocate the number of CPU cores for fuzzing. Setting this to <code>1</code> enables single-core execution.</li>
 <li><strong>max_messages_per_exec</strong>: Define the maximum number of message calls allowed per fuzzing input. If you want to fuzz
-one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it for example
+one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it, for
+example,
 to 4 will generate 4 different messages in one input, run all the invariants, and go to the next input.</li>
 </ul>
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
+<p>The Paths settings cover these 3 parameters:</p>
 <ul>
 <li><strong>instrumented_contract_path.path</strong>: Specify the path to the instrumented contract, which should be set
-post-invocation of <code>phink instrument my_contract</code>. This path will contains the source code of the initial contract,
-with the additional instrumentation instructions. It also will contians the instrumented compiled contract.</li>
-<li><strong>report_path</strong>: Designate the directory where HTML coverage reports will be generated, if the user wishes to generate
+post-invocation of <code>phink instrument my_contract</code>. This path will contain the source code of the initial contract,
+with the additional instrumentation instructions. It will also contain the instrumented compiled contract.</li>
+<li><strong>report_path</strong>: Designate the directory where HTML coverage reports will be generated if the user wishes to generate
 a coverage report.</li>
-<li><strong>fuzz_output</strong>: Indicate the directory for storing all fuzzing output. This output is important as it will contains
+<li><strong>fuzz_output</strong>: Indicate the directory for storing all fuzzing output. This output is important as it will contain
 the log file, the corpus entries, the crashes, and way more.</li>
 </ul>
 <h2 id="deployment"><a class="header" href="#deployment">Deployment</a></h2>
+<p>The Deployment settings include these 4 parameters:</p>
 <ul>
 <li><strong>deployer_address</strong>: Set the address of the smart contract deployer. The default is Alice’s address.</li>
 <li><strong>constructor_payload</strong>: Hexadecimal scale-encoded data necessary for contract instantiation. This is used when
 calling <code>bare_instantiate</code> extrinsic to instantiate the contract. You can use https://ui.use.ink/ to generate this
-payload. By default, Phink will deploy the contract using the constructor that have no arguments <code>new()</code>.</li>
+payload. By default, Phink will deploy the contract using the constructor that has no arguments <code>new()</code>.</li>
 <li><strong>storage_deposit_limit</strong>: Limit for storage deposits during contract deployment. It represents
 an optional cap on the amount of blockchain storage (measured in balance units) that can be used or reserved by the
 contract call.</li>
-<li><strong>instantiate_initial_value</strong>: Initial value to be transferred upon contract instantiation, if required. So if the
-contract requires during instantiation a minimum amount of 3000 units, set 3000 here.</li>
+<li><strong>instantiate_initial_value</strong>: Initial value to be transferred upon contract instantiation if required. So if the
+contract requires a minimum amount of 3000 units during instantiation, set 3000 here.</li>
 </ul>
-<h2 id="fuzzing-options"><a class="header" href="#fuzzing-options">Fuzzing Options</a></h2>
+<h2 id="fuzzing-options"><a class="header" href="#fuzzing-options">Fuzzing options</a></h2>
+<p>These 4 parameters are important when you configure fuzzing options:</p>
 <ul>
 <li><strong>fuzz_origin</strong>: A Boolean option to try calling each message as a different user, which may impact performance. If
 set to <code>false</code>, the fuzzer will fuzz any message with the one input (Alice).</li>
-<li><strong>verbose</strong>: Enables detailed debugging messages when set to <code>true</code>. This will just output more logs.</li>
+<li><strong>verbose</strong>: Enables detailed debugging of messages when set to <code>true</code>. This will just output more logs.</li>
 <li><strong>show_ui</strong>: Toggle for displaying the advanced user interface.</li>
 <li><strong>use_honggfuzz</strong>: Determines whether to use Honggfuzz; remains <code>false</code> by
-default. (<strong>let it false! not handled currently</strong> )</li>
+default. (<strong>let it false! is not handled currently</strong>)</li>
 <li><strong>catch_trapped_contract</strong>: Indicate whether the fuzzer should treat trapped contracts as bugs.
 <ul>
 <li>When set to <code>true</code>: The fuzzer will identify any contracts that become trapped (<code>ContractTrapped</code>) as bugs. This
@@ -259,16 +267,18 @@ scenarios. This is preferable when you are only interested in logical correctnes
 </ul>
 </li>
 </ul>
-<h2 id="gas-limits"><a class="header" href="#gas-limits">Gas Limits</a></h2>
-<h3 id="default-gas-limit-configuration"><a class="header" href="#default-gas-limit-configuration">Default Gas Limit Configuration</a></h3>
+<h2 id="gas-limit"><a class="header" href="#gas-limit">Gas limit</a></h2>
 <p>The gas limit refers to the maximum amount of computational effort (or weight) that an execution is allowed to use when
 performing a call to a contract. It controls how much balance a contract is allowed to use for expanding its state
-storage during execution, ensures that users won’t unintentionally spend more than they wanted on storage allocation,
-and offers protection against excessive storage costs by defining an upper limit on how much can be spent on storage
+storage during execution. The setting ensures that users won’t unintentionally spend more than they wanted on storage
+allocation. Besides, it offers protection against excessive storage costs by defining an upper limit on how much can be
+spent on storage
 within that call.</p>
+<h3 id="default-gas-limit-configuration"><a class="header" href="#default-gas-limit-configuration">Default gas limit configuration</a></h3>
+<p>The key Gas limit settings include:</p>
 <ul>
-<li><strong>ref_time</strong>: Specifies the reference time for gas allocation.</li>
-<li><strong>proof_size</strong>: Defines the proof size (e.g., <code>3145728</code> corresponds to 3 MB).</li>
+<li><strong>ref_time</strong>: Specify the reference time for gas allocation.</li>
+<li><strong>proof_size</strong>: Define the proof size (e.g., <code>3145728</code> corresponds to 3 MB).</li>
 </ul>
 
                     </main>

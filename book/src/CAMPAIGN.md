@@ -1,10 +1,10 @@
-## Writing Properties for ink! Contracts
+## Writing properties for ink! contracts
 
-### Adding Properties
+### Adding properties
 
 #### Inside your `Cargo.toml`
 
-First, you need to add the `phink` feature to your Cargo.toml, such as:
+First, you need to add the `phink` feature to your `Cargo.toml`, such as:
 
 ```toml
 [features]
@@ -13,7 +13,7 @@ phink = []
 
 #### Inside your `file.rs`
 
-Then, you can use the following example to create invariants. You need to create another `impl` if your contract, and to
+Then, you can use the following example to create invariants. Create another `impl` in your contract, and
 put
 it under the feature of `phink`. Use `assert!` or `panic!` for your properties.
 
@@ -35,9 +35,10 @@ You can find more informations in the page dedicated to [invariants](INVARIANTS.
 
 ## Running Phink
 
-### 1. Instrument the Contract
+### 1. Instrument the contract
 
-Run the following command to instrument your ink! smart contract, enabling it for fuzzing:
+First things first: Let's enable your contract for fuzzing. Run the following command to instrument your ink! smart
+contract:
 
 ```sh
 phink instrument my_contract/
@@ -48,8 +49,8 @@ contract, so you don't have to make a copy before.
 
 ### 2. Run the fuzzer
 
-After **instrumenting** your contract and **writing** properties and **configuring** your `phink.toml`, execute the
-fuzzing process:
+After **instrumenting** your contract and **writing** properties and **configuring** your `phink.toml`, let's get our
+hands on the fuzzing process:
 
 ```sh
 phink fuzz
@@ -67,7 +68,7 @@ watch -c -t -n 0.1 "clear && cat output/phink/logs/last_seed.phink" # `output` i
 
 This will provide you with clearer logs by continuously updating them every **0.1** seconds.
 
-## Analyzing Results
+## Analyzing results
 
 ### Crashes
 
@@ -78,21 +79,23 @@ In case of crashes, you should see something like the following.
 To analyze the crash, you can run `phink execute <your_crash>`, for instance
 `phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2`
 
-| Component      | Description                                                  |
-|----------------|--------------------------------------------------------------|
-| 1729082451630  | Timestamp representing when the crash was recorded.          |
-| id:000000      | Unique identifier for the crash.                             |
-| sig:06         | Signal number that triggered the crash.                      |
-| src:000008     | Source test case number.                                     |
-| time:627512    | Execution time since the start of the testing process.       |
-| execs:3066742  | Cumulative number of executions performed until the crash.   |
-| op:havoc,rep:2 | Type of fuzzing operation (havoc) and its repetition number. |
+| Component      | Description                                                 |
+|----------------|-------------------------------------------------------------|
+| 1729082451630  | Timestamp representing when the crash was recorded          |
+| id:000000      | Unique identifier for the crash                             |
+| sig:06         | Signal number that triggered the crash                      |
+| src:000008     | Source test case number                                     |
+| time:627512    | Execution time since the start of the testing process       |
+| execs:3066742  | Cumulative number of executions performed until the crash   |
+| op:havoc,rep:2 | Type of fuzzing operation (havoc) and its repetition number |
 
-By running this, you should have an output similar to the screenshot below:
+By running the above command, you should get an output similar to the screenshot below:
 
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/backtrace.png" alt="crash"/>
 
-### Coverage (**this feature is in alpha and unstable**)
+### Coverage
+
+**This feature is in alpha and unstable.**
 
 #### Generating a coverage report
 
@@ -109,10 +112,10 @@ phink coverage my_contract/
 ```
 
 Some HTML files should then be generated in the path you've configured inside your `phink.toml`. The coverage report
-provides a visual representation of tested code areas. Basically, the more green lines, the better. You can find below
-an example of the coverage report.
+provides a visual representation of the tested code areas. As a rule of thumb, the more green lines you can see there,
+the better it is for the code.
 
-### Coverage Report Example
+### Coverage report example
 
 **Green Lines**: Code that has been tested.
 

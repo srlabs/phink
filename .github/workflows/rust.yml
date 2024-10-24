@@ -87,8 +87,7 @@ jobs:
         run: bash build.sh
 
       - name: Run all unit and integration tests
-        run: |
-          cargo test --no-fail-fast -- --test-threads=1 --show-output
+        run: cargo test --no-fail-fast -- --test-threads=1 --show-output
 
       - name: Final cleanup
         if: always()

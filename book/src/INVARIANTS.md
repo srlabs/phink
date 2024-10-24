@@ -6,7 +6,7 @@ execution of the contract, preventing potential vulnerabilities and ensuring its
 
 We suggest to use **integrity** and **unit tests** from your codebase to get inspiration to generate good invariants.
 
-## Creating good invariants for Ink! smart-contracts
+## Creating good invariants for ink! smart-contracts
 
 Below are some guidelines to help you design robust invariants:
 
@@ -44,19 +44,19 @@ impl DomainNameService {
 }
 ```
 
-### Important Annotations Explained
+### Annotations explaination
 
 - **`#[cfg(feature = "phink")]`**: Ensures the function is only compiled when the "phink" feature is enabled.
 - **`#[ink(message)]`**: Marks the function as an executable entry defined by the ink! framework.
 - **Function Naming**: Begin with "phink_" to indicate the purpose and correlation to fuzz testing.
 
-## Creating Invariants with LLM
+## Creating invariants with LLM
 
 Large Language Models (LLMs) offer a good (_lazy, yes..._) approach to generate invariants by interpreting the logic and
 identifying properties from the contract code. Here is an example prompt system you could use to generate a base of
 invariants
 
-##### System Prompt
+##### System prompt
 
 ```markdown
 You are provided with Rust files containing an ink! smart contract. Your task is to generate invariants, which are
@@ -93,7 +93,7 @@ impl DomainNameService {
 `` `
 ```
 
-##### Sources in the Prompt
+##### Sources in the prompt
 
 If your contract is small enough and contains multiple Rust files, you could use the following snippet, to put
 everything inside `everything.rs`.

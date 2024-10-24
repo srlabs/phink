@@ -1,14 +1,14 @@
-# Runtime Integration
+# Runtime integration
 
 Phink provides developers with the flexibility to customize their fuzzing environment through a simple interface. By
 editing `contract/custom/custom.rs` and `contract/custom/preferences.rs`, developers can tailor the runtime storage and
 contract initialization
-processes to suit their testing needs. Having a clone of Phink is required, in order to modify the source code.
+processes to suit their testing needs. Have a clone of Phink if you want to modify the source code.
 
-## Custom Runtime Storage
+## Custom runtime storage
 
-Phink allows developers to tailor the runtime environment by customizing the storage configuration. This enables the
-creation of versatile and realistic testing scenarios.
+Phink allows developers to tailor the runtime environment by customizing the storage configuration. Let's
+create some realistic testing scenarios!
 
 ### Example
 
@@ -60,21 +60,48 @@ fn on_contract_initialize() -> anyhow::Result<()> {
 }
 ```
 
-### Customization Points
+### Customization points
+
+- **`runtime_storage`:** Use this function as your gateway to defining any mocks or `RuntimeGenesisConfig` settings
+  needed
+  for your testing environment. Whether it's allocating funds, initializing storage items, or setting up custom
+  storage, adjust these configurations to mirror your deployment scenarios closely. This flexibility lets
+  you test how your ink! smart contract behaves in various simulated network states.
+
+## Contract initialization
+
+The `on_contract_initialize` function can be adapted to execute additional initialization logic, such as uploading
+supplementary contracts or handling dependencies.
+
+### Example
+
+```rust,ignore
+fn on_contract_initialize() -> anyhow::Result<()> {
+    Contracts::bare_upload_code(
+        AccountId32::new([1; 32]),
+        fs::read("adder.wasm")?,
+        None,
+        Determinism::Enforced,
+    );
+    Ok(())
+}
+```
+
+### Customization points
 
 - **`on_contract_initialize`:** Use this function to automate contract uploads, configure dependencies, or perform any
   setup necessary before testing.
 
-## Custom Runtime Parameters
+## Custom runtime parameters
 
 Phink provides default runtime configurations, but developers can provide their own runtime parameters in
 `contract/runtime.rs`. This can be particularly useful if you wish to connect your fuzzing environment to your own
 Substrate runtime, so Phink can be adapted to work with your specific runtime.
 **You can edit the runtime configure [here](https://github.com/srlabs/phink/blob/main/src/contract/runtime.rs).**
 
-### Example: Custom Runtime Configuration
+### Example: custom runtime configuration
 
-For instance, users could customize the `pallet_timestamp` runtime parameters:
+For instance, customize the `pallet_timestamp` runtime parameters like this:
 
 ```rust,ignore
 impl pallet_timestamp::Config for Runtime {
