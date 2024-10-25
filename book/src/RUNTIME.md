@@ -34,19 +34,19 @@ impl DevelopperPreferences for Preferences {
 }
 ```
 
-### Customization Points
+### Customization points
 
 - **`runtime_storage`:** This function is your gateway to defining any mocks or `RuntimeGenesisConfig` settings needed
   for your testing environment. Whether it's allocating funds, initializing storage items, or setting up custom
   storage, you can adjust these configurations to mirror your deployment scenarios closely. This flexibility allows
   you to test how your ink! smart contract behave in various simulated network states.
 
-## Contract Initialization
+## Contract initialization
 
 The `on_contract_initialize` function can be adapted to execute additional initialization logic, such as uploading
 supplementary contracts or handling dependencies.
 
-### Usage Example
+### Usage example
 
 ```rust,ignore
 fn on_contract_initialize() -> anyhow::Result<()> {

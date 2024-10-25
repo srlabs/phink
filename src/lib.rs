@@ -23,7 +23,7 @@ use crate::{
     },
     instrumenter::{
         instrumentation::Instrumenter,
-        seedgen::SeedExtractInjector,
+        seedgen::generator::SeedExtractInjector,
         traits::visitor::ContractVisitor,
     },
 };
@@ -192,10 +192,8 @@ fn handle_cli() -> EmptyResult {
         } => {
             let seeder = SeedExtractInjector::new(&contract, compiled_directory)?;
             seeder
-                .prepare()
+                .extract(&config.fuzz_output.unwrap_or_default())
                 .context(format!("Couldn't extract the seed from {contract:?}"))?;
-
-            // seeder.run_tests().context("xxxxxxx")?;
             Ok(())
         }
     }

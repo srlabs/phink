@@ -381,7 +381,7 @@ mod test {
         let data = transcoder.encode(constructor, ["\"\""]).unwrap();
         let hex = hex::encode(data);
         assert_eq!(hex, "fa80c2f600");
-        println!("{:?}", hex);
+        // println!("{hex:?}");
     }
 
     #[test]

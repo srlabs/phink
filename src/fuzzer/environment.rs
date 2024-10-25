@@ -107,19 +107,29 @@ pub struct CorpusManager {
 }
 
 impl CorpusManager {
-    pub fn new(phink_file: PhinkFiles) -> ResultOf<CorpusManager> {
+    pub fn new(phink_file: &PhinkFiles) -> ResultOf<CorpusManager> {
         let corpus_dir = phink_file.path(CorpusPath);
-        fs::create_dir_all(&corpus_dir)?;
+        if !corpus_dir.exists() {
+            fs::create_dir_all(&corpus_dir)?;
+        }
         Ok(Self { corpus_dir })
     }
 
-    pub fn write_corpus_file(&self, index: usize, selector: &Selector) -> io::Result<()> {
-        // 00010000 01 fa80c2f6 00
+    /// Write a seed to a given `name`.bin. It pre-append `00000000 01` which is basically
+    /// null-value and Alice as origin
+    pub fn write_seed(&self, name: &str, seed: &[u8]) -> io::Result<()> {
         let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
-        // let mut data = vec![];
+        let file_path = self.corpus_dir.join(format!("{name}.bin"));
+        data.extend_from_slice(seed);
+        println!("{:?}", file_path);
+        fs::write(file_path, data)
+    }
+
+    pub fn write_corpus_file(&self, index: usize, selector: &Selector) -> io::Result<()> {
+        let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01]; // 00010000 01 fa80c2f6 00
         let file_path = self.corpus_dir.join(format!("selector_{index}.bin"));
         data.extend_from_slice(selector.0.as_ref());
-        data.extend(vec![0x0, 0x0]);
+        data.extend(vec![0x0, 0x0]); // Padding for SCALE
         fs::write(file_path, data)
     }
 }
@@ -141,7 +151,7 @@ impl EnvironmentBuilder {
             phink_file.clone(),
             conf.config().max_messages_per_exec.unwrap_or_default(),
         )?;
-        let corpus_manager = CorpusManager::new(phink_file)
+        let corpus_manager = CorpusManager::new(&phink_file)
             .with_context(|| "Couldn't create a new corpus manager")?;
 
         for (i, selector) in self
@@ -214,7 +224,7 @@ mod tests {
         let path = create_temp_phink_file("test_corpus");
         let phink_file = PhinkFiles::new(path.clone());
 
-        let corpus_manager = CorpusManager::new(phink_file)?;
+        let corpus_manager = CorpusManager::new(&phink_file)?;
         assert!(corpus_manager.corpus_dir.exists());
 
         Ok(())
@@ -224,7 +234,7 @@ mod tests {
     fn test_write_corpus_file() -> io::Result<()> {
         let path = create_temp_phink_file("test_corpus");
         let phink_file = PhinkFiles::new(path.clone());
-        let corpus_manager = CorpusManager::new(phink_file).unwrap();
+        let corpus_manager = CorpusManager::new(&phink_file).unwrap();
 
         let selector = create_test_selector();
         corpus_manager.write_corpus_file(0, &selector)?;

@@ -4,6 +4,11 @@ use crate::{
     ResultOf,
 };
 
+use crate::{
+    cli::config::PhinkFiles,
+    fuzzer::environment::CorpusManager,
+    instrumenter::seedgen::parser::SeedExtractor,
+};
 use anyhow::{
     bail,
     Context,
@@ -15,6 +20,7 @@ use std::{
         Path,
         PathBuf,
     },
+    process::Command,
 };
 use syn::{
     parse_quote,
@@ -54,9 +60,9 @@ impl SeedExtractInjector {
         })
     }
 
-    /// Fork the contract, insert the snippet to extract the seeds, patch Cargo.toml, run the tests,
-    /// extracts the seeds.
-    pub fn prepare(&self) -> EmptyResult {
+    /// Fork the contract, insert the snippet to extract the seeds, patch `Cargo.toml`, run the
+    /// tests, extracts the seeds.
+    pub fn extract(&self, output: &PathBuf) -> EmptyResult {
         self.fork()
             .context("Forking the project to a new directory failed")?;
 
@@ -64,15 +70,79 @@ impl SeedExtractInjector {
             .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
 
         self.patch_toml()
-            .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
+            .context("Patching Cargo.toml for seed extraction wasn't possible")?;
 
         self.build()
             .context("Couldn't build the contract required for seed extraction")?;
+
+        let unparsed_seed = self
+            .run_tests()
+            .context("Couldn't run `cargo test ...` to run the seeds")?;
+
+        let amount = self.save_seeds(unparsed_seed, output)?;
+        if self.verbose() {
+            println!(
+                "Done! We've saved {amount} seeds in total. If your campaign already started,\
+             you can use `cargo ziggy add-seeds` to include the seeds."
+            );
+        }
         Ok(())
     }
 
-    pub fn run_tests(&self) -> EmptyResult {
-        todo!()
+    /// Save all the seeds properly to a .bin file
+    /// # Returns
+    /// The number of seed saved
+    fn save_seeds(&self, unparsed_seed: String, output: &PathBuf) -> ResultOf<usize> {
+        let seeds_as_bin = SeedExtractor::new(unparsed_seed).extract_seeds();
+        let pfile = PhinkFiles::new_by_ref(output);
+        let writer = &CorpusManager::new(&pfile)?;
+        for (i, seed) in seeds_as_bin.iter().enumerate() {
+            let bytes = seed.as_ref();
+            let name = format!("seedgen_{i}");
+            writer.write_seed(name.as_str(), bytes)?;
+            if self.verbose() {
+                let path = format!("{pfile}/corpus/{name}.bin");
+                println!("Writing bytes 0x{} to `{path}`", hex::encode(bytes));
+            }
+        }
+
+        Ok(seeds_as_bin.len())
+    }
+
+    pub fn run_tests(&self) -> ResultOf<String> {
+        let path = self.output_directory();
+        let p_display = &path.display();
+
+        if !path.exists() {
+            bail!("There was probably a fork issue, as {p_display} doesn't exist.")
+        }
+
+        let output = Command::new("cargo")
+            .current_dir(&path)
+            .args(["test", "--features=e2e-tests", "--", "--show-output"])
+            .output()?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        if output.status.success() {
+            if self.verbose() {
+                println!(
+                    "{stdout}\n\n=========================================\n\n\
+                You can find the stringified seeds below. \
+                No worries, they're already saved with the correct format to the corpus. \
+                You don't need to do anything."
+                );
+            }
+            Ok(stdout.parse()?)
+        } else {
+            bail!(
+                "{stderr} - {stdout}\n\n\nIt seems that we couldn't run the E2E tests or unit tests for your contract. \
+        Please go to `{p_display}`, edit the source code, and run `cargo test --features=e2e-tests -- --show-output`.\n\
+        It might be because your contract cannot run the tests properly. Maybe additionnal parameters to `cargo test` are required ? \
+        \nMore informations in the stacktrace above.",
+            )
+        }
     }
 
     /// Insert the snippet that will extract each call and send it via `debug_println!`
@@ -89,6 +159,7 @@ impl SeedExtractInjector {
 
     /// Patch the `Cargo.toml` to use our own version of ink!
     fn patch_toml(&self) -> EmptyResult {
+        // TODO: Seed extraction if we have multiple contracts, so multiple Cargo.toml
         let cargo_path = &self.output_directory().join("Cargo.toml");
         let cargo_content = fs::read_to_string(cargo_path)?;
         let mut doc = cargo_content.parse::<DocumentMut>()?;
@@ -156,19 +227,15 @@ impl ContractVisitor for SeedExtractInjector {
     }
 
     fn output_directory(&self) -> PathBuf {
-        let path = match &self.compiled_path {
+        match &self.compiled_path {
             None => {
                 // Create a new directory that is not tied to `TempDir`
                 let dir = std::env::temp_dir().join("phink_seedgen");
-                fs::create_dir_all(&dir).expect("Failed to create directory");
+                fs::create_dir_all(&dir).expect("Failed to create output directory for seedgen");
                 dir
             }
             Some(contract) => contract.to_path_buf(),
-        };
-        if self.verbose() {
-            println!("Using {path:?} for contract output");
         }
-        path
     }
 
     fn verbose(&self) -> bool {
@@ -212,7 +279,6 @@ impl VisitMut for &SeedExtractInjector {
                             })
                             .collect();
 
-                        // Ink message function name
                         let fn_name_str = fn_name.to_string();
 
                         let mut push_args = quote! {
@@ -234,7 +300,7 @@ impl VisitMut for &SeedExtractInjector {
                             {
                             #push_args;
                             let encoded = ink::scale::Encode::encode(&toz);
-                            ink::env::debug_println!("ENCODED_SEED = 0x{}", encoded.iter().map(|byte| format!("{:02x}", byte)).collect::<String>());
+                            ink::env::debug_println!("ENCODED_SEED={}", encoded.iter().map(|byte| format!("{:02x}", byte)).collect::<String>());
                             }
                         };
 
@@ -258,7 +324,7 @@ impl VisitMut for &SeedExtractInjector {
 
 #[cfg(test)]
 mod tests {
-    use crate::instrumenter::seedgen::SeedExtractInjector;
+    use crate::instrumenter::seedgen::generator::SeedExtractInjector;
     use quote::quote;
     use std::path::PathBuf;
     use syn::{

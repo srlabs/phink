@@ -57,18 +57,14 @@ mod dummy {
         #[ink::test]
         fn new_works() {
             let mut a = MyBuggedContract::new();
-            // a.toz(32, Hash::from([0x99; 32]));
             a.crash_with_invariant("abc".to_string()).unwrap();
-            a.crash_with_invariant("def".to_string()).unwrap();
             a.crash_with_invariant("fuz".to_string()).unwrap();
         }
 
         #[ink::test]
         fn for_seedgen() {
             let mut a = MyBuggedContract::new();
-            a.crash_with_invariant("abc".to_string()).unwrap();
             a.toz(32, crate::dummy::Hash::from([0x99; 32]));
-            a.crash_with_invariant("fuz".to_string()).unwrap();
         }
     }
 

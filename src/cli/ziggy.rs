@@ -137,7 +137,7 @@ impl ZiggyConfig {
 
         if config.use_honggfuzz {
             bail!(
-                "Please, set use_honggfuzz to `false`, as we do not currently support Honggfuzz
+                "Please, set `use_honggfuzz` to `false`, as we do not currently support Honggfuzz
         due to ALLOW_LIST limitations in Honggfuzz"
             )
         }

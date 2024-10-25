@@ -611,17 +611,17 @@ create some realistic testing scenarios!</p>
         storage
     }
 }</code></pre>
-<h3 id="customization-points"><a class="header" href="#customization-points">Customization Points</a></h3>
+<h3 id="customization-points"><a class="header" href="#customization-points">Customization points</a></h3>
 <ul>
 <li><strong><code>runtime_storage</code>:</strong> This function is your gateway to defining any mocks or <code>RuntimeGenesisConfig</code> settings needed
 for your testing environment. Whether it’s allocating funds, initializing storage items, or setting up custom
 storage, you can adjust these configurations to mirror your deployment scenarios closely. This flexibility allows
 you to test how your ink! smart contract behave in various simulated network states.</li>
 </ul>
-<h2 id="contract-initialization"><a class="header" href="#contract-initialization">Contract Initialization</a></h2>
+<h2 id="contract-initialization"><a class="header" href="#contract-initialization">Contract initialization</a></h2>
 <p>The <code>on_contract_initialize</code> function can be adapted to execute additional initialization logic, such as uploading
 supplementary contracts or handling dependencies.</p>
-<h3 id="usage-example"><a class="header" href="#usage-example">Usage Example</a></h3>
+<h3 id="usage-example"><a class="header" href="#usage-example">Usage example</a></h3>
 <pre><code class="language-rust ignore">fn on_contract_initialize() -&gt; anyhow::Result&lt;()&gt; {
     Contracts::bare_upload_code(
         AccountId32::new([1; 32]),
