@@ -177,6 +177,7 @@ file.
 - [x] Visualization of ink! contract coverage
 - [x] Proper binary usage
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
+- [x] Seed extraction out of unit and end-to-end tests
 - [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
 - [ ] Creation of default invariants common to every contract  (_research needed_)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
