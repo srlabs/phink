@@ -73,6 +73,7 @@ docker build -t phink .
 
 ```bash
 phink instrument path/to/ink_contract
+phink generate-seed path/to/ink_contract #optional 
 phink fuzz  
 ```  
 
@@ -181,4 +182,3 @@ file.
 - [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
 - [ ] Creation of default invariants common to every contract  (_research needed_)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
-- [ ] Extraction of seeds and constants from the codebase (_research needed_)
