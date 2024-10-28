@@ -47,7 +47,54 @@ phink instrument my_contract/
 This step modifies the contract to include necessary hooks for Phink's fuzzing process. It creates a fork of the
 contract, so you don't have to make a copy before.
 
-### 2. Run the fuzzer
+### 2. Generate seeds (optionnal but highly recommended)
+
+The `phink generate-seed` command is an optional but powerful feature that enhances your fuzzing experience by
+generating initial seeds from your existing unit and end-to-end (E2E) tests.
+
+#### What it Does
+
+`phink generate-seed` executes the unit tests and E2E tests of your ink! smart contract, extracting seeds based on
+executed messages. These seeds are saved in the `corpus/` directory, which highly helps to reach good coverage, as long
+as you have good tests.
+**Therefore, we encourage to have good and various unit-tests and E2E tests in your contract.**
+
+#### How It Works
+
+- **Unit Tests**: The command runs through all defined unit tests and captures the invoked messages, with Alice as the
+  origin and a value of 0.
+
+- **End-to-End Tests**: For E2E tests, Phink modifies the `Cargo.toml` to point to
+  a [custom ink! repository](https://github.com/kevin-valerio/ink/commit/5869d341ff13a454c22a6980fd232f4520721b97). This
+  step
+  ensures necessary modifications are included to print debug messages containing the message's 4-byte hash and
+  scale-encoded parameters to stdout.
+
+- If a test invokes at least one message, Phink extracts them all as seeds for use during fuzzing.
+
+#### Usage
+
+```sh
+phink generate-seed <CONTRACT> [COMPILED_DIRECTORY]
+```
+
+- `<CONTRACT>`: The root directory path of your ink! smart contract.
+- `[COMPILED_DIRECTORY]`: Optional path for where the temporary contract will be compiled. Defaults to `tmp` if
+  unspecified.
+
+This will generate a set of initial inputs, derived from your current tests, to kickstart fuzzing.
+
+#### Why using `generate-seed`?
+
+Generating seeds from your existing test suite can increase the efficiency of fuzz testing by:
+
+- Providing a good starting point for fuzzing inputs.
+- Ensuring that the fuzzing process begins with valid and meaningful test cases.
+
+For more information on how seeds work with Phink, refer to
+the [seeds documentation](SEEDS.md).
+
+### 3. Run the fuzzer
 
 After **instrumenting** your contract and **writing** properties and **configuring** your `phink.toml`, let's get our
 hands on the fuzzing process:

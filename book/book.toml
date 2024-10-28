@@ -25,8 +25,8 @@ no-section-label = false
 git-repository-url = "https://github.com/srlabs/phink/"
 git-repository-icon = "fa-github"
 edit-url-template = "https://github.com/srlabs/phink/blob/main/src/{path}"
-site-url = "/example-book/"
-cname = "myproject.rs"
+site-url = "https://srlabs.github.io/"
+cname = "github.io"
 
 [output.html.search]
 limit-results = 15
