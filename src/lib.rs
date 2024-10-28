@@ -56,6 +56,9 @@ pub type ResultOf<T> = anyhow::Result<T>;
     about = "🐙 Phink: An ink! smart-contract property-based and coverage-guided fuzzer",
     long_about = None
 )]
+#[command(
+    help_template = "{before-help}{about-with-newline}🧑‍🎨 {author-with-newline}\n{usage-heading}\n    {usage}\n\n{all-args}{after-help}"
+)]
 struct Cli {
     /// Order to execute (if you start here, instrument then fuzz suggested)
     #[clap(subcommand)]
