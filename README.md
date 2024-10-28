@@ -6,6 +6,7 @@
 
 
 ![Docker](https://github.com/srlabs/phink/actions/workflows/docker.yml/badge.svg)
+[![Latest Release](https://img.shields.io/crates/v/phink.svg)](https://crates.io/crates/phink)
 ![Tests](https://github.com/srlabs/phink/actions/workflows/rust.yml/badge.svg)
 [![License](https://img.shields.io/github/license/srlabs/phink)](https://github.com/srlabs/phink/blob/main/LICENSE)
 [![dependency status](https://deps.rs/repo/github/srlabs/phink/status.svg)](https://deps.rs/repo/github/srlabs/phink)
