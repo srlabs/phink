@@ -330,7 +330,11 @@ mod test {
             .collect();
 
         // Dummy selectors
-        assert_eq!(extracted, "9bae9d5e fa80c2f6 4c406b48 27d8f137 ");
+        assert_eq!(
+            extracted, "9bae9d5e fa80c2f6 4c406b48 27d8f137 ",
+            "If this panics, check that the contracts were compiled with the phink features!\n\
+        Go to samples/* and run `cargo contract build --features phink`"
+        );
     }
     #[test]
     fn fetch_correct_selectors() {
