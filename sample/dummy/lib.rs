@@ -30,7 +30,7 @@ mod dummy {
 
         #[ink(message)]
         pub fn crash_with_invariant(&mut self, data: String) -> Result<()> {
-            if data.len() == 4 {
+            if data.len() < 7 && data.len() > 3 {
                 if data.chars().nth(0).unwrap() == 'f' {
                     if data.chars().nth(1).unwrap() == 'u' {
                         if data.chars().nth(2).unwrap() == 'z' {
