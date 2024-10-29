@@ -62,8 +62,15 @@ pub trait ContractVisitor {
         let output_p = self.output_directory();
         let contract_p = self.input_directory();
 
-        phink_log!(self, "🏗️ Creating new directory {:?}", output_p.display());
+        phink_log!(self, "🏗️ Creating new directory {output_p:?}");
 
+        if output_p.exists() {
+            fs::remove_dir_all(&output_p).context(format!(
+                "Couldn't remove the already-existing output while forking: {output_p:?}"
+            ))?;
+            phink_log!(self, "🏗️ {output_p:?} already exists... so we've erased it");
+        }
+        
         fs::create_dir_all(output_p.clone())
             .with_context(|| format!("🙅 Failed to create directory: {output_p:?}"))?;
 
