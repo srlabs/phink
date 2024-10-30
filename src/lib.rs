@@ -44,7 +44,8 @@ pub mod cover;
 pub mod fuzzer;
 pub mod instrumenter;
 
-/// This type is used to handle all the different errors on Phink. It's a simple biding to anyhow.
+/// This type is used to handle all the different errors on Phink. It's a simple binding to
+/// `anyhow`.
 pub type EmptyResult = anyhow::Result<()>;
 pub type ResultOf<T> = anyhow::Result<T>;
 
@@ -75,24 +76,24 @@ enum Commands {
     /// Starts the fuzzing campaign. Instrumentation required before!
     Fuzz,
     /// Run the tests of the ink! smart-contract to execute the
-    /// messages and extracts valid seeds fromit. For instance, if a test call three messages,
+    /// messages and extracts valid seeds from it. For instance, if a test call three messages,
     /// those three messages will be extracted to be used as seeds inside the corpus directory
     GenerateSeed {
         /// Path where the contract is located. It must be the root directory of
         /// the contract
         contract: PathBuf,
-        /// Path where the temporary contract will be compiled to. Optionnal. In `tmp` if not
-        /// defined.
+        /// Path where the temporary contract will be compiled to. Optionnal field, set to `tmp` if
+        /// not defined (or somewhere else, depending your OS)
         compiled_directory: Option<PathBuf>,
     },
     /// Instrument the ink! contract, and compile it with Phink features
     Instrument(Contract),
-    /// Run all the seeds
+    /// Run all the seeds from `corpus/`
     Run,
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here
     /// (mainly for debugging purposes only)
     HarnessCover,
-    /// Generate a coverage report for your smart-contract
+    /// Generate a coverage report for your ink! smart-contract
     Coverage(Contract),
     /// Execute one seed
     Execute {

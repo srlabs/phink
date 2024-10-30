@@ -70,7 +70,7 @@ pub trait ContractVisitor {
             ))?;
             phink_log!(self, "🏗️ {output_p:?} already exists... so we've erased it");
         }
-        
+
         fs::create_dir_all(output_p.clone())
             .with_context(|| format!("🙅 Failed to create directory: {output_p:?}"))?;
 

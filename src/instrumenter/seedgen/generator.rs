@@ -101,7 +101,7 @@ impl SeedExtractInjector {
             let name = format!("seedgen_{i}");
             writer.write_seed(name.as_str(), bytes)?;
             if self.verbose() {
-                let path = format!("{pfile}/phink/corpus/{name}.bin")
+                let path = format!("{pfile}/phink/corpus/{name}.bin");
                 println!("Writing bytes 0x{} to `{path}`", hex::encode(bytes));
             }
         }
