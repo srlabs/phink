@@ -446,7 +446,7 @@ mod test {
 
         let manager = Fuzzer::new(Ok(ziggy_config))?
             .init_fuzzer()
-            .context("Couldn't grap the transcoder and the invariant manager")?;
+            .context("Couldn't grap the `transcoder` and the invariant manager")?;
 
         let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
 
