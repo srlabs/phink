@@ -4,7 +4,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 echo "$SCRIPT_DIR"
 cd "$SCRIPT_DIR" || exit
 
-echo "We're building every contract :-)"
+echo "We're cleaning every contract :-)"
 for dir in */; do
     # Remove trailing slash from directory name
     dir=${dir%/}
@@ -13,14 +13,8 @@ for dir in */; do
 
     # Ensure we have a Cargo.toml file in the directory before proceeding
     if [ -f "$dir/Cargo.toml" ]; then
-        if [ "$dir" = "multi-contract-caller" ]; then
-            # Execute build-all.sh for multi-contract-caller
-            (cd "$dir" && ./build-all.sh)
-        else
-            # Execute cargo contract build for other directories
-            (cd "$dir" && cargo clean)
-        fi
-        echo "Finished building $dir"
+        (cd "$dir" && cargo clean)
+        echo "Finished cleaning $dir"
     else
         echo "Skipping $dir: Cargo.toml not found."
     fi
@@ -28,4 +22,4 @@ for dir in */; do
     echo
 done
 
-echo "All builds completed."
+echo "Cleaned everything"
