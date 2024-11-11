@@ -6,16 +6,6 @@ use std::{
     },
     str::FromStr,
 };
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum SelectorError {
-    #[error("Invalid hex string")]
-    InvalidHex(#[from] hex::FromHexError),
-
-    #[error("Invalid length for a 4-byte array")]
-    InvalidLength,
-}
 
 #[derive(PartialEq, Clone, Debug, Copy)]
 pub struct Selector(pub [u8; 4]);
@@ -68,7 +58,7 @@ impl From<Selector> for Vec<u8> {
 }
 
 impl TryFrom<&str> for Selector {
-    type Error = SelectorError;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = value.trim_start_matches("0x"); // Remove "0x" if present
@@ -78,11 +68,11 @@ impl TryFrom<&str> for Selector {
 }
 
 impl TryFrom<&[u8]> for Selector {
-    type Error = SelectorError;
+    type Error = anyhow::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         if value.len() != 4 {
-            return Err(SelectorError::InvalidLength);
+            return Err(anyhow::anyhow!("Invalid lenght for selector"));
         }
         let mut array = [0u8; 4];
         array.copy_from_slice(value);
@@ -91,7 +81,7 @@ impl TryFrom<&[u8]> for Selector {
 }
 
 impl TryFrom<Vec<u8>> for Selector {
-    type Error = SelectorError;
+    type Error = anyhow::Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         value.as_slice().try_into()

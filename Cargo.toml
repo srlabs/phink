@@ -94,7 +94,6 @@ ink_env = { version = "5.0.0" }
 contract-transcode = { version = "4.1.1" }
 contract-metadata = { version = "4.1.1" }
 colored = { version = "2.1.0" }
-thiserror = { version = "1.0.63" }
 time = { version = "0.3.36" }
 
 [lints.rust]
