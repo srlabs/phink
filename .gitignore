@@ -20,6 +20,7 @@ phink_temp_test.toml
 instrumented_*/
 output*/
 phink
+tests/fixtures/corpus/*
 
 # Compilation targets
 target
