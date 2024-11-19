@@ -853,7 +853,6 @@ good assessment of the contract’s logic.</p>
 <h3 id="contract-selectors"><a class="header" href="#contract-selectors">Contract selectors</a></h3>
 <p><strong>ink! contract selectors</strong> are unique identifiers for functions within ink! smart contracts. Selectors are derived from
 function signatures and are used to call specific functions within a contract deployed on the blockchain.</p>
-<hr />
 <div style="break-before: page; page-break-before: always;"></div><h1 id="how-phink-works"><a class="header" href="#how-phink-works">How Phink works</a></h1>
 <p>Phink is built on top of AFL++, leveraging its capabilities to provide effective fuzz testing for ink! smart contracts.
 Here’s an overview of how the fuzzer operates.</p>
@@ -885,8 +884,7 @@ This setup ensures that invariants are verified: known selectors are checked to 
 invariants hold across different message calls.</p>
 <h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract instrumentation</a></h2>
 <p>Phink instruments contracts using the <code>syn</code> crate, allowing for precise modification and analysis of the smart contract
-code. This instrumentation is pivotal for identifying potential vulnerabilities and safeguarding the integrity of the
-fuzz testing process.</p>
+code. For each high-level Rust instructions, a feedback is returned via the <code>debug_message</code> map to the fuzzing engine, mapping each instruction to a unique <code>u64</code> identifier. This map is then “expanded”, instrumented by AFL++ compiler, and ultimately updated the AFL++ shared map everytime a new edge is hit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h1>
 <h2 id="debugging-phink"><a class="header" href="#debugging-phink">Debugging Phink</a></h2>
 <h3 id="afl-logs"><a class="header" href="#afl-logs">AFL++ logs</a></h3>

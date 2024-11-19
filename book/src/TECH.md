@@ -44,5 +44,4 @@ invariants hold across different message calls.
 ## Contract instrumentation
 
 Phink instruments contracts using the `syn` crate, allowing for precise modification and analysis of the smart contract
-code. This instrumentation is pivotal for identifying potential vulnerabilities and safeguarding the integrity of the
-fuzz testing process.
+code. For each high-level Rust instructions, a feedback is returned via the `debug_message` map to the fuzzing engine, mapping each instruction to a unique `u64` identifier. This map is then "expanded", instrumented by AFL++ compiler, and ultimately updated the AFL++ shared map everytime a new edge is hit. 

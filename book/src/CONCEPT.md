@@ -69,5 +69,3 @@ good assessment of the contract's logic.
 
 **ink! contract selectors** are unique identifiers for functions within ink! smart contracts. Selectors are derived from
 function signatures and are used to call specific functions within a contract deployed on the blockchain.
-
----

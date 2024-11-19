@@ -210,8 +210,7 @@ This setup ensures that invariants are verified: known selectors are checked to 
 invariants hold across different message calls.</p>
 <h2 id="contract-instrumentation"><a class="header" href="#contract-instrumentation">Contract instrumentation</a></h2>
 <p>Phink instruments contracts using the <code>syn</code> crate, allowing for precise modification and analysis of the smart contract
-code. This instrumentation is pivotal for identifying potential vulnerabilities and safeguarding the integrity of the
-fuzz testing process.</p>
+code. For each high-level Rust instructions, a feedback is returned via the <code>debug_message</code> map to the fuzzing engine, mapping each instruction to a unique <code>u64</code> identifier. This map is then “expanded”, instrumented by AFL++ compiler, and ultimately updated the AFL++ shared map everytime a new edge is hit.</p>
 
                     </main>
 
