@@ -110,7 +110,7 @@ impl Fuzzer {
 
         env_builder
             .build_env(self.ziggy_config.to_owned())
-            .context("🙅 Couldn't create corpus entries and dict")?;
+            .context("Couldn't create corpus entries and dict")?;
 
         if conf.verbose {
             println!(

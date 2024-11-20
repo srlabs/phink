@@ -118,7 +118,7 @@ mod tests {
         let mut watcher = CorpusWatcher::from_fullpath(corpus_path.clone())?;
 
         // Initial check
-        let initial_data = watcher.data();
+        // let initial_data = watcher.data();
 
         // Add a file and check again
         let mut temp_file = NamedTempFile::new_in(corpus_path.clone())?;

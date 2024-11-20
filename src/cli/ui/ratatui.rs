@@ -95,7 +95,7 @@ impl CustomUI {
                             {
                                 str.to_string()
                             } else {
-                                "Couldn't decode {encoded_bytes}".to_string()
+                                format!("Couldn't decode {:?}", encoded_bytes)
                             }
                         } else {
                             "Double check your constructor in your `phink.toml`".to_string()
