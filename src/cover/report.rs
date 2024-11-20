@@ -170,7 +170,7 @@ impl CoverageTracker {
         let mut coverage_trace = match File::open(cov_trace_path) {
             Ok(file) => file,
             Err(_) => {
-                bail!("❌ Coverage file not found. Please execute the \"run\" command to create the coverage file.")
+                bail!("Coverage file not found. Please execute the \"run\" command to create the coverage file.")
             }
         };
 
