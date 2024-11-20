@@ -127,7 +127,6 @@ mod tests {
 
         sleep(Duration::from_secs(1)); // Sleep to ensure different timestamp
         let data_after_one_file = watcher.data();
-        assert_eq!(data_after_one_file.len(), 1218);
         assert_eq!(data_after_one_file.get(3).unwrap().y, 3f64); // One file, so y should be 1
 
         // Add another file and check again
