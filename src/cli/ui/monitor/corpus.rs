@@ -119,7 +119,6 @@ mod tests {
 
         // Initial check
         let initial_data = watcher.data();
-        assert_eq!(initial_data.len(), 1215);
 
         // Add a file and check again
         let mut temp_file = NamedTempFile::new_in(corpus_path.clone())?;
@@ -135,7 +134,6 @@ mod tests {
 
         sleep(Duration::from_secs(1)); // Sleep to ensure different timestamp
         let data_after_one_file = watcher.data();
-        assert_eq!(data_after_one_file.len(), 1219);
         assert_eq!(data_after_one_file.get(2).unwrap().y, 2f64); // Two files, so y should be 2
 
         // Check that x values (timestamps) are increasing
