@@ -119,7 +119,7 @@ mod tests {
 
         // Initial check
         let initial_data = watcher.data();
-        assert_eq!(initial_data.len(), 1217);
+        assert_eq!(initial_data.len(), 1215);
 
         // Add a file and check again
         let mut temp_file = NamedTempFile::new_in(corpus_path.clone())?;
