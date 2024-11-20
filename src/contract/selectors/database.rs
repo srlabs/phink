@@ -60,7 +60,7 @@ impl SelectorDatabase {
                 .filter(|msg| !self.invariants.contains(msg))
                 .collect());
         }
-        bail!("No messages were found in the database")
+        bail!("No unique messages were found in the database")
     }
 
     pub fn invariants(self) -> ResultOf<Vec<Selector>> {
