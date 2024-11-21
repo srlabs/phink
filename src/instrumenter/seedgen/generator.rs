@@ -62,7 +62,7 @@ impl SeedExtractInjector {
 
     /// Fork the contract, insert the snippet to extract the seeds, patch `Cargo.toml`, run the
     /// tests, extracts the seeds.
-    pub fn extract(&self, output: &PathBuf) -> EmptyResult {
+    pub fn extract(&mut self, output: &PathBuf) -> EmptyResult {
         self.fork()
             .context("Forking the project to a new directory failed")?;
 
@@ -91,7 +91,7 @@ impl SeedExtractInjector {
 
     /// Save all the seeds properly to a .bin file
     /// # Returns
-    /// The number of seed saved
+    /// The number of seeds saved
     fn save_seeds(&self, unparsed_seed: String, output: &PathBuf) -> ResultOf<usize> {
         let seeds_as_bin = SeedExtractor::new(unparsed_seed).extract_seeds();
         let pfile = PhinkFiles::new_by_ref(output);
@@ -146,14 +146,14 @@ impl SeedExtractInjector {
     }
 
     /// Insert the snippet that will extract each call and send it via `debug_println!`
-    fn insert_snippet(&self) -> EmptyResult {
-        self.for_each_file(|file_path| {
-            let source_code =
-                fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
-
-            self.instrument_file(file_path, &source_code, self)
-                .context("Failed to instrument the file")
-        })?;
+    fn insert_snippet(&mut self) -> EmptyResult {
+        // self.for_each_file(|file_path| {
+        //     let source_code =
+        //         fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
+        //
+        //     self.instrument_file(file_path, &source_code, &mut self)
+        //         .context("Failed to instrument the file")
+        // })?; todo!()
         Ok(())
     }
 
@@ -243,7 +243,7 @@ impl ContractVisitor for SeedExtractInjector {
     }
 }
 
-impl VisitMut for &SeedExtractInjector {
+impl VisitMut for &mut SeedExtractInjector {
     fn visit_item_mut(&mut self, item: &mut Item) {
         match item {
             Item::Fn(f) => self.visit_item_fn_mut(f),

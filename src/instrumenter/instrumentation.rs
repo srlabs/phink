@@ -90,11 +90,11 @@ impl Instrumenter {
         })
     }
 
-    pub fn instrument(self) -> EmptyResult {
+    pub fn instrument(&mut self) -> EmptyResult {
         self.fork()
             .context("Forking the project to a new directory failed")?;
 
-        let injector = CoverageInjector::new();
+        let mut injector = CoverageInjector::new();
 
         self.for_each_file(|file_path| {
             let source_code =
@@ -105,7 +105,7 @@ impl Instrumenter {
                 return Ok(());
             }
 
-            self.instrument_file(file_path, &source_code, injector)
+            self.instrument_file(file_path, &source_code, &mut injector)
                 .context("Failed to instrument the file")
         })?;
 
