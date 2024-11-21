@@ -1,9 +1,5 @@
 use crate::{
     cli::{
-        config::{
-            PFiles::CoverageTracePath,
-            PhinkFiles,
-        },
         ui::logger::LogWriter,
         ziggy::ZiggyConfig,
     },

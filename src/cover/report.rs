@@ -1,4 +1,5 @@
 use crate::cli::ziggy::ZiggyConfig;
+use fs::read_to_string;
 
 use crate::{
     cli::config::{
@@ -8,20 +9,24 @@ use crate::{
     cover::trace::COV_IDENTIFIER,
     EmptyResult,
 };
-use anyhow::bail;
+use anyhow::{
+    bail,
+    Context,
+};
 use std::{
     collections::HashMap,
     fs::{
         self,
         File,
     },
+    io,
     io::Read,
 };
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {
     /// Maps each *.rs file of the contract to a `Vec<bool>`. This `Vec` represents the coverage
-    /// map of the file.
+    /// map of the file, with a `len()` equal to the number of lines of the file.
     coverage: HashMap<String, Vec<bool>>,
     /// Stores each hit line's unique identifier.
     hit_lines: Vec<usize>,
@@ -41,7 +46,7 @@ impl CoverageTracker {
         }
     }
 
-    /// Calculates and prints a benchmark of the coverage achieved.
+    /// Calculates and prints a benchmark of the coverage achieved
     pub fn benchmark(&self) {
         let total_hit_lines = self.hit_lines.len();
         let number_of_files = self.coverage.len();
@@ -52,15 +57,15 @@ impl CoverageTracker {
             0 // Avoid division by zero
         };
 
-        println!("Fuzzing Coverage Benchmark:");
-        println!("  Total Hit Lines: {}", total_hit_lines);
-        println!("  Total Files: {}", number_of_files);
-        println!("  Maximum Coverage: {}", total_coverage_possible);
-        println!("  Coverage Percentage: {:.2}%", coverage_percentage);
+        println!("📐 Phink Coverage Benchmark:");
+        println!("  - Total Hit Lines: {}", total_hit_lines);
+        println!("  - Total Files: {}", number_of_files);
+        println!("  - Maximum Coverage: {}", total_coverage_possible);
+        println!("  - Coverage Percentage: {:.2}%", coverage_percentage);
     }
 
-    pub fn process_file(&mut self, file_path: &str) -> std::io::Result<()> {
-        let content = fs::read_to_string(file_path)?;
+    pub fn process_file(&mut self, file_path: &str) -> io::Result<()> {
+        let content = read_to_string(file_path)?;
         let lines: Vec<&str> = content.lines().collect();
 
         let mut file_coverage = vec![false; lines.len()];
@@ -72,10 +77,8 @@ impl CoverageTracker {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {
                         if self.hit_lines.contains(&num) {
-                            // Mark the current line and previous non-empty
-                            // lines as covered
-                            // We +1 to avoid marking the debug_println! as the covered
-                            // one
+                            // Mark the current line and previous non-empty lines as covered
+                            // We +1 to avoid marking the debug_println! as the covered one
                             file_coverage[i + 1] = true;
                         }
                     }
@@ -86,7 +89,7 @@ impl CoverageTracker {
         Ok(())
     }
 
-    pub fn generate_report(&self, output_dir: &str) -> std::io::Result<()> {
+    pub fn generate_report(&self, output_dir: &str) -> io::Result<()> {
         fs::create_dir_all(output_dir)?;
 
         let mut index_html = String::from(
@@ -147,8 +150,8 @@ impl CoverageTracker {
         file_path: &str,
         coverage: &[bool],
         output_path: &str,
-    ) -> std::io::Result<()> {
-        let source_code = fs::read_to_string(file_path)?;
+    ) -> io::Result<()> {
+        let source_code = read_to_string(file_path)?;
         let lines: Vec<&str> = source_code.lines().collect();
 
         let mut html = String::from(
@@ -177,7 +180,6 @@ impl CoverageTracker {
 
         html.push_str("</pre></body></html>");
         Self::remove_debug_statement(&mut html);
-
         fs::write(output_path, html)?;
 
         Ok(())
@@ -196,7 +198,6 @@ impl CoverageTracker {
 
         let mut contents = String::new();
         coverage_trace.read_to_string(&mut contents)?;
-        println!("📄 Successfully read coverage file.");
 
         let mut tracker = CoverageTracker::new(&contents);
         for entry in WalkDir::new(config.contract_path()?)
@@ -205,15 +206,16 @@ impl CoverageTracker {
             .filter(|e| e.path().extension().map_or(false, |ext| ext == "rs"))
             .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
         {
+            let entry = entry.path().as_os_str().to_str().unwrap();
             tracker
-                .process_file(entry.path().as_os_str().to_str().unwrap())
-                .expect("🙅 Cannot process file");
+                .process_file(entry)
+                .context(format!("Cannot process {entry:?} file"))?;
         }
 
-        let c = config.clone().config().report_path.clone().unwrap();
+        let c = config.config().report_path.clone().unwrap();
         tracker
             .generate_report(c.to_str().unwrap())
-            .expect("🙅 Cannot generate coverage report");
+            .expect("Cannot generate coverage report");
         println!("📊 Coverage report generated at: {}", c.display());
         Ok(())
     }

@@ -94,6 +94,8 @@ impl Instrumenter {
         self.fork()
             .context("Forking the project to a new directory failed")?;
 
+        let injector = CoverageInjector::new();
+
         self.for_each_file(|file_path| {
             let source_code =
                 fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
@@ -103,7 +105,7 @@ impl Instrumenter {
                 return Ok(());
             }
 
-            self.instrument_file(file_path, &source_code, CoverageInjector::new())
+            self.instrument_file(file_path, &source_code, injector)
                 .context("Failed to instrument the file")
         })?;
 
