@@ -60,20 +60,20 @@ impl SelectorDatabase {
                 .filter(|msg| !self.invariants.contains(msg))
                 .collect());
         }
-        bail!("No unique messages were found in the database")
+        bail!("No unique messages were found in the database. Check if the contract has some ink! messages *and* at least one invariant")
     }
 
     pub fn invariants(self) -> ResultOf<Vec<Selector>> {
         if !self.invariants.is_empty() {
             return Ok(self.invariants)
         }
-        bail!("No invariants were found in the database")
+        bail!("No invariants were found in the database. Check if the contract has at least one invariant")
     }
 
     pub fn messages(self) -> ResultOf<Vec<Selector>> {
         if !self.messages.is_empty() {
             return Ok(self.messages)
         }
-        bail!("No messages were found in the database")
+        bail!("No messages were found in the database. Check if the contract has at least one message")
     }
 }
