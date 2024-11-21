@@ -102,6 +102,7 @@ impl Fuzzer {
             .context("Couldn't fetch payable messages")?;
 
         let mut database = SelectorDatabase::new();
+
         database.add_invariants(invariants);
         database.add_messages(messages);
         database.add_payables(payable_messages);

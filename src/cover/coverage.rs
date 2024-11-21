@@ -5,10 +5,6 @@ use crate::{
     },
     cover::trace::CoverageTrace,
 };
-use serde_derive::{
-    Deserialize,
-    Serialize,
-};
 use std::{
     fmt,
     fmt::{
@@ -21,7 +17,7 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default)]
 pub struct InputCoverage {
     /// All the coverage ID grabbed and deduplicated
     all_cov_id: Vec<u64>,

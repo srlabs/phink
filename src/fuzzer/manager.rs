@@ -24,7 +24,6 @@ use anyhow::{
     Context,
 };
 use contract_transcode::ContractMessageTranscoder;
-use ink_metadata::InkProject;
 use sp_runtime::{
     DispatchError,
     ModuleError,
