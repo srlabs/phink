@@ -50,7 +50,7 @@ tempfile = { version = "3.12.0" }
 seq-macro = { version = "0.3.5" }
 scale-info = { version = "2.6.0", default-features = false }
 prettytable-rs = { version = "0.10.0" }
-ziggy = { version = "1.2.1", default-features = false }
+ziggy = { version = "1.3.0", default-features = false }
 hex = { version = "0.4.3" }
 serde = { version = "1.0.197", features = ["derive"] }
 toml = { version = "0.8.14" }
