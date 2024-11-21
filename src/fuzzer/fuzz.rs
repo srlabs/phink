@@ -1,9 +1,5 @@
 use crate::{
     cli::{
-        config::{
-            PFiles::CoverageTracePath,
-            PhinkFiles,
-        },
         ui::logger::LogWriter,
         ziggy::ZiggyConfig,
     },
@@ -64,7 +60,6 @@ impl Fuzzer {
     }
 
     pub fn execute_harness(self, mode: FuzzingMode) -> EmptyResult {
-        let config = &self.ziggy_config;
         match mode {
             Fuzz => {
                 let manager = self.clone().init_fuzzer()?;
@@ -73,8 +68,6 @@ impl Fuzzer {
                 });
             }
             ExecuteOneInput(seed_path) => {
-                let covpath = PhinkFiles::new(config.clone().fuzz_output()).path(CoverageTracePath);
-                let _ = fs::remove_file(covpath); // we also reset the cov map, doesn't matter if it fails
                 let manager = self
                     .to_owned()
                     .init_fuzzer()

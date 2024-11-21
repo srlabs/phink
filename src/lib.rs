@@ -194,7 +194,7 @@ fn handle_cli() -> EmptyResult {
             contract,
             compiled_directory,
         } => {
-            let seeder = SeedExtractInjector::new(&contract, compiled_directory)?;
+            let mut seeder = SeedExtractInjector::new(&contract, compiled_directory)?;
             seeder
                 .extract(&config.fuzz_output.unwrap_or_default())
                 .context(format!("Couldn't extract the seed from {contract:?}"))?;

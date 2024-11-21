@@ -4,7 +4,6 @@ use serde_derive::{
 };
 
 pub const COV_IDENTIFIER: &str = "COV=";
-
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct CoverageTrace(Vec<u8>);
 

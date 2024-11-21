@@ -3,6 +3,7 @@ use crate::{
     EmptyResult,
     ResultOf,
 };
+use std::borrow::BorrowMut;
 
 use crate::{
     cli::config::PhinkFiles,
@@ -62,7 +63,7 @@ impl SeedExtractInjector {
 
     /// Fork the contract, insert the snippet to extract the seeds, patch `Cargo.toml`, run the
     /// tests, extracts the seeds.
-    pub fn extract(&self, output: &PathBuf) -> EmptyResult {
+    pub fn extract(&mut self, output: &PathBuf) -> EmptyResult {
         self.fork()
             .context("Forking the project to a new directory failed")?;
 
@@ -73,7 +74,7 @@ impl SeedExtractInjector {
             .context("Patching Cargo.toml for seed extraction wasn't possible")?;
 
         self.build()
-            .context("Couldn't build the contract required for seed extraction")?;
+            .context("Couldn't build the contract required for seed extraction. Try removing `Cargo.lock` from your contract")?;
 
         let unparsed_seed = self
             .run_tests()
@@ -82,7 +83,7 @@ impl SeedExtractInjector {
         let amount = self.save_seeds(unparsed_seed, output)?;
         if self.verbose() {
             println!(
-                "Done! We've saved {amount} seeds in total. If your campaign already started,\
+                "\nDone! We've saved {amount} seeds in total. If your campaign already started,\
              you can use `cargo ziggy add-seeds` to include the seeds."
             );
         }
@@ -91,7 +92,7 @@ impl SeedExtractInjector {
 
     /// Save all the seeds properly to a .bin file
     /// # Returns
-    /// The number of seed saved
+    /// The number of seeds saved
     fn save_seeds(&self, unparsed_seed: String, output: &PathBuf) -> ResultOf<usize> {
         let seeds_as_bin = SeedExtractor::new(unparsed_seed).extract_seeds();
         let pfile = PhinkFiles::new_by_ref(output);
@@ -128,10 +129,10 @@ impl SeedExtractInjector {
         if output.status.success() {
             if self.verbose() {
                 println!(
-                    "{stdout}\n\n=========================================\n\n\
+                    "{stdout}\n\n\n=========================================\n\n\
                 You can find the stringified seeds below. \
                 No worries, they're already saved with the correct format to the corpus. \
-                You don't need to do anything."
+                You don't need to do anything.\n"
                 );
             }
             Ok(stdout.parse()?)
@@ -145,15 +146,27 @@ impl SeedExtractInjector {
         }
     }
 
-    /// Insert the snippet that will extract each call and send it via `debug_println!`
-    fn insert_snippet(&self) -> EmptyResult {
+    fn collect_file_paths(&self) -> ResultOf<Vec<PathBuf>> {
+        let mut paths = Vec::new();
         self.for_each_file(|file_path| {
+            paths.push(file_path);
+            Ok(())
+        })
+        .context("Couldn't fetch the contract's files")?;
+        Ok(paths)
+    }
+
+    /// Insert the snippet that will extract each call and send it via `debug_println!`
+    fn insert_snippet(&mut self) -> EmptyResult {
+        let paths: Vec<PathBuf> = self.collect_file_paths()?;
+        for file_path in paths {
             let source_code =
                 fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
 
-            self.instrument_file(file_path, &source_code, self)
-                .context("Failed to instrument the file")
-        })?;
+            self.instrument_file(file_path, &source_code, &mut self.clone().borrow_mut())
+                .context("Failed to instrument the file")?;
+        }
+
         Ok(())
     }
 
@@ -243,7 +256,7 @@ impl ContractVisitor for SeedExtractInjector {
     }
 }
 
-impl VisitMut for &SeedExtractInjector {
+impl VisitMut for &mut SeedExtractInjector {
     fn visit_item_mut(&mut self, item: &mut Item) {
         match item {
             Item::Fn(f) => self.visit_item_fn_mut(f),
@@ -419,7 +432,7 @@ mod tests {
 
         let mut syntax_tree: File = parse_str(input_code).expect("Failed to parse code");
         let mut seed_injector =
-            &SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
+            &mut SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
         seed_injector.visit_file_mut(&mut syntax_tree);
 
         let generated_code = quote!(#syntax_tree).to_string();

@@ -107,7 +107,12 @@ pub trait ContractVisitor {
     }
 
     /// Depending the `injector`, we visit the `code` and save + format it into `path`
-    fn instrument_file(&self, path: PathBuf, code: &str, injector: impl VisitMut) -> EmptyResult {
+    fn instrument_file(
+        &self,
+        path: PathBuf,
+        code: &str,
+        injector: &mut impl VisitMut,
+    ) -> EmptyResult {
         phink_log!(self, "{}", format!("📝 Instrumenting {}", path.display()));
 
         let modified_code = Self::visit_code(code, injector)
@@ -160,7 +165,7 @@ pub trait ContractVisitor {
         Ok(())
     }
 
-    fn visit_code(code: &str, mut visitor: impl VisitMut) -> ResultOf<String> {
+    fn visit_code(code: &str, visitor: &mut impl VisitMut) -> ResultOf<String> {
         let mut ast = parse_file(code)?;
         visitor.visit_file_mut(&mut ast);
         Ok(quote!(#ast).to_string())

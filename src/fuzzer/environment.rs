@@ -121,7 +121,6 @@ impl CorpusManager {
         let mut data = vec![0x00, 0x00, 0x00, 0x00, 0x01];
         let file_path = self.corpus_dir.join(format!("{name}.bin"));
         data.extend_from_slice(seed);
-        println!("{:?}", file_path);
         fs::write(file_path, data)
     }
 
