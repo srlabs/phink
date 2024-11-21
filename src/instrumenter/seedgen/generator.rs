@@ -432,7 +432,7 @@ mod tests {
 
         let mut syntax_tree: File = parse_str(input_code).expect("Failed to parse code");
         let mut seed_injector =
-            &SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
+            &mut SeedExtractInjector::new(&PathBuf::from("sample/dummy"), None).unwrap();
         seed_injector.visit_file_mut(&mut syntax_tree);
 
         let generated_code = quote!(#syntax_tree).to_string();
