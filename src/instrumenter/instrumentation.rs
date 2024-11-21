@@ -105,7 +105,7 @@ impl Instrumenter {
                 return Ok(());
             }
 
-            self.instrument_file(file_path, &source_code, injector)
+            self.instrument_file(file_path, &source_code, injector.clone())
                 .context("Failed to instrument the file")
         })?;
 
