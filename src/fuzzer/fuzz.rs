@@ -73,8 +73,6 @@ impl Fuzzer {
                 });
             }
             ExecuteOneInput(seed_path) => {
-                let covpath = PhinkFiles::new(config.clone().fuzz_output()).path(CoverageTracePath);
-                let _ = fs::remove_file(covpath); // we also reset the cov map, doesn't matter if it fails
                 let manager = self
                     .to_owned()
                     .init_fuzzer()
