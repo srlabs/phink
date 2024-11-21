@@ -83,7 +83,7 @@ impl SeedExtractInjector {
         let amount = self.save_seeds(unparsed_seed, output)?;
         if self.verbose() {
             println!(
-                "Done! We've saved {amount} seeds in total. If your campaign already started,\
+                "\nDone! We've saved {amount} seeds in total. If your campaign already started,\
              you can use `cargo ziggy add-seeds` to include the seeds."
             );
         }
@@ -129,10 +129,10 @@ impl SeedExtractInjector {
         if output.status.success() {
             if self.verbose() {
                 println!(
-                    "{stdout}\n\n=========================================\n\n\
+                    "{stdout}\n\n\n=========================================\n\n\
                 You can find the stringified seeds below. \
                 No worries, they're already saved with the correct format to the corpus. \
-                You don't need to do anything."
+                You don't need to do anything.\n"
                 );
             }
             Ok(stdout.parse()?)

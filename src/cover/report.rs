@@ -48,13 +48,16 @@ impl CoverageTracker {
 
     /// Calculates and prints a benchmark of the coverage achieved
     pub fn benchmark(&self) {
-        let total_hit_lines = self.hit_lines.len();
+        let mut hit_lines = self.hit_lines.clone();
+        hit_lines.sort();
+        hit_lines.dedup();
+        let total_hit_lines = hit_lines.len();
         let number_of_files = self.coverage.len();
         let total_coverage_possible: usize = self.coverage.values().map(|v| v.len()).sum();
         let coverage_percentage = if total_coverage_possible > 0 {
             total_hit_lines * 100 / total_coverage_possible
         } else {
-            0 // Avoid division by zero
+            0 // div. by zero
         };
 
         println!("📐 Phink Coverage Benchmark:");

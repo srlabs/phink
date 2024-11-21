@@ -154,7 +154,6 @@ mod instrument {
             for mut stmt in stmts.drain(..) {
                 let line_lit = LitInt::new(self.line_id.to_string().as_str(), Span::call_site());
 
-                println!("line_id = {}", self.line_id);
                 self.line_id += 1;
 
                 let insert_expr: Expr = parse_quote! {
