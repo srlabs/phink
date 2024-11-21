@@ -151,22 +151,22 @@ impl EnvironmentBuilder {
             phink_file.clone(),
             conf.config().max_messages_per_exec.unwrap_or_default(),
         )?;
-        let corpus_manager = CorpusManager::new(&phink_file)
-            .with_context(|| "Couldn't create a new corpus manager")?;
+        let corpus_manager =
+            CorpusManager::new(&phink_file).context("Couldn't create a new corpus manager")?;
 
         for (i, selector) in self
             .database
             .get_unique_messages()
-            .with_context(|| "Couldn't load messages")?
+            .context("Couldn't load messages")?
             .iter()
             .enumerate()
         {
             corpus_manager
                 .write_corpus_file(i, selector)
-                .with_context(|| "Couldn't write corpus file")?;
+                .context("Couldn't write corpus file")?;
 
             dict.write_dict_entry(selector)
-                .with_context(|| "Couldn't write the dictionnary entries")?;
+                .context("Couldn't write the dictionnary entries")?;
         }
 
         Ok(())
