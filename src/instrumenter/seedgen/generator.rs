@@ -3,6 +3,7 @@ use crate::{
     EmptyResult,
     ResultOf,
 };
+use std::borrow::BorrowMut;
 
 use crate::{
     cli::config::PhinkFiles,
@@ -73,7 +74,7 @@ impl SeedExtractInjector {
             .context("Patching Cargo.toml for seed extraction wasn't possible")?;
 
         self.build()
-            .context("Couldn't build the contract required for seed extraction")?;
+            .context("Couldn't build the contract required for seed extraction. Try removing `Cargo.lock` from your contract")?;
 
         let unparsed_seed = self
             .run_tests()
@@ -145,15 +146,27 @@ impl SeedExtractInjector {
         }
     }
 
+    fn collect_file_paths(&self) -> ResultOf<Vec<PathBuf>> {
+        let mut paths = Vec::new();
+        self.for_each_file(|file_path| {
+            paths.push(file_path);
+            Ok(())
+        })
+        .context("Couldn't fetch the contract's files")?;
+        Ok(paths)
+    }
+
     /// Insert the snippet that will extract each call and send it via `debug_println!`
     fn insert_snippet(&mut self) -> EmptyResult {
-        // self.for_each_file(|file_path| {
-        //     let source_code =
-        //         fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
-        //
-        //     self.instrument_file(file_path, &source_code, &mut self)
-        //         .context("Failed to instrument the file")
-        // })?; todo!()
+        let paths: Vec<PathBuf> = self.collect_file_paths()?;
+        for file_path in paths {
+            let source_code =
+                fs::read_to_string(&file_path).context(format!("Couldn't read {file_path:?}"))?;
+
+            self.instrument_file(file_path, &source_code, &mut self.clone().borrow_mut())
+                .context("Failed to instrument the file")?;
+        }
+
         Ok(())
     }
 
