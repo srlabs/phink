@@ -61,13 +61,10 @@ impl CoverageTracker {
         };
 
         println!("📐 Phink Coverage Benchmark:");
-        println!("  - Total of unique hit lines: {}", total_hit_lines);
-        println!("  - Total contract's files: {}", number_of_files);
-        println!(
-            "  - Maximum theoretically reachable coverage: {}",
-            total_feedback
-        ); // should be 294 for dummy
-        println!("  - Coverage percentage: {:.2}%", coverage_percentage);
+        println!("  - Total contract's files: {number_of_files}");
+        println!("  - Total of unique hit lines: {total_hit_lines}");
+        println!("  - Maximum theoretically reachable coverage: {total_feedback}"); // should be 294 for dummy
+        println!("  - Coverage percentage: {coverage_percentage:.2}%");
     }
 
     /// Create the proper coverage map for the final report
