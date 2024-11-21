@@ -20,13 +20,15 @@ use std::{
 use walkdir::WalkDir;
 
 pub struct CoverageTracker {
-    /// One String (entry) is one .rs file
+    /// Maps each *.rs file of the contract to a `Vec<bool>`. This `Vec` represents the coverage
+    /// map of the file.
     coverage: HashMap<String, Vec<bool>>,
-    /// One entry is one COV identifier (i.e COV=18)
+    /// Stores each hit line's unique identifier.
     hit_lines: Vec<usize>,
 }
 
 impl CoverageTracker {
+    /// Creates a new `CoverageTracker` from a string representing hit lines.
     pub fn new(coverage_string: &str) -> Self {
         let hit_lines = coverage_string
             .split("\n")
@@ -37,6 +39,24 @@ impl CoverageTracker {
             coverage: HashMap::new(),
             hit_lines,
         }
+    }
+
+    /// Calculates and prints a benchmark of the coverage achieved.
+    pub fn benchmark(&self) {
+        let total_hit_lines = self.hit_lines.len();
+        let number_of_files = self.coverage.len();
+        let total_coverage_possible: usize = self.coverage.values().map(|v| v.len()).sum();
+        let coverage_percentage = if total_coverage_possible > 0 {
+            total_hit_lines * 100 / total_coverage_possible
+        } else {
+            0 // Avoid division by zero
+        };
+
+        println!("Fuzzing Coverage Benchmark:");
+        println!("  Total Hit Lines: {}", total_hit_lines);
+        println!("  Total Files: {}", number_of_files);
+        println!("  Maximum Coverage: {}", total_coverage_possible);
+        println!("  Coverage Percentage: {:.2}%", coverage_percentage);
     }
 
     pub fn process_file(&mut self, file_path: &str) -> std::io::Result<()> {
@@ -107,7 +127,6 @@ impl CoverageTracker {
         for (file_path, coverage) in &self.coverage {
             let sanitized_path = file_path.replace("/", "_").replace("\\", "_");
             let report_path = format!("{output_dir}/{sanitized_path}.html");
-
             self.generate_file_report(file_path, coverage, &report_path)?;
 
             index_html.push_str(&format!(
@@ -116,8 +135,9 @@ impl CoverageTracker {
         }
 
         index_html.push_str("</ul></body></html>");
-
         fs::write(format!("{output_dir}/index.html"), index_html)?;
+
+        self.benchmark();
 
         Ok(())
     }

@@ -64,7 +64,6 @@ impl Fuzzer {
     }
 
     pub fn execute_harness(self, mode: FuzzingMode) -> EmptyResult {
-        let config = &self.ziggy_config;
         match mode {
             Fuzz => {
                 let manager = self.clone().init_fuzzer()?;
