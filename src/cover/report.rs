@@ -47,30 +47,36 @@ impl CoverageTracker {
     }
 
     /// Calculates and prints a benchmark of the coverage achieved
-    pub fn benchmark(&self) {
+    pub fn benchmark(&self, total_feedback: usize) {
         let mut hit_lines = self.hit_lines.clone();
         hit_lines.sort();
         hit_lines.dedup();
+
         let total_hit_lines = hit_lines.len();
-        let number_of_files = self.coverage.len();
-        let total_coverage_possible: usize = self.coverage.values().map(|v| v.len()).sum();
-        let coverage_percentage = if total_coverage_possible > 0 {
-            total_hit_lines * 100 / total_coverage_possible
+        let number_of_files = self.coverage.len(); // should be 140 for dummy
+        let coverage_percentage = if total_feedback > 0 {
+            total_hit_lines * 100 / total_feedback
         } else {
             0 // div. by zero
         };
 
         println!("📐 Phink Coverage Benchmark:");
-        println!("  - Total Hit Lines: {}", total_hit_lines);
-        println!("  - Total Files: {}", number_of_files);
-        println!("  - Maximum Coverage: {}", total_coverage_possible);
-        println!("  - Coverage Percentage: {:.2}%", coverage_percentage);
+        println!("  - Total of unique hit lines: {}", total_hit_lines);
+        println!("  - Total contract's files: {}", number_of_files);
+        println!(
+            "  - Maximum theoretically reachable coverage: {}",
+            total_feedback
+        ); // should be 294 for dummy
+        println!("  - Coverage percentage: {:.2}%", coverage_percentage);
     }
 
-    pub fn process_file(&mut self, file_path: &str) -> io::Result<()> {
+    /// Create the proper coverage map for the final report
+    /// # Returns
+    /// Returns the amount of time there was a coverage feedback, reached or not, for one given file
+    pub fn process_file(&mut self, file_path: &str) -> io::Result<usize> {
         let content = read_to_string(file_path)?;
         let lines: Vec<&str> = content.lines().collect();
-
+        let mut spotted_debugprint = 0;
         let mut file_coverage = vec![false; lines.len()];
 
         for (i, line) in lines.iter().enumerate() {
@@ -79,6 +85,8 @@ impl CoverageTracker {
             if let Some(cov_num) = trimmed.strip_prefix("ink::env::debug_println!(\"COV={}\", ") {
                 if let Some(cov_num) = cov_num.strip_suffix(");") {
                     if let Ok(num) = cov_num.parse::<usize>() {
+                        // We increment the number of time we spotted `debug_println`
+                        spotted_debugprint += 1;
                         if self.hit_lines.contains(&num) {
                             // Mark the current line and previous non-empty lines as covered
                             // We +1 to avoid marking the debug_println! as the covered one
@@ -89,7 +97,7 @@ impl CoverageTracker {
             }
         }
         self.coverage.insert(file_path.to_string(), file_coverage);
-        Ok(())
+        Ok(spotted_debugprint)
     }
 
     pub fn generate_report(&self, output_dir: &str) -> io::Result<()> {
@@ -142,8 +150,7 @@ impl CoverageTracker {
 
         index_html.push_str("</ul></body></html>");
         fs::write(format!("{output_dir}/index.html"), index_html)?;
-
-        self.benchmark();
+        println!("📊 Coverage report generated at: {output_dir}");
 
         Ok(())
     }
@@ -201,7 +208,7 @@ impl CoverageTracker {
 
         let mut contents = String::new();
         coverage_trace.read_to_string(&mut contents)?;
-
+        let mut total_feedback = 0;
         let mut tracker = CoverageTracker::new(&contents);
         for entry in WalkDir::new(config.contract_path()?)
             .into_iter()
@@ -210,16 +217,27 @@ impl CoverageTracker {
             .filter(|e| !e.path().components().any(|c| c.as_os_str() == "target"))
         {
             let entry = entry.path().as_os_str().to_str().unwrap();
-            tracker
+            let one_file_feedback = tracker
                 .process_file(entry)
                 .context(format!("Cannot process {entry:?} file"))?;
+
+            total_feedback += one_file_feedback;
         }
 
-        let c = config.config().report_path.clone().unwrap();
         tracker
-            .generate_report(c.to_str().unwrap())
-            .expect("Cannot generate coverage report");
-        println!("📊 Coverage report generated at: {}", c.display());
+            .generate_report(
+                config
+                    .config()
+                    .report_path
+                    .clone()
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+            )
+            .context("Cannot generate coverage report")?;
+
+        tracker.benchmark(total_feedback);
+
         Ok(())
     }
 
