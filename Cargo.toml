@@ -40,7 +40,6 @@ std = [
     "scale-info/std",
 ]
 
-
 [dev-dependencies]
 assert_cmd = { version = "2.0.16" }
 predicates = { version = "3.1.2" }
@@ -57,15 +56,11 @@ serde = { version = "1.0.197", features = ["derive"] }
 toml = { version = "0.8.14" }
 serde_derive = { version = "1.0" }
 serde_json = { version = "1.0.115" }
-paste = { version = "1.0.14" }
 anyhow = { version = "1.0.81" }
-strsim = { version = "0.11.1" }
-tracing = { version = "0.1.40" }
 clap = { version = "4.5.4", features = ["derive"] }
 syn = { version = "2.0.71", features = ["parsing", "full", "visit-mut"] }
 quote = { version = "1.0.36" }
 proc-macro2 = { version = "1.0.81", features = ["span-locations"] }
-rand = { version = "0.8" }
 walkdir = { version = "2.5.0" }
 ctrlc = { version = "3.4.5" }
 regex = { version = "1.10.4" }
@@ -77,10 +72,8 @@ toml_edit = { version = "0.22.22" }
 # Substrate-specific crates
 parity-scale-codec = { version = "3.6.12" }
 sp-core = { version = "34.0.0" }
-sp-keystore = { version = "0.40.0" }
 frame-support = { version = "38.0.0" }
 sp-runtime = { version = "39.0.0" }
-sp-io = { version = "38.0.0" }
 frame-system = { version = "38.0.0" }
 pallet-balances = { version = "39.0.0" }
 pallet-timestamp = { version = "37.0.0" }
@@ -89,12 +82,9 @@ pallet-contracts = { version = "38.0.0" }
 pallet-insecure-randomness-collective-flip = { version = "26.0.0" }
 
 # ink! crates
-ink_metadata = { version = "5.0.0" }
 ink_env = { version = "5.0.0" }
 contract-transcode = { version = "4.1.1" }
 contract-metadata = { version = "4.1.1" }
-colored = { version = "2.1.0" }
-time = { version = "0.3.36" }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
