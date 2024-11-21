@@ -105,7 +105,7 @@ impl Instrumenter {
                 return Ok(());
             }
 
-            self.instrument_file(file_path, &source_code, injector.clone())
+            self.instrument_file(file_path, &source_code, injector)
                 .context("Failed to instrument the file")
         })?;
 
@@ -134,7 +134,7 @@ mod instrument {
         Token,
     };
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Copy)]
     pub struct CoverageInjector {
         pub line_id: u64,
     }
