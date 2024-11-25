@@ -93,7 +93,8 @@ enum Commands {
     /// Generate a coverage report, only of the harness. You won't have your contract coverage here
     /// (mainly for debugging purposes only)
     HarnessCover,
-    /// Generate a coverage report for your ink! smart-contract
+    /// Generate a coverage report for your ink! smart-contract. This must me the path of the
+    /// *instrumented* contract !
     Coverage(Contract),
     /// Execute one seed
     Execute {
