@@ -101,6 +101,8 @@ enum Commands {
         /// Seed to be executed
         seed: PathBuf,
     },
+    /// Minimize the corpus taken from `corpus/`
+    Minimize,
 }
 
 #[derive(clap::Args, Debug, Clone)]
@@ -174,6 +176,11 @@ fn handle_cli() -> EmptyResult {
             ZiggyConfig::new(config)
                 .context("Couldn't generate handle the ZiggyConfig")?
                 .ziggy_run()
+        }
+        Commands::Minimize => {
+            ZiggyConfig::new(config)
+                .context("Couldn't generate handle the ZiggyConfig")?
+                .ziggy_minimize()
         }
         Commands::Execute { seed } => {
             let fuzzer = Fuzzer::new(ZiggyConfig::new(config))

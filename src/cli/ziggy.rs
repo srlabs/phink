@@ -70,6 +70,7 @@ pub enum ZiggyCommand {
     Cover,
     Build,
     Fuzz,
+    Minimize,
 }
 
 impl Display for ZiggyCommand {
@@ -79,6 +80,7 @@ impl Display for ZiggyCommand {
             ZiggyCommand::Cover => "cover",
             ZiggyCommand::Build => "build",
             ZiggyCommand::Fuzz => "fuzz",
+            ZiggyCommand::Minimize => "minimize",
         };
         write!(f, "{}", cmd)
     }
@@ -176,7 +178,7 @@ impl ZiggyConfig {
             .context("Building LLVM allowlist failed")?;
 
         match command {
-            ZiggyCommand::Cover | ZiggyCommand::Run => {
+            ZiggyCommand::Cover | ZiggyCommand::Run | ZiggyCommand::Minimize => {
                 self.exist_or_bail()?;
                 self.native_ui(args, env, command)?;
             }
@@ -224,18 +226,22 @@ impl ZiggyConfig {
             .envs(env)
             .stdout(Stdio::piped());
 
-        if ziggy_command == ZiggyCommand::Run {
-            let output = self.to_owned().fuzz_output();
+        let output = self.to_owned().fuzz_output();
+        let buf = PhinkFiles::new_by_ref(&output).path(PFiles::CorpusPath);
+        let corpus = buf.to_str().unwrap();
 
-            command_builder.args(vec![
-                "--inputs",
-                PhinkFiles::new_by_ref(&output)
-                    .path(PFiles::CorpusPath)
-                    .to_str()
-                    .unwrap(),
-            ]);
-
-            command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
+        match ziggy_command {
+            ZiggyCommand::Run => {
+                command_builder.args(vec!["--inputs", corpus]);
+                command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
+            }
+            ZiggyCommand::Minimize => {
+                command_builder.args(vec!["--input-corput", corpus]);
+                command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
+                command_builder.args(vec!["--engine", "afl-plus-plus"]); // don't minimize with
+                                                                         // honggfuzz
+            }
+            _ => {}
         }
 
         self.with_allowlist(command_builder)
@@ -247,7 +253,7 @@ impl ZiggyConfig {
 
         let mut ziggy_child = command_builder
             .spawn()
-            .context("Spawning Ziggy was unsuccessfull")?;
+            .context("Spawning Ziggy was unsuccessfull..")?;
 
         if let Some(stdout) = ziggy_child.stdout.take() {
             let reader = BufReader::new(stdout);
@@ -258,7 +264,7 @@ impl ZiggyConfig {
 
         let status = ziggy_child.wait().context("Couldn't wait for Ziggy")?;
         if !status.success() {
-            bail!("`cargo ziggy {ziggy_command}` failed ({})", status);
+            bail!("`cargo ziggy {ziggy_command}` failed ({status})");
         }
 
         Ok(())
@@ -323,6 +329,15 @@ impl ZiggyConfig {
     pub fn ziggy_cover(&self) -> EmptyResult {
         self.build_command(
             ZiggyCommand::Cover,
+            None,
+            vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
+        )?;
+        Ok(())
+    }
+
+    pub fn ziggy_minimize(&self) -> EmptyResult {
+        self.build_command(
+            ZiggyCommand::Minimize,
             None,
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
