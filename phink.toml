@@ -12,7 +12,7 @@ fuzz_output = "output"                         # Directory for fuzzing output
 
 # Deployment
 deployer_address = "5C62Ck4UrFPiBtoCmeSrgF7x9yv9mn38446dhCpsi2mLHiFT" # Contract deployer address (Alice by default)
-constructor_payload = "9BAE9D5E"                                     # Hexadecimal scale-encoded data for contract instantiation
+constructor_payload = "9bae9d5e46bb2fe2a65a54a45d32c168e2c39675f46d27d8caef57e908c60729f66b619e2e395e890aca14fb7f6afe16ea505e798b60dc4c7937867d51b738942482afcb155943ca70355219567888e5f496738b8553559871c8d0a21071bb6f63ca00b80000b0f89e03000000284142415820566f7465731476414241580a0064000014730f0000000000840c24000000000070991400000000"                                     # Hexadecimal scale-encoded data for contract instantiation
 storage_deposit_limit = "100000000000"                              # Storage deposit limit
 instantiate_initial_value = "0"                                     # Value transferred during instantiation, if needed
 

@@ -175,6 +175,12 @@ impl SeedExtractInjector {
         // TODO: Seed extraction if we have multiple contracts, so multiple Cargo.toml
         let cargo_path = &self.output_directory().join("Cargo.toml");
         let cargo_content = fs::read_to_string(cargo_path)?;
+        if !cargo_content.contains("ink_prelude =") {
+            bail!(format!(
+                "Please, add ink_prelude dependency to your project.\n\
+            You can add `ink_prelude = {{ version = \"5.0.0\", default-features = false }}`"
+            ))
+        }
         let mut doc = cargo_content.parse::<DocumentMut>()?;
         const REPO: &str = "https://github.com/kevin-valerio/ink";
 
@@ -313,7 +319,7 @@ impl VisitMut for &mut SeedExtractInjector {
                             {
                             #push_args;
                             let encoded = ink::scale::Encode::encode(&toz);
-                            ink::env::debug_println!("ENCODED_SEED={}", encoded.iter().map(|byte| format!("{:02x}", byte)).collect::<String>());
+                            ink::env::debug_println!("ENCODED_SEED={}", encoded.iter().map(|byte| format!("{:02x}", byte)).collect::<ink_prelude::string::String>());
                             }
                         };
 

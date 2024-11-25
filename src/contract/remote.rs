@@ -174,7 +174,7 @@ impl ContractSetup {
                 // We verify if the contract is correctly instantiated
                 if !ContractInfoOf::<Runtime>::contains_key(&new_contract_address) {
                     bail!(
-                        "🚨 Contract Instantiation Failed!
+                        "Contract instantiation failed!
                             This error is likely due to a misconfigured constructor payload in the configuration file.
                             Please ensure the correct payload for the constructor (selector + parameters) is provided, just as you would for a regular deployment. You can use the `constructor_payload` field inside the TOML configuration file for this purpose.
                             To generate your payload, please use `cargo contract`, for instance
