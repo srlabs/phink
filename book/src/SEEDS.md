@@ -62,6 +62,27 @@ This command iterates over the `corpus` folder, executing each seed. This ensure
 covers
 all previously discovered cases.
 
+# Minimizing the corpus
+
+To minimize the corpus folder containing seeds, use the following command:
+
+```bash
+phink minimize
+```
+
+The goal of the corpus minimization process is to streamline the set of seeds in the corpus folder, reducing it to the
+most essential and impactful test cases. Minimization makes fuzzing more efficient by eliminating
+redundant seeds, speeding up the speed and focusing only on seeds that reveal new or unique coverage.
+
+### What it does
+
+`phink minimize` analyzes the seeds within the corpus and identifies those that are redundant
+or do not contribute additional value to the fuzzing campaign. It executes each seed to determine their individual
+impact
+and removes any seeds that do not enhance coverage or expose new bugs. This results in a minimized set of seeds, savind
+time time and
+also optimizing resource usage.
+
 # Generating a seed
 
 To generate a new seed, all you need to do is construct it using the prescribed format. Start with the required byte

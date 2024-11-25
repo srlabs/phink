@@ -229,6 +229,20 @@ multiple messages within a single input, allowing more complex interactions to b
 <p>This command iterates over the <code>corpus</code> folder, executing each seed. This ensures a comprehensive fuzzing process that
 covers
 all previously discovered cases.</p>
+<h1 id="minimizing-the-corpus"><a class="header" href="#minimizing-the-corpus">Minimizing the corpus</a></h1>
+<p>To minimize the corpus folder containing seeds, use the following command:</p>
+<pre><code class="language-bash">phink minimize
+</code></pre>
+<p>The goal of the corpus minimization process is to streamline the set of seeds in the corpus folder, reducing it to the
+most essential and impactful test cases. Minimization makes fuzzing more efficient by eliminating
+redundant seeds, speeding up the speed and focusing only on seeds that reveal new or unique coverage.</p>
+<h3 id="what-it-does"><a class="header" href="#what-it-does">What it does</a></h3>
+<p><code>phink minimize</code> analyzes the seeds within the corpus and identifies those that are redundant
+or do not contribute additional value to the fuzzing campaign. It executes each seed to determine their individual
+impact
+and removes any seeds that do not enhance coverage or expose new bugs. This results in a minimized set of seeds, savind
+time time and
+also optimizing resource usage.</p>
 <h1 id="generating-a-seed"><a class="header" href="#generating-a-seed">Generating a seed</a></h1>
 <p>To generate a new seed, all you need to do is construct it using the prescribed format. Start with the required byte
 sequences for

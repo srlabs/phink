@@ -236,7 +236,7 @@ impl ZiggyConfig {
                 command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
             }
             ZiggyCommand::Minimize => {
-                command_builder.args(vec!["--input-corput", corpus]);
+                command_builder.args(vec!["--input-corpus", corpus]);
                 command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
                 command_builder.args(vec!["--engine", "afl-plus-plus"]); // don't minimize with
                                                                          // honggfuzz
@@ -341,6 +341,9 @@ impl ZiggyConfig {
             None,
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
+        if &self.config.verbose {
+            println!("Minimization finished, your corpus directory should now be smaller");
+        }
         Ok(())
     }
 

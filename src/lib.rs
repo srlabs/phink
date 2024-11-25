@@ -64,7 +64,6 @@ struct Cli {
     /// Order to execute (if you start here, instrument then fuzz suggested)
     #[clap(subcommand)]
     command: Commands,
-
     /// Path to the Phink configuration file.
     #[clap(long, short, value_parser, default_value = "phink.toml")]
     config: PathBuf,
