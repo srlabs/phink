@@ -70,14 +70,15 @@ impl SeedExtractInjector {
         self.insert_snippet()
             .context("Inserting the snippet into the file for seed extraction wasn't possible")?;
 
-        self.patch_toml()
+        let is_e2e: bool = self
+            .patch_toml()
             .context("Patching Cargo.toml for seed extraction wasn't possible")?;
 
         self.build()
             .context("Couldn't build the contract required for seed extraction. Try removing `Cargo.lock` from your contract")?;
 
         let unparsed_seed = self
-            .run_tests()
+            .run_tests(is_e2e)
             .context("Couldn't run `cargo test ...` to run the seeds")?;
 
         let amount = self.save_seeds(unparsed_seed, output)?;
@@ -110,7 +111,7 @@ impl SeedExtractInjector {
         Ok(seeds_as_bin.len())
     }
 
-    pub fn run_tests(&self) -> ResultOf<String> {
+    pub fn run_tests(&self, is_e2e: bool) -> ResultOf<String> {
         let path = self.output_directory();
         let p_display = &path.display();
 
@@ -118,9 +119,15 @@ impl SeedExtractInjector {
             bail!("There was probably a fork issue, as {p_display} doesn't exist.")
         }
 
+        let mut args = vec!["test"];
+        if is_e2e {
+            args.push("--features=e2e-tests");
+        }
+        args.extend_from_slice(&["--", "--show-output"]);
+
         let output = Command::new("cargo")
             .current_dir(&path)
-            .args(["test", "--features=e2e-tests", "--", "--show-output"])
+            .args(args)
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -171,7 +178,9 @@ impl SeedExtractInjector {
     }
 
     /// Patch the `Cargo.toml` to use our own version of ink!
-    fn patch_toml(&self) -> EmptyResult {
+    /// # Returns
+    /// Returns `Result<true>` if the Cargo.toml also has `e2e-test` enabled
+    fn patch_toml(&self) -> ResultOf<bool> {
         // TODO: Seed extraction if we have multiple contracts, so multiple Cargo.toml
         let cargo_path = &self.output_directory().join("Cargo.toml");
         let cargo_content = fs::read_to_string(cargo_path)?;
@@ -219,7 +228,7 @@ impl SeedExtractInjector {
         }
 
         fs::write(cargo_path, doc.to_string())?;
-        Ok(())
+        Ok(cargo_content.contains("ink_e2e = "))
     }
 
     /// Check if the function has the `#[ink(message)]` attribute
@@ -233,7 +242,7 @@ impl SeedExtractInjector {
                         Err(meta.error("Not an ink! message"))
                     }
                 });
-                return res.is_ok()
+                return res.is_ok();
             }
         }
         false
