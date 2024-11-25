@@ -83,8 +83,8 @@ pallet-insecure-randomness-collective-flip = { version = "26.0.0" }
 
 # ink! crates
 ink_env = { version = "5.0.0" }
-contract-transcode = { version = "4.1.1" }
-contract-metadata = { version = "4.1.1" }
+contract-transcode = { version = "5.0.0-alpha" }
+contract-metadata = { version = "5.0.0-alpha" }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
