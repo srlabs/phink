@@ -137,7 +137,8 @@ fn handle_cli() -> EmptyResult {
     let conf = &cli.config;
     if !conf.exists() {
         bail!(format!(
-            "No configuration found at {}, please create a phink.toml",
+            "No configuration found at {}, please create a phink.toml. You can get a sample at https://github.com/srlabs/phink/blob/main/phink.toml\
+            \nFeel free to `wget https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/phink.toml` and customize it as you wish",
             conf.to_str().unwrap(),
         ))
     }
