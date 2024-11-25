@@ -341,7 +341,7 @@ impl ZiggyConfig {
             None,
             vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)],
         )?;
-        if &self.config.verbose {
+        if self.config.verbose {
             println!("Minimization finished, your corpus directory should now be smaller");
         }
         Ok(())
