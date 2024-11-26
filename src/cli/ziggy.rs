@@ -231,13 +231,13 @@ impl ZiggyConfig {
         let corpus = buf.to_str().unwrap();
 
         match ziggy_command {
-            ZiggyCommand::Run => {
-                command_builder.args(vec!["--inputs", corpus]);
-                command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
+            ZiggyCommand::Run | ZiggyCommand::Cover => {
+                command_builder.args(vec!["-i", corpus]);
+                command_builder.args(vec!["-z", output.to_str().unwrap()]);
             }
             ZiggyCommand::Minimize => {
-                command_builder.args(vec!["--input-corpus", corpus]);
-                command_builder.args(vec!["--ziggy-output", output.to_str().unwrap()]);
+                command_builder.args(vec!["-i", corpus]);
+                command_builder.args(vec!["-z", output.to_str().unwrap()]);
                 command_builder.args(vec!["--engine", "afl-plus-plus"]); // don't minimize with
                                                                          // honggfuzz
             }

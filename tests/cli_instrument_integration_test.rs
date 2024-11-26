@@ -148,7 +148,7 @@ mod tests {
             .arg("--help")
             .assert()
             .stdout(predicate::str::contains(
-                "Usage: phink instrument <CONTRACT_PATH>",
+                "Usage: cargo run -- instrument <CONTRACT_PATH>",
             ));
         Ok(())
     }

@@ -33,6 +33,8 @@ feedback, features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
 ## Install
 
+**Important note:** Phink can only be used with its sources. You can't install it via `cargo install`. If
+
 ### Building from source
 
 #### Requirements
