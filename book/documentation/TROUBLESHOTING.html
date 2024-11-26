@@ -191,13 +191,13 @@ real-time view of the log output, helping you identify any issues during the fuz
 <h3 id="executing-a-single-seed"><a class="header" href="#executing-a-single-seed">Executing a Single Seed</a></h3>
 <p>To debug specific cases where a contract crashes, you can execute a single seed. This method allows you to instantiate a
 contract and identify crash points more easily:</p>
-<pre><code class="language-sh">phink execute output/phink/corpus/selector_1.bin
+<pre><code class="language-sh">cargo run -- execute output/phink/corpus/selector_1.bin
 </code></pre>
 <p>This command runs a single fuzzing input, making it easier to pinpoint problems.</p>
 <h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness coverage</a></h3>
 <p>Use the harness coverage feature for debugging. You should only use it if you want to have a coverage of Phink itself.
 For instance, if you’re planning to contribute to Phink, or to debug it.</p>
-<pre><code class="language-sh">phink harness-cover
+<pre><code class="language-sh">cargo run -- harness-cover
 </code></pre>
 <p>Be aware that this is primarily for those who want to dive deeper into the coverage of Phink and is not generally
 necessary for regular debugging.</p>

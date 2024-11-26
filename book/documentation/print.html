@@ -265,8 +265,7 @@ sudo cargo-afl afl system-config
 </li>
 <li>
 <p><strong>Run Phink</strong></p>
-<pre><code class="language-bash">./target/release/phink --help
-phink --help # if installed via `cargo install`
+<pre><code class="language-bash">cargo run -- help  
 </code></pre>
 </li>
 </ol>
@@ -434,15 +433,16 @@ impl DomainNameService {
 <h3 id="1-instrument-the-contract"><a class="header" href="#1-instrument-the-contract">1. Instrument the contract</a></h3>
 <p>First things first: Let’s enable your contract for fuzzing. Run the following command to instrument your ink! smart
 contract:</p>
-<pre><code class="language-sh">phink instrument my_contract/
+<pre><code class="language-sh">cargo run -- instrument my_contract/
 </code></pre>
 <p>This step modifies the contract to include necessary hooks for Phink’s fuzzing process. It creates a fork of the
 contract, so you don’t have to make a copy before.</p>
 <h3 id="2-generate-seeds-optionnal-but-highly-recommended"><a class="header" href="#2-generate-seeds-optionnal-but-highly-recommended">2. Generate seeds (optionnal but highly recommended)</a></h3>
-<p>The <code>phink generate-seed</code> command is an optional but powerful feature that enhances your fuzzing experience by
+<p>The <code>cargo run -- generate-seed</code> command is an optional but powerful feature that enhances your fuzzing experience by
 generating initial seeds from your existing unit and end-to-end (E2E) tests.</p>
 <h4 id="what-it-does"><a class="header" href="#what-it-does">What it Does</a></h4>
-<p><code>phink generate-seed</code> executes the unit tests and E2E tests of your ink! smart contract, extracting seeds based on
+<p><code>cargo run -- generate-seed</code> executes the unit tests and E2E tests of your ink! smart contract, extracting seeds based
+on
 executed messages. These seeds are saved in the <code>corpus/</code> directory, which highly helps to reach good coverage, as long
 as you have good tests.
 <strong>Therefore, we encourage to have good and various unit-tests and E2E tests in your contract.</strong></p>
@@ -464,7 +464,7 @@ scale-encoded parameters to stdout.</p>
 </li>
 </ul>
 <h4 id="usage"><a class="header" href="#usage">Usage</a></h4>
-<pre><code class="language-sh">phink generate-seed &lt;CONTRACT&gt; [COMPILED_DIRECTORY]
+<pre><code class="language-sh">cargo run -- generate-seed &lt;CONTRACT&gt; [COMPILED_DIRECTORY]
 </code></pre>
 <ul>
 <li><code>&lt;CONTRACT&gt;</code>: The root directory path of your ink! smart contract.</li>
@@ -483,21 +483,21 @@ the <a href="SEEDS.html">seeds documentation</a>.</p>
 <h3 id="3-run-the-fuzzer"><a class="header" href="#3-run-the-fuzzer">3. Run the fuzzer</a></h3>
 <p>After <strong>instrumenting</strong> your contract and <strong>writing</strong> properties and <strong>configuring</strong> your <code>phink.toml</code>, let’s get our
 hands on the fuzzing process:</p>
-<pre><code class="language-sh">phink fuzz
+<pre><code class="language-sh">cargo run -- fuzz
 </code></pre>
 <p>After executing this command, your fuzzing tests will begin based on the configurations specified in your <code>phink.toml</code>
 file. You should see a user interface appear.</p>
 <p>If you’re utilizing the advanced UI, you’ll receive <em>real-time</em> updates on the fuzzed messages at the bottom of the
 screen. For more detailed log information, you can use the following command:</p>
-<pre><code class="language-sh">watch -c -t -n 0.1 "clear &amp;&amp; cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
+<pre><code class="language-sh">watch -c -t -n 0.5 "clear &amp;&amp; cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
 </code></pre>
 <p>This will provide you with clearer logs by continuously updating them every <strong>0.1</strong> seconds.</p>
 <h2 id="analyzing-results"><a class="header" href="#analyzing-results">Analyzing results</a></h2>
 <h3 id="crashes"><a class="header" href="#crashes">Crashes</a></h3>
 <p>In case of crashes, you should see something like the following.</p>
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/crashed.png" alt="crash"/>
-<p>To analyze the crash, you can run <code>phink execute &lt;your_crash&gt;</code>, for instance
-<code>phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2</code></p>
+<p>To analyze the crash, you can run <code>cargo run -- execute &lt;your_crash&gt;</code>, for instance
+<code>cargo run -- execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2</code></p>
 <div class="table-wrapper"><table><thead><tr><th>Component</th><th>Description</th></tr></thead><tbody>
 <tr><td>1729082451630</td><td>Timestamp representing when the crash was recorded</td></tr>
 <tr><td>id:000000</td><td>Unique identifier for the crash</td></tr>
@@ -514,10 +514,10 @@ screen. For more detailed log information, you can use the following command:</p
 <p><strong>This feature is in alpha and unstable.</strong></p>
 <h4 id="generating-a-coverage-report"><a class="header" href="#generating-a-coverage-report">Generating a coverage report</a></h4>
 <p>First, you need to create a <code>traces.cov</code> file. For this, execute the command below.</p>
-<pre><code class="language-sh">phink run  
+<pre><code class="language-sh">cargo run -- run  
 </code></pre>
 <p>Once done, generate coverage reports to analyze which parts of the contract were tested:</p>
-<pre><code class="language-sh">phink coverage my_contract/
+<pre><code class="language-sh">cargo run -- coverage my_contract/
 </code></pre>
 <p>Some HTML files should then be generated in the path you’ve configured inside your <code>phink.toml</code>. The coverage report
 provides a visual representation of the tested code areas. As a rule of thumb, the more green lines you can see there,
@@ -750,25 +750,25 @@ multiple messages within a single input, allowing more complex interactions to b
 </ul>
 <h1 id="running-one-seed"><a class="header" href="#running-one-seed">Running one seed</a></h1>
 <p>To execute a single seed, use the following command:</p>
-<pre><code class="language-bash">phink execute my_seed.bin
+<pre><code class="language-bash">cargo run -- execute my_seed.bin
 </code></pre>
 <p>This command runs the specific seed <code>my_seed.bin</code>, providing targeted fuzzing for individual transaction testing.</p>
 <h1 id="running-all-the-seeds"><a class="header" href="#running-all-the-seeds">Running all the seeds</a></h1>
 <p>To run all seeds sequentially, use the following command:</p>
-<pre><code class="language-bash">phink run
+<pre><code class="language-bash">cargo run -- run
 </code></pre>
 <p>This command iterates over the <code>corpus</code> folder, executing each seed. This ensures a comprehensive fuzzing process that
 covers
 all previously discovered cases.</p>
 <h1 id="minimizing-the-corpus"><a class="header" href="#minimizing-the-corpus">Minimizing the corpus</a></h1>
 <p>To minimize the corpus folder containing seeds, use the following command:</p>
-<pre><code class="language-bash">phink minimize
+<pre><code class="language-bash">cargo run -- minimize
 </code></pre>
 <p>The goal of the corpus minimization process is to streamline the set of seeds in the corpus folder, reducing it to the
 most essential and impactful test cases. Minimization makes fuzzing more efficient by eliminating
 redundant seeds, speeding up the speed and focusing only on seeds that reveal new or unique coverage.</p>
 <h3 id="what-it-does-1"><a class="header" href="#what-it-does-1">What it does</a></h3>
-<p><code>phink minimize</code> analyzes the seeds within the corpus and identifies those that are redundant
+<p><code>cargo run -- minimize</code> analyzes the seeds within the corpus and identifies those that are redundant
 or do not contribute additional value to the fuzzing campaign. It executes each seed to determine their individual
 impact
 and removes any seeds that do not enhance coverage or expose new bugs. This results in a minimized set of seeds, savind
@@ -816,7 +816,7 @@ xxd -r -p abc.out seed.bin
 </li>
 <li>
 <p>Execute the updated seed</p>
-<pre><code class="language-bash">phink execute seed.bin
+<pre><code class="language-bash">cargo run -- execute seed.bin
 </code></pre>
 </li>
 </ol>
@@ -911,13 +911,13 @@ real-time view of the log output, helping you identify any issues during the fuz
 <h3 id="executing-a-single-seed"><a class="header" href="#executing-a-single-seed">Executing a Single Seed</a></h3>
 <p>To debug specific cases where a contract crashes, you can execute a single seed. This method allows you to instantiate a
 contract and identify crash points more easily:</p>
-<pre><code class="language-sh">phink execute output/phink/corpus/selector_1.bin
+<pre><code class="language-sh">cargo run -- execute output/phink/corpus/selector_1.bin
 </code></pre>
 <p>This command runs a single fuzzing input, making it easier to pinpoint problems.</p>
 <h3 id="harness-coverage"><a class="header" href="#harness-coverage">Harness coverage</a></h3>
 <p>Use the harness coverage feature for debugging. You should only use it if you want to have a coverage of Phink itself.
 For instance, if you’re planning to contribute to Phink, or to debug it.</p>
-<pre><code class="language-sh">phink harness-cover
+<pre><code class="language-sh">cargo run -- harness-cover
 </code></pre>
 <p>Be aware that this is primarily for those who want to dive deeper into the coverage of Phink and is not generally
 necessary for regular debugging.</p>

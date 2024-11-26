@@ -42,17 +42,17 @@ includes:
 2. **Running Phink**:
    To run Phink with the default command (running the default example):
    ```bash
-   docker run --rm phink
+   docker run --rm "cargo run"
    ```
 
    To specify a different contract for instrumentation:
    ```bash
-   docker run --rm phink instrument <path_to_your_contract>
+   docker run --rm "cargo run -- instrument <path_to_your_contract>"
    ```
 
    To fuzz your instrumented ink! smart-contract:
    ```bash
-   docker run --rm phink fuzz  
+   docker run --rm "cargo run -- fuzz"
    ```
 
 ### Notes

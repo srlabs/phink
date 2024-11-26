@@ -20,7 +20,7 @@ To debug specific cases where a contract crashes, you can execute a single seed.
 contract and identify crash points more easily:
 
 ```sh
-phink execute output/phink/corpus/selector_1.bin
+cargo run -- execute output/phink/corpus/selector_1.bin
 ```
 
 This command runs a single fuzzing input, making it easier to pinpoint problems.
@@ -31,7 +31,7 @@ Use the harness coverage feature for debugging. You should only use it if you wa
 For instance, if you're planning to contribute to Phink, or to debug it.
 
 ```sh
-phink harness-cover
+cargo run -- harness-cover
 ```
 
 Be aware that this is primarily for those who want to dive deeper into the coverage of Phink and is not generally

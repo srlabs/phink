@@ -45,7 +45,7 @@ Here's a breakdown for the seed
 To execute a single seed, use the following command:
 
 ```bash
-phink execute my_seed.bin
+cargo run -- execute my_seed.bin
 ```
 
 This command runs the specific seed `my_seed.bin`, providing targeted fuzzing for individual transaction testing.
@@ -55,7 +55,7 @@ This command runs the specific seed `my_seed.bin`, providing targeted fuzzing fo
 To run all seeds sequentially, use the following command:
 
 ```bash
-phink run
+cargo run -- run
 ```
 
 This command iterates over the `corpus` folder, executing each seed. This ensures a comprehensive fuzzing process that
@@ -67,7 +67,7 @@ all previously discovered cases.
 To minimize the corpus folder containing seeds, use the following command:
 
 ```bash
-phink minimize
+cargo run -- minimize
 ```
 
 The goal of the corpus minimization process is to streamline the set of seeds in the corpus folder, reducing it to the
@@ -76,7 +76,7 @@ redundant seeds, speeding up the speed and focusing only on seeds that reveal ne
 
 ### What it does
 
-`phink minimize` analyzes the seeds within the corpus and identifies those that are redundant
+`cargo run -- minimize` analyzes the seeds within the corpus and identifies those that are redundant
 or do not contribute additional value to the fuzzing campaign. It executes each seed to determine their individual
 impact
 and removes any seeds that do not enhance coverage or expose new bugs. This results in a minimized set of seeds, savind
@@ -141,7 +141,7 @@ To edit a seed, complete these 3 easy tasks:
 3. Execute the updated seed
 
     ```bash
-    phink execute seed.bin
+    cargo run -- execute seed.bin
     ```
 
 Congratulations! We're off to the races again. 

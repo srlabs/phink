@@ -33,7 +33,9 @@ feedback, features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
 ## Install
 
-**Important note:** Phink can only be used with its sources. You can't install it via `cargo install`. If
+**Important note:** Phink requires Cargo and can only be used by running it from source code. You can't install it via
+`cargo install`. Since the fuzzing harness needs to be compiled with instrumentation and is included within the tool,
+you must use `cargo run` with the source code to execute Phink.
 
 ### Building from source
 
@@ -50,16 +52,8 @@ sudo cargo-afl afl system-config
 ##### Install Phink
 
 ```bash
-cargo install --git https://github.com/srlabs/phink
-phink --help
-```
-
-If you prefer to install Phink manually, follow these steps:
-
-```bash
-git clone https://github.com/kevin-valerio/phink
-cd phink/ && cargo build --release
-./target/release/phink --help
+git clone https://github.com/srlabs/phink && cd phink;
+cargo run -- help
 ```
 
 ##### Install Phink via Docker
@@ -76,9 +70,9 @@ docker build -t phink .
 ### Via normal installation
 
 ```bash
-phink instrument path/to/ink_contract
-phink generate-seed path/to/ink_contract #optional 
-phink fuzz  
+cargo run -- instrument path/to/ink_contract
+cargo run -- generate-seed path/to/ink_contract #optional 
+cargo run -- fuzz  
 ```  
 
 ### If installed via Docker
@@ -86,13 +80,13 @@ phink fuzz
 To use Phink via Docker, you can run:
 
 ```bash
-docker run --rm phink
+docker run --rm "cargo run"
 ```
 
 For instrumenting a contract:
 
 ```bash
-docker run --rm phink instrument path/to/ink_contract
+docker run --rm "cargo run -- instrument path/to/ink_contract"
 ```
 
 _Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on using Phink with Docker._
@@ -142,7 +136,7 @@ impl DomainNameService {
 #### Catching an invariant
 
 ```bash
-phink execute output/phink/crashes/<timestamp>/<id:000x:seed>  
+cargo run -- execute output/phink/crashes/<timestamp>/<id:000x:seed>  
 ```
 
 Below, the trace after executing the crash:
@@ -184,5 +178,5 @@ file.
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
 - [x] Seed extraction out of unit and end-to-end tests
 - [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
-- [ ] Creation of default invariants common to every contract  (_research needed_)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
+- [ ] Migrate from pallet-contract to pallet-revive and targetting PolkaVM  (_research needed_)

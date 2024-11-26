@@ -52,8 +52,7 @@ Follow these 5 easy steps:
 
 5. **Run Phink**
    ```bash
-   ./target/release/phink --help
-   phink --help # if installed via `cargo install`
+   cargo run -- help  
    ```
 
 ##### Using Docker

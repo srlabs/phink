@@ -41,7 +41,7 @@ First things first: Let's enable your contract for fuzzing. Run the following co
 contract:
 
 ```sh
-phink instrument my_contract/
+cargo run -- instrument my_contract/
 ```
 
 This step modifies the contract to include necessary hooks for Phink's fuzzing process. It creates a fork of the
@@ -49,12 +49,13 @@ contract, so you don't have to make a copy before.
 
 ### 2. Generate seeds (optionnal but highly recommended)
 
-The `phink generate-seed` command is an optional but powerful feature that enhances your fuzzing experience by
+The `cargo run -- generate-seed` command is an optional but powerful feature that enhances your fuzzing experience by
 generating initial seeds from your existing unit and end-to-end (E2E) tests.
 
 #### What it Does
 
-`phink generate-seed` executes the unit tests and E2E tests of your ink! smart contract, extracting seeds based on
+`cargo run -- generate-seed` executes the unit tests and E2E tests of your ink! smart contract, extracting seeds based
+on
 executed messages. These seeds are saved in the `corpus/` directory, which highly helps to reach good coverage, as long
 as you have good tests.
 **Therefore, we encourage to have good and various unit-tests and E2E tests in your contract.**
@@ -75,7 +76,7 @@ as you have good tests.
 #### Usage
 
 ```sh
-phink generate-seed <CONTRACT> [COMPILED_DIRECTORY]
+cargo run -- generate-seed <CONTRACT> [COMPILED_DIRECTORY]
 ```
 
 - `<CONTRACT>`: The root directory path of your ink! smart contract.
@@ -100,7 +101,7 @@ After **instrumenting** your contract and **writing** properties and **configuri
 hands on the fuzzing process:
 
 ```sh
-phink fuzz
+cargo run -- fuzz
 ```
 
 After executing this command, your fuzzing tests will begin based on the configurations specified in your `phink.toml`
@@ -110,7 +111,7 @@ If you’re utilizing the advanced UI, you'll receive _real-time_ updates on the
 screen. For more detailed log information, you can use the following command:
 
 ```sh
-watch -c -t -n 0.1 "clear && cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
+watch -c -t -n 0.5 "clear && cat output/phink/logs/last_seed.phink" # `output` is the default, but it depends of your `phink.toml`
 ```
 
 This will provide you with clearer logs by continuously updating them every **0.1** seconds.
@@ -123,8 +124,8 @@ In case of crashes, you should see something like the following.
 
 <img src="https://raw.githubusercontent.com/srlabs/phink/refs/heads/main/assets/crashed.png" alt="crash"/>
 
-To analyze the crash, you can run `phink execute <your_crash>`, for instance
-`phink execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2`
+To analyze the crash, you can run `cargo run -- execute <your_crash>`, for instance
+`cargo run -- execute output/phink/crashes/1729082451630/id:000000,sig:06,src:000008,time:627512,execs:3066742,op:havoc,rep:2`
 
 | Component      | Description                                                 |
 |----------------|-------------------------------------------------------------|
@@ -149,13 +150,13 @@ By running the above command, you should get an output similar to the screenshot
 First, you need to create a `traces.cov` file. For this, execute the command below.
 
 ```sh
-phink run  
+cargo run -- run  
 ```
 
 Once done, generate coverage reports to analyze which parts of the contract were tested:
 
 ```sh
-phink coverage my_contract/
+cargo run -- coverage my_contract/
 ```
 
 Some HTML files should then be generated in the path you've configured inside your `phink.toml`. The coverage report
