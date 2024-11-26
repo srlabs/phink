@@ -275,7 +275,7 @@ impl ContractSetup {
             }
             Err(e) => {
                 let debug = String::from_utf8_lossy(instantiate.debug_message.as_ref());
-                bail!("❌ Failed to instantiate the contract, double check your `constructor_payload` please ({e:?})\n Details : {debug:?}");
+                bail!("❌ Failed to instantiate the contract, double check your `constructor_payload` please ({e:?}). Details : {debug}");
             }
         }
     }

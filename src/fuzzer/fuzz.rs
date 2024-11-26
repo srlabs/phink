@@ -188,9 +188,9 @@ impl Fuzzer {
         if self.ziggy_config.config().show_ui {
             let seeder = LogWriter::new(parsed_input.to_owned(), coverage.to_owned());
             if LogWriter::should_save() {
-                seeder
-                    .save(self.clone().ziggy_config.fuzz_output())
-                    .unwrap();
+                seeder.save(self.clone().ziggy_config.fuzz_output()).expect(
+                    "You should run `fuzz` at least once and have a valid `output` directory",
+                );
             }
         }
 
