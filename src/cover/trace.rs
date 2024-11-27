@@ -5,7 +5,7 @@ use serde_derive::{
 
 pub const COV_IDENTIFIER: &str = "COV=";
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct CoverageTrace(Vec<u8>);
+pub struct CoverageTrace(pub Vec<u8>);
 
 impl From<Vec<u8>> for CoverageTrace {
     fn from(vec: Vec<u8>) -> Self {

@@ -140,7 +140,7 @@ impl Fuzzer {
                     self.ziggy_config.config().clone(),
                 );
 
-                coverage.add_cov(&result.clone().debug_message());
+                coverage.add_cov(result.clone().debug_message());
                 responses.push(result);
             }
         });
@@ -166,7 +166,7 @@ impl Fuzzer {
         let all_msg_responses = self.execute_messages(&parsed_input, &mut chain, &mut coverage);
 
         let cov = coverage.messages_coverage();
-
+        let debug = coverage.trace();
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
         // of performance) Simply comment out the following line :)
@@ -179,7 +179,8 @@ impl Fuzzer {
                 .save(&manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
 
-            println!("[🚧DEBUG TRACE] Caught coverage identifiers {cov:?}\n",);
+            println!("[🚧COVERAGE] Caught identifiers {cov:?}\n",);
+            println!("[🚧DEBUG TRACE] Fetched the following trace: {debug:?}\n",);
         }
         // We now fake the coverage
         coverage.redirect_coverage(cov);

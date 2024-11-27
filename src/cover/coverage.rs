@@ -21,6 +21,8 @@ use std::{
 pub struct InputCoverage {
     /// All the coverage ID grabbed and deduplicated
     all_cov_id: Vec<u64>,
+    /// Full debug stack trace without parsing
+    trace: CoverageTrace,
 }
 
 impl Debug for InputCoverage {
@@ -35,6 +37,7 @@ impl InputCoverage {
     pub fn new() -> InputCoverage {
         InputCoverage {
             all_cov_id: Vec::new(),
+            trace: CoverageTrace(Vec::new()),
         }
     }
     pub fn coverage_len(&self) -> usize {
@@ -45,8 +48,13 @@ impl InputCoverage {
         &self.all_cov_id
     }
 
-    pub fn add_cov(&mut self, coverage: &CoverageTrace) {
+    pub fn trace(&self) -> String {
+        String::from_utf8_lossy(self.trace.as_ref()).into()
+    }
+
+    pub fn add_cov(&mut self, coverage: CoverageTrace) {
         let parsed = coverage.parse_coverage();
+        self.trace = coverage;
         for id in parsed {
             if !self.all_cov_id.contains(&id) {
                 self.all_cov_id.push(id);
@@ -119,7 +127,7 @@ mod tests {
     fn test_add_cov() {
         let mut coverage = InputCoverage::new();
         let trace = CoverageTrace::from("COV=1 COV=2 COV=3".as_bytes().to_vec());
-        coverage.add_cov(&trace);
+        coverage.add_cov(trace);
         assert_eq!(coverage.coverage_len(), 3);
         assert!(coverage.messages_coverage().contains(&1));
         assert!(coverage.messages_coverage().contains(&2));
@@ -131,8 +139,8 @@ mod tests {
         let mut coverage = InputCoverage::new();
         let trace1 = CoverageTrace::from("COV=1 COV=2 COV=3".as_bytes().to_vec());
         let trace2 = CoverageTrace::from("COV=2 COV=3 COV=4".as_bytes().to_vec());
-        coverage.add_cov(&trace1);
-        coverage.add_cov(&trace2);
+        coverage.add_cov(trace1);
+        coverage.add_cov(trace2);
         assert_eq!(coverage.coverage_len(), 4);
     }
 
