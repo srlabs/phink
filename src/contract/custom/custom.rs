@@ -33,16 +33,16 @@ use std::{
 /// This file is made to be customized. Feel free to remove, add, modify code
 impl DevelopperPreferences for Preferences {
     fn runtime_storage() -> Storage {
+        let specific_address =
+            AccountId32::from_str("5CJwK57RASwYZexBDvxoybV7BoRTbGtxckrWKbtpBug35yx2").unwrap();
+        let mut balances = (0..u8::MAX)
+            .map(|i| ([i; 32].into(), 10000000000000000000 * 2))
+            .collect::<Vec<_>>();
+
+        balances.push((specific_address.into(), 10000000000000000000 * 2));
+
         let storage = RuntimeGenesisConfig {
-            balances: BalancesConfig {
-                balances: (0..u8::MAX) // Lot of money for Alice, Bob ... Ferdie
-                    .map(|i| [i; 32].into())
-                    .collect::<Vec<_>>()
-                    .iter()
-                    .cloned()
-                    .map(|k| (k, 10000000000000000000 * 2))
-                    .collect(),
-            },
+            balances: BalancesConfig { balances },
             ..Default::default()
         }
         .build_storage()
