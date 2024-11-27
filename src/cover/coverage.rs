@@ -22,7 +22,7 @@ pub struct InputCoverage {
     /// All the coverage ID grabbed and deduplicated
     all_cov_id: Vec<u64>,
     /// Full debug stack trace without parsing
-    trace: CoverageTrace,
+    trace: Vec<CoverageTrace>,
 }
 
 impl Debug for InputCoverage {
@@ -37,7 +37,7 @@ impl InputCoverage {
     pub fn new() -> InputCoverage {
         InputCoverage {
             all_cov_id: Vec::new(),
-            trace: CoverageTrace(Vec::new()),
+            trace: vec![],
         }
     }
     pub fn coverage_len(&self) -> usize {
@@ -48,13 +48,17 @@ impl InputCoverage {
         &self.all_cov_id
     }
 
-    pub fn trace(&self) -> String {
-        String::from_utf8_lossy(self.trace.as_ref()).into()
+    pub fn concatened_trace(&self) -> String {
+        self.trace
+            .iter()
+            .map(|coverage_trace| coverage_trace.as_string())
+            .collect::<Vec<String>>()
+            .join(" ")
     }
 
     pub fn add_cov(&mut self, coverage: CoverageTrace) {
         let parsed = coverage.parse_coverage();
-        self.trace = coverage;
+        self.trace.push(coverage);
         for id in parsed {
             if !self.all_cov_id.contains(&id) {
                 self.all_cov_id.push(id);

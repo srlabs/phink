@@ -20,8 +20,12 @@ impl AsRef<[u8]> for CoverageTrace {
 }
 
 impl CoverageTrace {
+    pub fn as_string(&self) -> String {
+        String::from_utf8_lossy(&self.0).to_string()
+    }
+
     pub fn parse_coverage(&self) -> Vec<u64> {
-        let coverage_str = String::from_utf8_lossy(&self.0);
+        let coverage_str = self.as_string();
         let mut parsed = Vec::new();
 
         for part in coverage_str.split_whitespace() {
@@ -35,7 +39,7 @@ impl CoverageTrace {
     }
 
     pub fn remove_cov_from_trace(&self) -> String {
-        String::from_utf8_lossy(self.as_ref())
+        self.as_string()
             .split_whitespace()
             .filter(|&s| !s.starts_with(COV_IDENTIFIER))
             .collect::<Vec<&str>>()

@@ -9,11 +9,14 @@ use crate::{
             ContractSetup,
             FullContractResponse,
         },
+        runtime::{
+            RuntimeOrigin,
+            Timestamp,
+        },
         selectors::database::SelectorDatabase,
     },
     cover::coverage::InputCoverage,
     fuzzer::{
-        engine::timestamp,
         environment::EnvironmentBuilder,
         fuzz::FuzzingMode::{
             ExecuteOneInput,
@@ -160,13 +163,14 @@ impl Fuzzer {
         }
 
         let mut chain = BasicExternalities::new(self.setup.genesis.clone());
-        chain.execute_with(|| timestamp(0));
+        chain.execute_with(|| {
+            Timestamp::set(RuntimeOrigin::none(), 3000).unwrap();
+        });
 
         let mut coverage = InputCoverage::new();
         let all_msg_responses = self.execute_messages(&parsed_input, &mut chain, &mut coverage);
 
         let cov = coverage.messages_coverage();
-        let debug = coverage.trace();
         // If we are not in fuzzing mode, we save the coverage
         // If you ever wish to have real-time coverage while fuzzing (and a lose
         // of performance) Simply comment out the following line :)
@@ -178,8 +182,8 @@ impl Fuzzer {
             coverage
                 .save(&manager.config().fuzz_output.unwrap_or_default())
                 .expect("🙅 Cannot save the coverage");
-
-            println!("[🚧COVERAGE] Caught identifiers {cov:?}\n",);
+            let debug = coverage.concatened_trace();
+            println!("[🚧COVERAGE] Caught identifiers {cov:?}",);
             println!("[🚧DEBUG TRACE] Fetched the following trace: {debug:?}\n",);
         }
         // We now fake the coverage
