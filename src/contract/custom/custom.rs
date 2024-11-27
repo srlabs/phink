@@ -53,21 +53,6 @@ impl DevelopperPreferences for Preferences {
     /// We want for our test case to upload other contracts
     /// Most of the time, you might want this function to be empty
     fn on_contract_initialize() -> EmptyResult {
-        fn transfer_foreign(receiver: AccountId, balance: u32) {
-            pallet_balances::Pallet::<Runtime>::transfer_keep_alive(
-                RuntimeOrigin::root(),
-                receiver,
-                balance.into(),
-            )
-            .expect("TODO: panic message");
-        }
-
-        let abc = transfer_foreign(
-            AccountId32::from_str("5CJwK57RASwYZexBDvxoybV7BoRTbGtxckrWKbtpBug35yx2").unwrap(),
-            10000,
-        );
-
-        println!("AAAAAAAAa = {:?}", abc);
         let ink_fuzzed_path: &str = "/tmp/ink_fuzzed_UfY2T";
 
         let adder = Contracts::bare_upload_code(
