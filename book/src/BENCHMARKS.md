@@ -1,4 +1,4 @@
-# Benchmark Results
+# Benchmarking
 
 Benchmarking provides insights into Phink's performance in real-world scenarios, in order to vizualise its efficiency
 and
