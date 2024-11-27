@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main" >> /etc/apt/sources.list.d/llvm.list \
     && apt-get update && apt-get install -y --no-install-recommends \
     llvm-19 \
-#    llvm-19-dev \
     clang-19 \
     libclang-19-dev \
     && apt-get clean \
@@ -40,9 +39,6 @@ RUN cargo build --release
 RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
 RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
 
-RUN cp target/release/phink /usr/local/bin/phink
-
 WORKDIR /phink
-ENTRYPOINT ["phink"]
 # If nothing is provided, we just start an instrumentation of `dummy`
-CMD ["instrument", "sample/dummy/"]
+CMD ["cargo", "run", "--", "instrument", "sample/dummy/"]

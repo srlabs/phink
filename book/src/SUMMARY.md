@@ -16,4 +16,5 @@
 - [Concept and terminology](./CONCEPT.md)
 - [How does Phink work](./TECH.md)
 - [Troubleshoting](./TROUBLESHOTING.md)
+- [Benchmarks](./BENCHMARKS.md)
 - [FAQ](./FAQ.md)
