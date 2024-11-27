@@ -53,7 +53,8 @@ impl InputCoverage {
             .iter()
             .map(|coverage_trace| coverage_trace.as_string())
             .collect::<Vec<String>>()
-            .join(" ")
+            .join(" | ")
+            .replace("\n", " ")
     }
 
     pub fn add_cov(&mut self, coverage: CoverageTrace) {

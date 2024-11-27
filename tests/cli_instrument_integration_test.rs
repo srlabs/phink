@@ -14,12 +14,14 @@ mod tests {
     };
     use anyhow::ensure;
     use assert_cmd::Command as CommandAssertCmd;
+    use contract_transcode::env_types::AccountId;
     use phink_lib::{
         cli::config::Configuration,
         instrumenter::path::InstrumentedPath,
         EmptyResult,
     };
     use predicates::prelude::predicate;
+    use sp_core::crypto::AccountId32;
     use std::fs;
     use tempfile::tempdir;
     use walkdir::WalkDir;
@@ -64,6 +66,19 @@ mod tests {
             Ok(())
         });
         assert!(test.is_ok(), "{}", test.err().unwrap().to_string());
+        Ok(())
+    }
+
+    #[test]
+    fn aaa() -> EmptyResult {
+        // let a = AccountId32::new([1; 32]);
+        // println!("{}", a);
+        let bcd = contract_transcode::AccountId32::try_from([
+            10, 218, 186, 223, 239, 138, 14, 204, 129, 51, 100, 132, 99, 100, 82, 52, 32, 4, 43,
+            116, 79, 198, 231, 242, 83, 147, 228, 45, 81, 6, 222, 125,
+        ]);
+        println!("{:?}", bcd?.to_ss58check());
+
         Ok(())
     }
 
