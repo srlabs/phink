@@ -4,17 +4,21 @@ Benchmarking provides insights into Phink's performance in real-world scenarios,
 and
 fuzzing ink! smart contracts. Below are the benchmark results for various smart contracts, detailing
 coverage, speed, corpus size, and the potential usage of `generate-seed`. Each contract were fuzzed for maximum a day.
-Stats are given for one core only.
+Statistics (especially *average speed*) are given for **one** core only. The coverage percent is calculated using the
+number of
+lines covered divided the number of reachable lines, as a percentage.
 
 ### Benchmarks
 
-| Contract name | Coverage | Average speed (_execs/sec_)           | AFL++ corpus size | generate-seed usage         |
-|---------------|----------|---------------------------------------|-------------------|-----------------------------|
-| abax_governor | **48%**  | 1500 (early phase) / 100 (late phase) | 1639              | **NO** (no tests available) |
-| multisig      | **91%**  | 113 (late phase)                      | 1524              | **YES** (without E2E)       |
+| Contract name | Coverage percent | Average speed (_execs/sec_)           | AFL++ corpus size | Using Phink seed generation |
+|---------------|------------------|---------------------------------------|-------------------|-----------------------------|
+| abax_governor | **48%**          | 1500 (early phase) / 100 (late phase) | 1639              | **NO** (no tests available) |
+| multisig      | **91%**          | 113 (late phase)                      | 1524              | **YES** (without E2E)       |
 
-- Github for `abax_governor` : https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor
-- Github for `multisig` : https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs
+- Github for
+  `abax_governor` : [https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor](https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor)
+- Github for
+  `multisig` : [https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs](https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs)
 
 ### Explanation of terms
 
