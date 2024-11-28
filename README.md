@@ -24,10 +24,6 @@ use Phink.
 
 ![Dashboard GIF](assets/dashboard.gif)
 
-
-> ⚠️ This project is actively under development with new features and improvements being made regularly. Contributions
-> and feedback are welcome!
-
 For documentation, visit our [**documentation site here**](https://srlabs.github.io/phink/). If you have any question,
 feedback, features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
 
@@ -71,23 +67,11 @@ docker build -t phink .
 
 ```bash
 cargo run -- instrument path/to/ink_contract
-cargo run -- generate-seed path/to/ink_contract #optional 
+cargo run -- generate-seed path/to/ink_contract #optional but recommended
 cargo run -- fuzz  
 ```  
 
 ### If installed via Docker
-
-To use Phink via Docker, you can run:
-
-```bash
-docker run --rm "cargo run"
-```
-
-For instrumenting a contract:
-
-```bash
-docker run --rm "cargo run -- instrument path/to/ink_contract"
-```
 
 _Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on using Phink with Docker._
 
@@ -175,8 +159,9 @@ file.
 - [x] Crafting multiple messages in a single transaction
 - [x] Visualization of ink! contract coverage
 - [x] Proper binary usage
+- [x] Benchmarking the fuzzing campaign and generating statistics
 - [x] Enabling multi-contract fuzzing and cross-contract interactions
 - [x] Seed extraction out of unit and end-to-end tests
-- [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/Honggfuzz dashboard)
+- [x] Development of a custom fuzzing dashboard (default options: Ziggy/AFL++/~~Honggfuzz~~ dashboard)
 - [ ] Implementation of a snapshot-based fuzzing approach  (_research needed_)
 - [ ] Migrate from pallet-contract to pallet-revive and targetting PolkaVM  (_research needed_)

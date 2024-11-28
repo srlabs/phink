@@ -934,6 +934,11 @@ Each contract were fuzzed for maximum a day.
 Statistics (especially <em>average speed</em>) are given for <strong>one</strong> core only. The coverage percent is calculated using the
 number of
 lines covered divided the number of reachable lines, as a percentage.</p>
+<blockquote>
+<p>⚠️ The point of the benchmark is to demonstrate how much coverage is reachable within a day of fuzzing without doing
+proper seed creation. In a real fuzzing campaign, the developers would aim for 100% coverage, by creating seeds,
+adding <code>GenesisConfig</code> values, more (E2E) tests extracted with <code>seed-generator</code>, etc.</p>
+</blockquote>
 <h3 id="benchmarks"><a class="header" href="#benchmarks">Benchmarks</a></h3>
 <div class="table-wrapper"><table><thead><tr><th>Contract name</th><th>Coverage percent</th><th>Average speed (<em>execs/sec</em>)</th><th>AFL++ corpus size</th><th>Using Phink seed generation</th></tr></thead><tbody>
 <tr><td>abax_governor</td><td><strong>48%</strong></td><td>1500 (early phase) <strong>and</strong> 100 (late phase)</td><td>1639</td><td><strong>NO</strong> (no tests available)</td></tr>

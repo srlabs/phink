@@ -9,6 +9,10 @@ Statistics (especially *average speed*) are given for **one** core only. The cov
 number of
 lines covered divided the number of reachable lines, as a percentage.
 
+> ⚠️ The point of the benchmark is to demonstrate how much coverage is reachable within a day of fuzzing without doing
+> proper seed creation. In a real fuzzing campaign, the developers would aim for 100% coverage, by creating seeds,
+> adding `GenesisConfig` values, more (E2E) tests extracted with `seed-generator`, etc.
+
 ### Benchmarks
 
 | Contract name | Coverage percent | Average speed (_execs/sec_)                        | AFL++ corpus size | Using Phink seed generation |
