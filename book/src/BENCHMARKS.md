@@ -18,7 +18,7 @@ lines covered divided the number of reachable lines, as a percentage.
 | Contract name | Coverage percent | Average speed (_execs/sec_)                       | AFL++ corpus size | Using Phink seed generation |
 |---------------|------------------|---------------------------------------------------|-------------------|-----------------------------|
 | abax_governor | **48%**          | 1500 (early phase) **and** 100 (late phase)       | 1639              | **NO** (no tests available) |
-| erc1155       | **66%**          | 1300 (early phase phase) **and** 134 (late phase) | 561               | **YES** (without E2E)       |
+| erc1155       | **89%**          | 1300 (early phase phase) **and** 140 (late phase) | 949               | **YES** (without E2E)       |
 | multisig      | **91%**          | 1400 (early phase phase) **and** 113 (late phase) | 1524              | **YES** (without E2E)       |
 
 - Github for
