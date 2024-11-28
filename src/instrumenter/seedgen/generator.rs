@@ -82,7 +82,13 @@ impl SeedExtractInjector {
             .context("Couldn't run `cargo test ...` to run the seeds")?;
 
         let amount = self.save_seeds(unparsed_seed, output)?;
+
         if self.verbose() {
+            if is_e2e {
+                println!(
+                    "The contract has the e2e-tests features, so we run seed generator with E2E."
+                );
+            }
             println!(
                 "\nDone! We've saved {amount} seeds in total. If your campaign already started,\
              you can use `cargo ziggy add-seeds` to include the seeds."
