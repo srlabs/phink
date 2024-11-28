@@ -44,55 +44,10 @@ mod dummy {
             Ok(())
         }
 
-        #[ink(message)]
-        pub fn toz(&mut self, a: u32, name: Hash) {
-            let a = 1 + 1;
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        #[ink::test]
-        fn new_works() {
-            let mut a = MyBuggedContract::new();
-            a.crash_with_invariant("abc".to_string()).unwrap();
-            a.crash_with_invariant("fuz".to_string()).unwrap();
-        }
-
-        #[ink::test]
-        fn for_seedgen() {
-            let mut a = MyBuggedContract::new();
-            a.toz(32, crate::dummy::Hash::from([0x99; 32]));
-        }
-    }
-
-    #[cfg(all(test, feature = "e2e-tests"))]
-    mod e2e_tests {
-        use super::*;
-        use ink_e2e::ContractsBackend;
-
-        type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
-        #[ink_e2e::test]
-        async fn it_works<Client: E2EBackend>(mut client: Client) -> E2EResult<()> {
-            let mut constructor = MyBuggedContractRef::new();
-            let contract = client
-                .instantiate("dummy", &ink_e2e::alice(), &mut constructor)
-                .submit()
-                .await
-                .expect("instantiate failed");
-            let mut call_builder = contract.call_builder::<MyBuggedContract>();
-
-            let flip = call_builder.toz(432432, crate::dummy::Hash::from([0x12; 32]));
-            let _flip_res = client
-                .call(&ink_e2e::bob(), &flip)
-                .submit()
-                .await
-                .expect("flip failed");
-            Ok(())
-        }
+        // #[ink(message)]
+        // pub fn toz(&mut self, a: u32, name: Hash) {
+        //     let a = 1 + 1;
+        // }
     }
 
     #[cfg(feature = "phink")]
@@ -106,4 +61,48 @@ mod dummy {
             assert_ne!(self.forbidden_number, forbidden_number);
         }
     }
+    // #[cfg(test)]
+    // mod tests {
+    // use super::*;
+    //
+    // #[ink::test]
+    // fn new_works() {
+    // let mut a = MyBuggedContract::new();
+    // a.crash_with_invariant("abc".to_string()).unwrap();
+    // a.crash_with_invariant("fuz".to_string()).unwrap();
+    // }
+    //
+    // #[ink::test]
+    // fn for_seedgen() {
+    // let mut a = MyBuggedContract::new();
+    // a.toz(32, crate::dummy::Hash::from([0x99; 32]));
+    // }
+    // }
+    //
+    // #[cfg(all(test, feature = "e2e-tests"))]
+    // mod e2e_tests {
+    // use super::*;
+    // use ink_e2e::ContractsBackend;
+    //
+    // type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+    //
+    // #[ink_e2e::test]
+    // async fn it_works<Client: E2EBackend>(mut client: Client) -> E2EResult<()> {
+    // let mut constructor = MyBuggedContractRef::new();
+    // let contract = client
+    // .instantiate("dummy", &ink_e2e::alice(), &mut constructor)
+    // .submit()
+    // .await
+    // .expect("instantiate failed");
+    // let mut call_builder = contract.call_builder::<MyBuggedContract>();
+    //
+    // let flip = call_builder.toz(432432, crate::dummy::Hash::from([0x12; 32]));
+    // let _flip_res = client
+    // .call(&ink_e2e::bob(), &flip)
+    // .submit()
+    // .await
+    // .expect("flip failed");
+    // Ok(())
+    // }
+    // }
 }
