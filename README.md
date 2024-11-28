@@ -55,11 +55,7 @@ cargo run -- help
 ##### Install Phink via Docker
 
 Alternatively, you can use Docker to set up and run Phink without needing to manually install dependencies. Detailed
-instructions are available in [README.Docker.md](README.Docker.md). To build the Docker image:
-
-```bash
-docker build -t phink .
-```
+instructions are available in [README.Docker.md](README.Docker.md).
 
 ## Usage
 
@@ -71,13 +67,9 @@ cargo run -- generate-seed path/to/ink_contract #optional but recommended
 cargo run -- fuzz  
 ```  
 
-### If installed via Docker
-
-_Refer to [README.Docker.md](README.Docker.md) for more detailed instructions on using Phink with Docker._
-
 ## Example
 
-#### Adding some invariants
+#### Adding some invariants (required!)
 
 Below are some invariants created for the [dns](https://github.com/kevin-valerio/phink/blob/main/sample/dns/lib.rs)
 contract.
