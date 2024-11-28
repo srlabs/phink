@@ -18,11 +18,11 @@ lines covered divided the number of reachable lines, as a percentage.
 | Contract name | Coverage percent | Average speed (_execs/sec_)                       | AFL++ corpus size | Using Phink seed generation |
 |---------------|------------------|---------------------------------------------------|-------------------|-----------------------------|
 | abax_governor | **48%**          | 1500 (early phase) **and** 100 (late phase)       | 1639              | **NO** (no tests available) |
-| erc1155       | **63%**          | 1300 (early phase phase) **and** 134 (late phase) | 561               | **YES** (without E2E)       |
+| erc1155       | **66%**          | 1300 (early phase phase) **and** 134 (late phase) | 561               | **YES** (without E2E)       |
 | multisig      | **91%**          | 1400 (early phase phase) **and** 113 (late phase) | 1524              | **YES** (without E2E)       |
 
 - Github for
-  `abax_governor` : [AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor](https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor)
+  `abax_governor` : [AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor](https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor/)
 - Github for
   `multisig` : [use-ink/ink-examples/blob/main/multisig/lib.rs](https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs)
 - Github for
@@ -32,33 +32,21 @@ lines covered divided the number of reachable lines, as a percentage.
 
 ###### ERC-1155
 
-> The ERC-1155 standard is a versatile framework designed to manage a diverse range of assets within a single contract.
-> This contract type supports both fungible and non-fungible tokens, allowing for efficient and flexible asset
-> management.
-> One of the key features of the ERC-1155 contract is its ability to perform batch transfers, enabling multiple token
-> transfers in a single transaction. This functionality simplifies complex operations and makes managing various tokens
-> more streamlined and cost-effective. By combining multiple asset types, ERC-1155 provides developers with a powerful
-> tool for creating diverse and dynamic digital environments.
+> The ERC-1155 contract is a standard for creating multiple token types within a single contract. It allows for the
+> creation of both fungible and non-fungible tokens and enables batch transfers, making it easy to transfer multiple
+> tokens at once.
 
 ###### Multisig Wallet
 
-> The Multisig Wallet is a smart contract that facilitates collaborative decision-making among multiple owners. This
-> example contract, inspired by the Gnosis multisig wallet, allows a group of owners to jointly manage and execute
-> transactions. Each multisig wallet establishes a set number of required approvals from its owners to execute any
-> proposed transaction, ensuring a democratic and secure management process. Although this implementation serves
-> educational purposes and is not intended for production, it illustrates the importance of shared control and risk
-> mitigation in decentralized financial operations.
+> The Multisig Wallet contract is a multi-owner wallet that requires a certain number of owners to agree on a
+> transaction before it can be executed. Each owner can submit a transaction, and when enough owners confirm, it can be
+> executed.
 
 ###### AbaxGovernor
 
-> The AbaxGovernor contract is centered around governance and participation through staking mechanisms. It allows users
-> to
-> stake the Abax token, a PSP22 token, in exchange for PSP22Vault shares, which are used as voting power or "votes."
-> This
-> contract facilitates the creation, proposal, and voting on governance decisions by leveraging the Govern trait. It
-> includes various voting phases and uses the GeneralVest contract to manage unstaking after a specified period. The
-> AbaxGovernor is particularly focused on ensuring responsible governance participation and enabling stakeholders to
-> influence important protocol decisions through their voting power.
+> The Abax Governor contract is a governance contract that allows for staking of PSP22 tokens in exchange for
+> non-transferrable PSP22Vault shares (votes). It enables users to propose and vote on proposals, with the number of
+> shares held by a user determining their voting power.
 
 ### Explanation of terms
 

@@ -21,4 +21,4 @@ jobs:
         run: docker build -t phink .
 
       - name: Run Docker Phink with --help
-        run: docker run --rm phink --help  #just checking if phink works properly
+        run: docker run --rm phink cargo run -- help #just checking if phink works properly

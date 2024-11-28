@@ -100,7 +100,7 @@ enum Commands {
         /// Seed to be executed
         seed: PathBuf,
     },
-    /// Minimize the corpus taken from `corpus/`
+    /// Minimize the corpus taken from `corpus/` (unstable, not recommended)
     Minimize,
 }
 
