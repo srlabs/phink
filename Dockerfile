@@ -38,6 +38,7 @@ RUN cargo build --release
 
 RUN curl https://raw.githubusercontent.com/AFLplusplus/AFLplusplus/stable/afl-system-config > afl-system-config.sh
 RUN chmod +x afl-system-config.sh && bash afl-system-config.sh
+RUN cp target/release/phink /usr/local/bin/phink
 
 WORKDIR /phink
 # If nothing is provided, we just start an instrumentation of `dummy`

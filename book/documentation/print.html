@@ -937,15 +937,49 @@ lines covered divided the number of reachable lines, as a percentage.</p>
 <h3 id="benchmarks"><a class="header" href="#benchmarks">Benchmarks</a></h3>
 <div class="table-wrapper"><table><thead><tr><th>Contract name</th><th>Coverage percent</th><th>Average speed (<em>execs/sec</em>)</th><th>AFL++ corpus size</th><th>Using Phink seed generation</th></tr></thead><tbody>
 <tr><td>abax_governor</td><td><strong>48%</strong></td><td>1500 (early phase) <strong>and</strong> 100 (late phase)</td><td>1639</td><td><strong>NO</strong> (no tests available)</td></tr>
+<tr><td>erc1155</td><td><strong>58%</strong></td><td>1300 (early phase phase) <strong>and</strong> todo (late phase)</td><td>400</td><td><strong>YES</strong> (without E2E)</td></tr>
 <tr><td>multisig</td><td><strong>91%</strong></td><td>113 (late phase)</td><td>1524</td><td><strong>YES</strong> (without E2E)</td></tr>
 </tbody></table>
 </div>
 <ul>
 <li>Github for
-<code>abax_governor</code> : <a href="https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor">https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor</a></li>
+<code>abax_governor</code> : <a href="https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor">AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor</a></li>
 <li>Github for
-<code>multisig</code> : <a href="https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs">https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs</a></li>
+<code>multisig</code> : <a href="https://github.com/use-ink/ink-examples/blob/main/multisig/lib.rs">use-ink/ink-examples/blob/main/multisig/lib.rs</a></li>
+<li>Github for
+<code>erc1155</code> : <a href="https://github.com/use-ink/ink-examples/blob/main/erc1155/lib.rs">use-ink/ink-examples/blob/main/erc1155/lib.rs</a></li>
 </ul>
+<h4 id="contracts"><a class="header" href="#contracts">Contracts</a></h4>
+<h6 id="erc-1155"><a class="header" href="#erc-1155">ERC-1155</a></h6>
+<blockquote>
+<p>The ERC-1155 standard is a versatile framework designed to manage a diverse range of assets within a single contract.
+This contract type supports both fungible and non-fungible tokens, allowing for efficient and flexible asset
+management.
+One of the key features of the ERC-1155 contract is its ability to perform batch transfers, enabling multiple token
+transfers in a single transaction. This functionality simplifies complex operations and makes managing various tokens
+more streamlined and cost-effective. By combining multiple asset types, ERC-1155 provides developers with a powerful
+tool for creating diverse and dynamic digital environments.</p>
+</blockquote>
+<h6 id="multisig-wallet"><a class="header" href="#multisig-wallet">Multisig Wallet</a></h6>
+<blockquote>
+<p>The Multisig Wallet is a smart contract that facilitates collaborative decision-making among multiple owners. This
+example contract, inspired by the Gnosis multisig wallet, allows a group of owners to jointly manage and execute
+transactions. Each multisig wallet establishes a set number of required approvals from its owners to execute any
+proposed transaction, ensuring a democratic and secure management process. Although this implementation serves
+educational purposes and is not intended for production, it illustrates the importance of shared control and risk
+mitigation in decentralized financial operations.</p>
+</blockquote>
+<h6 id="abaxgovernor"><a class="header" href="#abaxgovernor">AbaxGovernor</a></h6>
+<blockquote>
+<p>The AbaxGovernor contract is centered around governance and participation through staking mechanisms. It allows users
+to
+stake the Abax token, a PSP22 token, in exchange for PSP22Vault shares, which are used as voting power or “votes.”
+This
+contract facilitates the creation, proposal, and voting on governance decisions by leveraging the Govern trait. It
+includes various voting phases and uses the GeneralVest contract to manage unstaking after a specified period. The
+AbaxGovernor is particularly focused on ensuring responsible governance participation and enabling stakeholders to
+influence important protocol decisions through their voting power.</p>
+</blockquote>
 <h3 id="explanation-of-terms"><a class="header" href="#explanation-of-terms">Explanation of terms</a></h3>
 <ul>
 <li>
