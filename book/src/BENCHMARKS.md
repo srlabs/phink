@@ -15,11 +15,11 @@ lines covered divided the number of reachable lines, as a percentage.
 
 ### Benchmarks
 
-| Contract name | Coverage percent | Average speed (_execs/sec_)                        | AFL++ corpus size | Using Phink seed generation |
-|---------------|------------------|----------------------------------------------------|-------------------|-----------------------------|
-| abax_governor | **48%**          | 1500 (early phase) **and** 100 (late phase)        | 1639              | **NO** (no tests available) |
-| erc1155       | **58%**          | 1300 (early phase phase) **and** todo (late phase) | 400               | **YES** (without E2E)       |
-| multisig      | **91%**          | 113 (late phase)                                   | 1524              | **YES** (without E2E)       |
+| Contract name | Coverage percent | Average speed (_execs/sec_)                       | AFL++ corpus size | Using Phink seed generation |
+|---------------|------------------|---------------------------------------------------|-------------------|-----------------------------|
+| abax_governor | **48%**          | 1500 (early phase) **and** 100 (late phase)       | 1639              | **NO** (no tests available) |
+| erc1155       | **63%**          | 1300 (early phase phase) **and** 134 (late phase) | 561               | **YES** (without E2E)       |
+| multisig      | **91%**          | 1400 (early phase phase) **and** 113 (late phase) | 1524              | **YES** (without E2E)       |
 
 - Github for
   `abax_governor` : [AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor](https://github.com/AbaxFinance/dao-contracts/tree/main/src/contracts/abax_governor)

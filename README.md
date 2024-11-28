@@ -134,6 +134,25 @@ Below, the trace after executing the crash:
 +---------+-------------------------------------------------------------------+
 ```
 
+#### Generating a coverage report
+
+The user can generate a coverage report after running all the seeds with `run`. The only parameter required is the one
+for `coverage`, which corresponds to the **instrumented** contract path. Here is a possible output of the
+coverage statistics:
+
+```bash
+cargo run -- run && cargo run -- coverage toooooooooooz/
+```
+
+```asciidoc
+📊 Coverage report generated at: output/phink/contract_coverage 📐 Phink Coverage Benchmark:
+
+- Total contract's files: 1
+- Total of unique hit lines: 47
+- Maximum theoretically reachable coverage: 74
+- Coverage percentage: 63%
+```
+
 #### List of samples
 
 You can find various sample ink! smart-contracts in the `sample/` directory. For detailed descriptions of these samples
