@@ -10,7 +10,6 @@ sample/.DS_Store
 terminalizer.yml
 
 # Cargo & Rust stuff
-Cargo.lock
 **/*.rs.bk
 package-lock.json
 
