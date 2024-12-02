@@ -33,14 +33,14 @@ use std::{
 pub struct AllowListBuilder;
 
 impl AllowListBuilder {
-    pub const FUNCTIONS: [&str; 2] = ["redirect_coverage*", "parse_input*"];
+    pub const FUNCTIONS: [&str; 2] = ["*redirect_coverage*", "*parse_input*"];
 
     /// Builds the LLVM allowlist if it doesn't already exist.
     pub fn build(fuzz_output: PathBuf) -> io::Result<()> {
         let allowlist_path = PhinkFiles::new(fuzz_output).path(AllowlistPath);
 
         if allowlist_path.exists() {
-            println!("❗ {} already exists... skipping", AllowList);
+            println!("❗ {AllowList} already exists... skipping");
             return Ok(());
         }
 
@@ -51,7 +51,7 @@ impl AllowListBuilder {
             writeln!(allowlist_file, "fun: {}", func)?;
         }
 
-        println!("✅ {} created successfully", AllowList);
+        println!("✅ {AllowList} created successfully");
         Ok(())
     }
 }

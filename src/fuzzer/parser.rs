@@ -198,7 +198,7 @@ impl<'a> Iterator for Data<'a> {
 }
 
 pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
-    let config = manager.clone().config();
+    let config = manager.config();
 
     let max_msg = config.max_messages_per_exec.unwrap_or_default();
     let data = Data {
@@ -215,7 +215,7 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
     };
 
     let arc = manager.transcoder();
-    let guard = arc.try_lock().unwrap();
+    let guard = arc.try_lock().expect("Failed on `try_lock`");
 
     for payload in data {
         let mut encoded_message = vec![0u8; payload.len() - 5];
@@ -242,15 +242,11 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
                         DisableOriginFuzzing => Origin::default(),
                     };
                     let is_payable: bool = db.is_payable(&slctr);
-                    let value_token: u128 = if is_payable {
-                        u32::from_ne_bytes(payload[0..4].try_into().unwrap()) as u128 // todo:16 not
-                                                                                      // 4
-                    } else {
-                        0
-                    };
-
+                    let mut value_token: u128 = 0;
+                    if is_payable {
+                        value_token = u32::from_ne_bytes(payload[0..4].try_into().unwrap()) as u128 // todo:16
+                    }
                     input.raw_binary = Vec::from(bytes);
-
                     input.messages.push(Message {
                         is_payable,
                         payload: encoded_message,
@@ -286,7 +282,7 @@ pub fn decode_contract_message(
         .find(|x| msg_selector == x.selector().to_bytes())
         .ok_or_else(|| {
             anyhow::anyhow!(
-                "XMessage with selector {} not found in contract metadata",
+                "Message with selector {} not found in contract metadata",
                 hex::encode_upper(msg_selector)
             )
         })?;

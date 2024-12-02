@@ -51,7 +51,7 @@ impl CustomManager {
         env: Vec<(String, String)>,
         ziggy_config: ZiggyConfig,
     ) -> Self {
-        // If it exists, we remove the `LAST_SEED_FILENAME`
+        // If it exists, we remove the `PFiles::LastSeed`
         let _ = fs::remove_file(
             PhinkFiles::new(ziggy_config.config().fuzz_output.clone().unwrap())
                 .path(PFiles::LastSeed),
@@ -111,7 +111,7 @@ impl CustomManager {
             }
             if ratatui.is_err() {
                 if print_err {
-                    println!("⏰ Waiting for AFL++ to finish the dry run ");
+                    println!("⏰ Waiting for AFL++ to finish the dry run");
                     print_err = false;
                 }
                 ratatui = CustomUI::new(&cloned_config);

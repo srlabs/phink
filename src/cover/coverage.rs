@@ -83,7 +83,6 @@ impl InputCoverage {
 
         // Write each unique ID to the file, one per line
         writeln!(file, "{}", trace_strings.join("\n"))?;
-
         Ok(())
     }
 
@@ -96,10 +95,8 @@ impl InputCoverage {
 
         seq_macro::seq!(cov_id in 0_u64 .. 2_000_u64 {
             if black_box(flat.contains(black_box(&cov_id))) {
-                {
-                    let _cov = black_box(cov_id.saturating_add(1));
-                };
-                black_box(());
+                let _cov = black_box(cov_id.saturating_add(1));
+                let _abc = cov_id.saturating_add(1);
             }
         });
     }
