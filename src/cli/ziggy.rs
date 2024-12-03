@@ -301,7 +301,8 @@ impl ZiggyConfig {
             None
         };
 
-        self.build_command(ZiggyCommand::Build, build_args, vec![])?;
+        let fuzz_config = vec![(FuzzingWithConfig.to_string(), serde_json::to_string(self)?)];
+        self.build_command(ZiggyCommand::Build, build_args, fuzz_config)?;
 
         println!("🏗️ Ziggy Build completed");
 

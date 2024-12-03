@@ -61,9 +61,7 @@ impl InputCoverage {
         let parsed = coverage.parse_coverage();
         self.trace.push(coverage);
         for id in parsed {
-            if !self.all_cov_id.contains(&id) {
-                self.all_cov_id.push(id);
-            }
+            self.all_cov_id.push(id);
         }
     }
 
@@ -80,7 +78,6 @@ impl InputCoverage {
             .append(true)
             .create(true)
             .open(PhinkFiles::new_by_ref(output).path(CoverageTracePath))?;
-
         // Write each unique ID to the file, one per line
         writeln!(file, "{}", trace_strings.join("\n"))?;
         Ok(())
