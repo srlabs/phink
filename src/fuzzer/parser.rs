@@ -215,7 +215,6 @@ pub fn try_parse_input(bytes: &[u8], manager: CampaignManager) -> Option<OneInpu
     let arc = manager.transcoder();
     let guard = arc.try_lock().expect("Failed on `try_lock`");
 
-    let msg_len = input.messages.len();
     for payload in data {
         let origin = match input.fuzz_option {
             EnableOriginFuzzing => Origin(payload[4]),
@@ -237,7 +236,9 @@ pub fn try_parse_input(bytes: &[u8], manager: CampaignManager) -> Option<OneInpu
 
         match decode_contract_message(&guard, &mut encoded_cloned) {
             Ok(message_metadata) => {
-                if data.max_messages_per_exec != 0 && msg_len <= data.max_messages_per_exec {
+                if data.max_messages_per_exec != 0
+                    && input.messages.len() <= data.max_messages_per_exec
+                {
                     let is_payable: bool = db.is_payable(&slctr);
                     let mut value_token: u128 = 0;
                     if is_payable {
@@ -259,7 +260,7 @@ pub fn try_parse_input(bytes: &[u8], manager: CampaignManager) -> Option<OneInpu
         }
     }
 
-    if msg_len > 0 {
+    if !input.messages.is_empty() {
         return Some(input);
     }
     None
