@@ -197,15 +197,13 @@ impl<'a> Iterator for Data<'a> {
     }
 }
 
-pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
+pub fn try_parse_input(bytes: &[u8], manager: CampaignManager) -> Option<OneInput> {
     let config = manager.config();
-
-    let max_msg = config.max_messages_per_exec.unwrap_or_default();
     let data = Data {
         data: bytes,
         pointer: 0,
         size: 0,
-        max_messages_per_exec: max_msg,
+        max_messages_per_exec: config.max_messages_per_exec.unwrap_or_default(),
     };
 
     let mut input = OneInput {
@@ -217,7 +215,12 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
     let arc = manager.transcoder();
     let guard = arc.try_lock().expect("Failed on `try_lock`");
 
+    let msg_len = input.messages.len();
     for payload in data {
+        let origin = match input.fuzz_option {
+            EnableOriginFuzzing => Origin(payload[4]),
+            DisableOriginFuzzing => Origin::default(),
+        };
         let mut encoded_message = vec![0u8; payload.len() - 5];
         encoded_message.copy_from_slice(&payload[5..]);
 
@@ -227,20 +230,14 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
 
         // If we see a message being an invariant or our selector isn't a proper message we stop
         if db.contains_invariant(&slctr) || !db.contains_message(&slctr) {
-            break;
+            return None;
         }
 
         let mut encoded_cloned = encoded_message.clone();
 
         match decode_contract_message(&guard, &mut encoded_cloned) {
             Ok(message_metadata) => {
-                if data.max_messages_per_exec != 0
-                    && input.messages.len() <= data.max_messages_per_exec
-                {
-                    let origin = match input.fuzz_option {
-                        EnableOriginFuzzing => Origin(payload[4]),
-                        DisableOriginFuzzing => Origin::default(),
-                    };
+                if data.max_messages_per_exec != 0 && msg_len <= data.max_messages_per_exec {
                     let is_payable: bool = db.is_payable(&slctr);
                     let mut value_token: u128 = 0;
                     if is_payable {
@@ -257,11 +254,15 @@ pub fn parse_input(bytes: &[u8], manager: CampaignManager) -> OneInput {
                 }
             }
             Err(_) => {
-                continue;
+                return None;
             }
         }
     }
-    input
+
+    if msg_len > 0 {
+        return Some(input);
+    }
+    None
 }
 
 pub fn decode_contract_message(

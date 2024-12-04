@@ -164,7 +164,7 @@ mod test {
         fuzzer::{
             fuzz::Fuzzer,
             parser::{
-                parse_input,
+                try_parse_input,
                 Origin,
             },
         },
@@ -406,7 +406,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+        let input = try_parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);
@@ -448,7 +448,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the `transcoder` and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+        let input = try_parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);
@@ -498,7 +498,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes, manager.to_owned());
+        let input = try_parse_input(encoded_bytes, manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);
@@ -552,7 +552,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes, manager.to_owned());
+        let input = try_parse_input(encoded_bytes, manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);
@@ -602,7 +602,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+        let input = try_parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);
@@ -651,7 +651,7 @@ mod test {
             .init_fuzzer()
             .context("Couldn't grap the transcoder and the invariant manager")?;
 
-        let input = parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned());
+        let input = try_parse_input(encoded_bytes.as_bytes_ref(), manager.to_owned()).unwrap();
 
         let msg = input.messages;
         // println!("{:?}", msg);

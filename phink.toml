@@ -1,7 +1,7 @@
 ### Phink Configuration
 
 # General Settings
-cores = 4                # Set to 1 for single-core execution
+cores = 10                # Set to 1 for single-core execution
 max_messages_per_exec = 1 # Maximum number of message calls per input
 catch_trapped_contract = false # Not setting trapped contract as a bug, only detecting invariant-based bugs
 

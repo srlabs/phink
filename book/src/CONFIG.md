@@ -12,7 +12,7 @@ Here's how a configuration file looks like:
 ### Phink Configuration
 
 # General Settings
-cores = 4                # Set to 1 for single-core execution
+cores = 10                # Set to 1 for single-core execution
 max_messages_per_exec = 1 # Maximum number of message calls per input
 
 # Paths
@@ -43,7 +43,8 @@ proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
 
 The General settings cover these 2 parameters:
 
-- **cores**: Allocate the number of CPU cores for fuzzing. Setting this to `1` enables single-core execution.
+- **cores**: Allocate the number of CPU cores for fuzzing. Setting this to `1` enables single-core execution. We *
+  *highly** not recommend using single-core, since this will dissalow `CMPLOG` feature from AFL++.
 - **max_messages_per_exec**: Define the maximum number of message calls allowed per fuzzing input. If you want to fuzz
   one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it, for
   example,

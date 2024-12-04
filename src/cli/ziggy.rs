@@ -456,8 +456,8 @@ mod tests {
         assert!(allowlist_path.exists());
 
         let contents = fs::read_to_string(allowlist_path)?;
-        assert!(contents.contains("fun: redirect_coverage*"));
-        assert!(contents.contains("fun: parse_input*"));
+        assert!(contents.contains("fun: *redirect_coverage*"));
+        assert!(contents.contains("fun: *try_parse_input*"));
 
         Ok(())
     }

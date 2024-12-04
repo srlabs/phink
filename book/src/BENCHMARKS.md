@@ -28,6 +28,37 @@ lines covered divided the number of reachable lines, as a percentage.
 - Github for
   `erc1155` : [use-ink/ink-examples/blob/main/erc1155/lib.rs](https://github.com/use-ink/ink-examples/blob/main/erc1155/lib.rs)
 
+##### Dummy benchmark
+
+The [dummy](https://github.com/srlabs/phink/blob/main/sample/dummy/lib.rs) benchmark involves a simple nested
+if-condition. It acts as a reference to ensure that the fuzzer is
+effectively coverage guided. The results for this benchmark are as follows:
+
+* **Average speed**: 7,500 executions per second in average
+* **Number of cores used**: 10
+* **Time until invariant triggered**: 48 seconds
+* **Stability**: 99.43%
+* **Fuzzing origin**: false
+* **Final corpus size**: 12 seeds
+
+###### Dummy logic
+
+The logic tested in the dummy benchmark can simply be represented that way:
+
+```rust, ignore
+if data.len() > 3 && data.len() < 7 {
+    if data.chars().nth(0).unwrap() == 'f' {
+        if data.chars().nth(1).unwrap() == 'u' {
+            if data.chars().nth(2).unwrap() == 'z' {
+                if data.chars().nth(3).unwrap() == 'z' {
+                    self.forbidden_number = 42;
+                }
+            }
+        }
+    }
+}
+``` 
+
 #### Contracts
 
 ###### ERC-1155

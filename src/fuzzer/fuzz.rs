@@ -24,7 +24,7 @@ use crate::{
         },
         manager::CampaignManager,
         parser::{
-            parse_input,
+            try_parse_input,
             OneInput,
             MIN_SEED_LEN,
         },
@@ -156,11 +156,14 @@ impl Fuzzer {
             return;
         }
 
-        let parsed_input: OneInput = parse_input(input, manager.to_owned());
+        let maybe_parsed_input: Option<OneInput> = try_parse_input(input, manager.to_owned());
 
-        if parsed_input.messages.is_empty() {
-            return;
-        }
+        let parsed_input = match maybe_parsed_input {
+            None => {
+                return;
+            }
+            Some(parsed) => parsed,
+        };
 
         let mut chain = BasicExternalities::new(self.setup.genesis.clone());
         chain.execute_with(|| {

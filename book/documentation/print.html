@@ -311,7 +311,7 @@ right into it!</p>
 <pre><code class="language-toml">### Phink Configuration
 
 # General Settings
-cores = 4                # Set to 1 for single-core execution
+cores = 10                # Set to 1 for single-core execution
 max_messages_per_exec = 1 # Maximum number of message calls per input
 
 # Paths
@@ -340,7 +340,8 @@ proof_size = 3_145_728          # Proof size (3 * 1024 * 1024 bytes)
 <h2 id="general-settings"><a class="header" href="#general-settings">General settings</a></h2>
 <p>The General settings cover these 2 parameters:</p>
 <ul>
-<li><strong>cores</strong>: Allocate the number of CPU cores for fuzzing. Setting this to <code>1</code> enables single-core execution.</li>
+<li><strong>cores</strong>: Allocate the number of CPU cores for fuzzing. Setting this to <code>1</code> enables single-core execution. We *
+<em>highly</em>* not recommend using single-core, since this will dissalow <code>CMPLOG</code> feature from AFL++.</li>
 <li><strong>max_messages_per_exec</strong>: Define the maximum number of message calls allowed per fuzzing input. If you want to fuzz
 one function per one function, set this number to 1. Setting it to zero will fuzz zero message. Setting it, for
 example,
@@ -954,6 +955,31 @@ adding <code>GenesisConfig</code> values, more (E2E) tests extracted with <code>
 <li>Github for
 <code>erc1155</code> : <a href="https://github.com/use-ink/ink-examples/blob/main/erc1155/lib.rs">use-ink/ink-examples/blob/main/erc1155/lib.rs</a></li>
 </ul>
+<h5 id="dummy-benchmark"><a class="header" href="#dummy-benchmark">Dummy benchmark</a></h5>
+<p>The <a href="https://github.com/srlabs/phink/blob/main/sample/dummy/lib.rs">dummy</a> benchmark involves a simple nested
+if-condition. It acts as a reference to ensure that the fuzzer is
+effectively coverage guided. The results for this benchmark are as follows:</p>
+<ul>
+<li><strong>Average speed</strong>: 7,500 executions per second in average</li>
+<li><strong>Number of cores used</strong>: 10</li>
+<li><strong>Time until invariant triggered</strong>: 48 seconds</li>
+<li><strong>Stability</strong>: 99.43%</li>
+<li><strong>Fuzzing origin</strong>: false</li>
+<li><strong>Final corpus size</strong>: 12 seeds</li>
+</ul>
+<h6 id="dummy-logic"><a class="header" href="#dummy-logic">Dummy logic</a></h6>
+<p>The logic tested in the dummy benchmark can simply be represented that way:</p>
+<pre><code class="language-rust  ignore">if data.len() &gt; 3 &amp;&amp; data.len() &lt; 7 {
+    if data.chars().nth(0).unwrap() == 'f' {
+        if data.chars().nth(1).unwrap() == 'u' {
+            if data.chars().nth(2).unwrap() == 'z' {
+                if data.chars().nth(3).unwrap() == 'z' {
+                    self.forbidden_number = 42;
+                }
+            }
+        }
+    }
+}</code></pre>
 <h4 id="contracts"><a class="header" href="#contracts">Contracts</a></h4>
 <h6 id="erc-1155"><a class="header" href="#erc-1155">ERC-1155</a></h6>
 <blockquote>

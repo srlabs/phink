@@ -17,6 +17,10 @@ use std::{
     path::PathBuf,
 };
 
+// extern "C" {
+//     fn __afl_coverage_interesting(val: u8, id: u32);
+// }
+
 #[derive(Clone, Default)]
 pub struct InputCoverage {
     /// All the coverage ID grabbed
@@ -83,52 +87,16 @@ impl InputCoverage {
         Ok(())
     }
 
-    #[allow(unused_doc_comments)]
+    /// We assume that the instrumentation will never insert more than
+    /// `1_000` artificial branches This value should be big enough
+    /// to handle most of smart-contract, even the biggest
     #[allow(clippy::identity_op)]
     pub fn redirect_coverage(&self, flat: &[u64]) {
-        /// We assume that the instrumentation will never insert more than
-        /// `2_000` artificial branches This value should be big enough
-        /// to handle most of smart-contract, even the biggest
-
-        seq_macro::seq!(cov_id in 0_u64 .. 2_000_u64 {
-           if flat.contains(&cov_id) {
-                // Fake coverage with junk operations:
-                black_box({
-                    //unsafe {__afl_coverage_interesting(255, 0);}
-                    let _fake_coverage_val = cov_id * 2 + 1;
-                    let _ = _fake_coverage_val % 3;
-                    for _ in 0..10 {
-                        let _noop = _fake_coverage_val + 1;
-                        let _ = _noop * 2;
-                    }
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_mul(12345);
-                    let _ = cov_id.wrapping_add(67890);
-                    let _ = cov_id.rotate_left(3);
-                    let _ = cov_id.rotate_right(3);
-
-                    for _ in 0..11 {
-                        let _ = cov_id.wrapping_mul(111);
-                        let _ = cov_id.wrapping_sub(222);
-                        let _ = cov_id.rotate_left(2);
-                        let _ = cov_id.rotate_right(2);
-                    }
-
-                    let _cov = cov_id.saturating_add(1);
-                    let _junk = _cov.wrapping_mul(42);
-                    let _junk_result = _junk % 3;
-                    for _ in 0..12 {
-                        let _more_junk = _junk_result.wrapping_sub(7);
-                        let _final_junk = _more_junk.wrapping_mul(13);
-                    }
-                });
-            }
+        seq_macro::seq!(cov_id in 0_u64 .. 1_000_u64 {
+            if black_box(flat.contains(&cov_id)) {
+                let cov = black_box(cov_id.saturating_add(1));
+                println!("C:{cov}");
+              }
         });
     }
 }
