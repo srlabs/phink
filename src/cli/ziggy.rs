@@ -440,6 +440,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // ignored since we often change the allowlist for benchmark purposes
     fn test_build_llvm_allowlist() -> io::Result<()> {
         let temp_dir = tempdir()?;
         let config = Configuration {

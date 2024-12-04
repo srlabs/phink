@@ -43,11 +43,6 @@ mod dummy {
             }
             Ok(())
         }
-
-        // #[ink(message)]
-        // pub fn toz(&mut self, a: u32, name: Hash) {
-        //     let a = 1 + 1;
-        // }
     }
 
     #[cfg(feature = "phink")]

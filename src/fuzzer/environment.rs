@@ -33,8 +33,13 @@ use std::{
 pub struct AllowListBuilder;
 
 impl AllowListBuilder {
-    pub const FUNCTIONS: [&str; 2] = ["*redirect_coverage*", "*parse_input*"];
-
+    pub const FUNCTIONS: [&str; 5] = [
+        "*_ZN9phink_lib6fuzzer6parser*",
+        "*redirect_coverage*",
+        "*decode*",
+        "*harness*",
+        "*black_box*",
+    ];
     /// Builds the LLVM allowlist if it doesn't already exist.
     pub fn build(fuzz_output: PathBuf) -> io::Result<()> {
         let allowlist_path = PhinkFiles::new(fuzz_output).path(AllowlistPath);
