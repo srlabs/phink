@@ -25,7 +25,7 @@ use Phink.
 ![Dashboard GIF](assets/dashboard.gif)
 
 For documentation, visit our [**documentation site here**](https://srlabs.github.io/phink/). If you have any question,
-feedback, features suggestion, join our [Discord](https://discord.gg/gAahQMGE).
+feedback, features suggestion, join our [Discord](https://discord.gg/gAahQMGE). Feel free to watch our [Nullcon Goa talk](https://www.youtube.com/watch?v=TPzKDjTNoMQ) aswell!
 
 ## Install
 
