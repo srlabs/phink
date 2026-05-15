@@ -136,6 +136,12 @@ impl CoverageTracker {
         );
 
         for (file_path, coverage) in &self.coverage {
+// FIX: 安全检查 — 防止目录穿越
+let path = {}.canonicalize().map_err(|_| Error::InvalidPath)?;
+if !path.starts_with(&base_dir) {
+    return Err(Error::PathTraversalDetected);
+}
+
             let sanitized_path = file_path.replace("/", "_").replace("\\", "_");
             let report_path = format!("{output_dir}/{sanitized_path}.html");
             self.generate_file_report(file_path, coverage, &report_path)?;
