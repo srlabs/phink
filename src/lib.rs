@@ -184,7 +184,7 @@ fn handle_cli() -> EmptyResult {
         }
         Commands::Execute { seed } => {
             let fuzzer = Fuzzer::new(ZiggyConfig::new(config))
-                .context("Creating a new fuzzer instance faled")?;
+                .context("Creating a new fuzzer instance failed")?;
             fuzzer.execute_harness(ExecuteOneInput(seed))
         }
         Commands::HarnessCover => {
